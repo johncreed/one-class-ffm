@@ -92,6 +92,8 @@ private:
 
     void gd(shared_ptr<ImpData> &data, Vec &A, Vec &C, Vec &D, Vec &G);
     void cg(shared_ptr<ImpData> &data, Vec &A, Vec &D, Vec &G);
+    void Hs(shared_ptr<ImpData> &data, Vec &A, Vec &D, Vec &S, Vec &HS);
+    void func();
 
 
 
