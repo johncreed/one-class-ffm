@@ -12,6 +12,8 @@
 #include <climits>
 #include <utility>
 #include <numeric>
+#include <cassert>
+
 
 #include <immintrin.h>
 
@@ -32,72 +34,87 @@ const ImpInt MIN_Z = -10000;
 
 class Parameter {
 public:
-    ImpFloat eta, lambda;
+    ImpFloat omega, lambda;
     ImpInt nr_pass, k, nr_threads;
     string model_path, predict_path;
     bool item_bias;
-    Parameter():eta(0.1), lambda(1e-5), nr_pass(20), k(4), nr_threads(1), item_bias(true) {};
+    Parameter():omega(0.1), lambda(1e-5), nr_pass(20), k(4), nr_threads(1), item_bias(true) {};
 };
 
 class Node {
 public:
+    ImpInt fid;
     ImpLong idx;
     ImpDouble val;
-    Node(): idx(0), val(0) {};
+    Node(): fid(0), idx(0), val(0) {};
 };
 
 class ImpData {
 public:
     string file_name;
-    ImpLong l, n, m;
+    ImpLong m, n, f, nnz_x, nnz_y;
     vector<Node> M, N;
     vector<Node*> X, Y;
 
-    ImpData(string file_name): file_name(file_name), l(0), n(0), m(0) {};
+
+    vector<vector<Node>> Ms;
+    vector<vector<Node*>> Xs;
+    vector<ImpLong> Ds;
+
+    ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
     void read(bool has_label, ImpLong max_m=ULONG_MAX);
     void print_data_info();
+    void split_fields();
     void transY(const vector<Node*> &YT);
 };
 
 
 class ImpProblem {
 public:
-    ImpProblem(shared_ptr<ImpData> &Tr, shared_ptr<ImpData> &Te,
-            shared_ptr<ImpData> &Xt, shared_ptr<Parameter> &param)
-        :Tr(Tr), Te(Te), Xt(Xt), param(param) {};
+    ImpProblem(shared_ptr<ImpData> &U, shared_ptr<ImpData> &Ut,
+            shared_ptr<ImpData> &V, shared_ptr<Parameter> &param)
+        :U(U), Ut(Ut), V(V), param(param) {};
 
     void init();
     void solve();
 
 private:
     ImpDouble loss, reg, lambda, w;
-    shared_ptr<ImpData> Tr, Te, Xt;
+    shared_ptr<ImpData> U, Ut, V;
     shared_ptr<Parameter> param;
 
-    ImpInt k;
-    ImpLong l, n, mc, mt;
+    ImpInt k, fu, fv, f;
+    ImpLong m, n;
+    ImpLong mt;
 
-    Vec U, V, gu, gv;
-    Vec P, Q, CTC;
+    vector<Vec> W, H, P, Q, Pt, Qt;
+    Vec a, b, va_loss, CTC;
 
-    Vec va_loss;
-    vector<ImpInt> top_k, orders;
+    vector<ImpInt> top_k;
+
+    void init_pair(const ImpInt &f12, const ImpInt &fi, const ImpInt &fj,
+            const shared_ptr<ImpData> &d1, const shared_ptr<ImpData> &d2);
+
+    void add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1);
+    void calc_side();
+    void init_y_tilde();
+    ImpDouble calc_cross(const ImpLong &i, const ImpLong &j);
+
+    void update_side(const ImpInt &f1, const ImpInt &f2, bool add);
+    void update_cross(const ImpInt &f1, const ImpInt &f2, bool add);
 
     void UTx(Node *x0, Node* x1, Vec &A, ImpDouble *c);
-    void UTX(shared_ptr<ImpData> &D, Vec &A, Vec &C);
+    void UTX(const vector<Node*> &X, ImpLong m1, Vec &A, Vec &C);
+
 
     void QTQ(const Vec &C, const ImpLong &l);
 
+    void solve_side(const ImpInt &f1, const ImpInt &f2);
+    void solve_cross(const ImpInt &f1, const ImpInt &f2);
+
+
     void one_epoch();
-
-    void gd(shared_ptr<ImpData> &data, Vec &A, Vec &C, Vec &D, Vec &G);
-    void cg(shared_ptr<ImpData> &data, Vec &A, Vec &D, Vec &G);
-    void Hs(shared_ptr<ImpData> &data, Vec &A, Vec &D, Vec &S, Vec &HS);
-    void func();
-
-
-
-    void init_va_loss(ImpInt size);
+    void init_va(ImpInt size);
 
     void pred_z(ImpLong i, Vec &z);
     void pred_items();
