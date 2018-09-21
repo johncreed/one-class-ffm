@@ -57,7 +57,7 @@ public:
     vector<Node*> X, Y;
 
 
-    vector<vector<Node>> Ms;
+    vector<vector<Node>> Ns;
     vector<vector<Node*>> Xs;
     vector<ImpLong> Ds;
 

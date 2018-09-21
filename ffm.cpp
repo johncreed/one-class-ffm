@@ -18,7 +18,7 @@ void mm(const ImpDouble *a, const ImpDouble *b, ImpDouble *c,
 }
 
 const ImpInt index_vec(const ImpInt f1, const ImpInt f2, const ImpInt f) {
-    return f2 + f*f1 - f1*(f1-1)/2;
+    return f2 + (f-1)*f1 - f1*(f1-1)/2;
 }
 
 ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)
@@ -154,7 +154,7 @@ void ImpData::read(bool has_label, ImpLong max_m) {
 }
 
 void ImpData::split_fields() {
-    Ms.resize(f);
+    Ns.resize(f);
     Xs.resize(f);
     Ds.resize(f);
 
@@ -176,7 +176,7 @@ void ImpData::split_fields() {
     }
 
     for (ImpInt fi = 0; fi < f; fi++) {
-        Ms[fi].resize(f_sum_nnz[fi]);
+        Ns[fi].resize(f_sum_nnz[fi]);
         f_sum_nnz[fi] = 0;
     }
 
@@ -190,14 +190,14 @@ void ImpData::split_fields() {
             Ds[fid] = max(idx+1, Ds[fid]);
             ImpLong nnz_i = f_sum_nnz[fid]-1;
 
-            Ms[fid][nnz_i].fid = fid;
-            Ms[fid][nnz_i].idx = idx;
-            Ms[fid][nnz_i].val = val;
+            Ns[fid][nnz_i].fid = fid;
+            Ns[fid][nnz_i].idx = idx;
+            Ns[fid][nnz_i].val = val;
         }
     }
 
     for (ImpInt fi = 0; fi < f; fi++) {
-        Node* fM = Ms[fi].data();
+        Node* fM = Ns[fi].data();
         Xs[fi][0] = fM;
         for (ImpLong i = 0; i < m; i++)
             Xs[fi][i+1] = fM + f_nnz[fi][i];
@@ -206,8 +206,8 @@ void ImpData::split_fields() {
     X.clear();
     X.shrink_to_fit();
 
-    M.clear();
-    M.shrink_to_fit();
+    N.clear();
+    N.shrink_to_fit();
 }
 
 void ImpData::transY(const vector<Node*> &YT) {
@@ -262,7 +262,6 @@ void ImpData::print_data_info() {
     cout.width(12);
     cout << endl;
 }
-
 
 void ImpProblem::init_pair(const ImpInt &f12,
         const ImpInt &fi, const ImpInt &fj,
@@ -404,11 +403,11 @@ void ImpProblem::init() {
     Q.resize(nr_blocks);
 
     for (ImpInt f1 = 0; f1 < f; f1++) {
-        const shared_ptr<ImpData> d1 = ((f1>fu)? U: V);
-        const ImpInt fi = ((f1>fu)? f1-fu: f1);
+        const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
+        const ImpInt fi = ((f1>=fu)? f1-fu: f1);
         for (ImpInt f2 = f1; f2 < f; f2++) {
-            const shared_ptr<ImpData> d2 = ((f2>fu)? U: V);
-            const ImpInt fj = ((f2>fu)? f2-fu: f2);
+            const shared_ptr<ImpData> d2 = ((f2<fu)? U: V);
+            const ImpInt fj = ((f2>=fu)? f2-fu: f2);
             const ImpInt f12 = index_vec(f1, f2, f);
             init_pair(f12, fi, fj, d1, d2);
         }
@@ -419,19 +418,19 @@ void ImpProblem::init() {
 }
 
 void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
-    assert(f2 >= f1);
+    const ImpInt f12 = index_vec(f1, f2, f);
+
     const ImpInt base = (f1 < fu)? 0: fu;
-    const ImpInt fi = f1+base, fj = f2+base;
-    const ImpInt f12 = index_vec(fi, fj, f);
+    const ImpInt fi = f1-base, fj = f2-base;
 
     shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
-    vector<Node*> &UX = U1->Xs[f1],  &VX = U1->Xs[f2];
+    vector<Node*> &UX = U1->Xs[fi],  &VX = U1->Xs[fj];
 
     Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
-    const ImpLong Df1 = U1->Ds[f1], Df2 = U1->Ds[f2];
+    const ImpLong Df1 = U1->Ds[fi], Df2 = U1->Ds[fj];
 
 
-    update_side(fi, fj, false);
+    update_side(f1, f2, false);
 
     //GD
     //CG
@@ -441,21 +440,18 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     //CG
     UTX(VX, U1->m, H1, Q1);
 
-    update_side(fi, fj, true);
+    update_side(f1, f2, true);
 }
 
 void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
-    assert(f1 < fu);
-    assert(f2 > fu+1);
-    const ImpInt fi = f1, fj = f2+fu;
-    const ImpInt f12 = index_vec(fi, fj, f);
-
-    vector<Node*> &UX = U->Xs[f1], &VX = V->Xs[f2];
+    const ImpInt f12 = index_vec(f1, f2, f);
     Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
-    const ImpLong Df1 = U->Ds[f1], Df2 = V->Ds[f2];
 
+    const ImpInt fi = f1, fj = f2-fu;
+    vector<Node*> &UX = U->Xs[fi], &VX = V->Xs[fj];
+    const ImpLong Df1 = U->Ds[fi], Df2 = V->Ds[fj];
 
-    update_cross(fi, fj, false);
+    update_cross(f1, f2, false);
 
     //GD
     //CG
@@ -465,7 +461,7 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
     //CG
     UTX(VX, V->m, H1, Q1);
 
-    update_cross(fi, fj, true);
+    update_cross(f1, f2, true);
 
 }
 

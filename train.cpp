@@ -156,23 +156,20 @@ int main(int argc, char *argv[])
 
 
         U->read(true);
-        V->read(false);
-        V->transY(U->Y);
-
         U->split_fields();
         U->print_data_info();
 
+        V->read(false);
+        V->transY(U->Y);
+
         V->split_fields();
         V->print_data_info();
-        exit(1);
 
         if (!Ut->file_name.empty()) {
             Ut->read(true, Ut->m);
             Ut->split_fields();
             Ut->print_data_info();
         }
-
-
 
         ImpProblem prob(U, Ut, V, option.param);
         prob.init();
