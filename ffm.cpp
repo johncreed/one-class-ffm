@@ -254,6 +254,12 @@ void ImpData::print_data_info() {
     cout << "m:";
     cout << m;
     cout.width(12);
+    cout << "n:";
+    cout << n;
+    cout.width(12);
+    cout << "f:";
+    cout << f;
+    cout.width(12);
     cout << endl;
 }
 

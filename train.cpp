@@ -149,24 +149,32 @@ int main(int argc, char *argv[])
         omp_set_num_threads(option.param->nr_threads);
 
 
-        shared_ptr<ImpData> Tr = make_shared<ImpData>(option.tr_path);
-        shared_ptr<ImpData> Te = make_shared<ImpData>(option.te_path);
+        shared_ptr<ImpData> U = make_shared<ImpData>(option.tr_path);
+        shared_ptr<ImpData> V = make_shared<ImpData>(option.xt_path);
 
-        shared_ptr<ImpData> Xt = make_shared<ImpData>(option.xt_path);
+        shared_ptr<ImpData> Ut = make_shared<ImpData>(option.te_path);
 
 
-        Tr->read(true);
-        Tr->print_data_info();
-        if (!Te->file_name.empty()) {
-            Te->read(true, Tr->m);
-            Te->print_data_info();
+        U->read(true);
+        V->read(false);
+        V->transY(U->Y);
+
+        U->split_fields();
+        U->print_data_info();
+
+        V->split_fields();
+        V->print_data_info();
+        exit(1);
+
+        if (!Ut->file_name.empty()) {
+            Ut->read(true, Ut->m);
+            Ut->split_fields();
+            Ut->print_data_info();
         }
 
-        Xt->read(false);
-        Xt->transY(Tr->Y);
-        Xt->print_data_info();
 
-        ImpProblem prob(Tr, Te, Xt, option.param);
+
+        ImpProblem prob(U, Ut, V, option.param);
         prob.init();
         prob.solve();
     }
