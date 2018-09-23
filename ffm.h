@@ -34,11 +34,11 @@ const ImpInt MIN_Z = -10000;
 
 class Parameter {
 public:
-    ImpFloat omega, lambda;
+    ImpFloat omega, lambda, r;
     ImpInt nr_pass, k, nr_threads;
     string model_path, predict_path;
     bool item_bias;
-    Parameter():omega(0.1), lambda(1e-5), nr_pass(20), k(4), nr_threads(1), item_bias(true) {};
+    Parameter():omega(0.1), lambda(1e-5), r(-1), nr_pass(20), k(4), nr_threads(1), item_bias(true) {};
 };
 
 class Node {
@@ -79,7 +79,7 @@ public:
     void solve();
 
 private:
-    ImpDouble loss, reg, lambda, w;
+    ImpDouble loss, reg, lambda, w, r;
     shared_ptr<ImpData> U, Ut, V;
     shared_ptr<Parameter> param;
 
@@ -88,7 +88,7 @@ private:
     ImpLong mt;
 
     vector<Vec> W, H, P, Q, Pt, Qt;
-    Vec a, b, va_loss, CTC;
+    Vec a, b, va_loss, CTC, sa, sb;
 
     vector<ImpInt> top_k;
 
@@ -105,12 +105,15 @@ private:
 
     void UTx(Node *x0, Node* x1, Vec &A, ImpDouble *c);
     void UTX(const vector<Node*> &X, ImpLong m1, Vec &A, Vec &C);
-
-
     void QTQ(const Vec &C, const ImpLong &l);
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
+    void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
+    void hs_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y);
+
     void solve_cross(const ImpInt &f1, const ImpInt &f2);
+    void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G, Vec &P1);
+    void cache_sasb();
 
 
     void one_epoch();
