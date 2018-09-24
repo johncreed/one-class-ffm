@@ -483,13 +483,14 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &Q1, Vec &G) {
     const ImpLong n1 = (f1 < fu)? n:m;
 
     const Vec &b1 = (f1 < fu)? b:a;
+    const Vec &a1 = (f1 < fu)? a:b;
     const Vec &sa1 = (f1 < fu)? sa:sb;
     const ImpDouble b_sum = sum(b1);
 
 
     for (ImpLong i = 0; i < m1; i++) {
         const ImpDouble *q1 = qp+i*k; 
-        ImpDouble z_i = w*(n1*(r-a[i])-b_sum-sa1[i]);
+        ImpDouble z_i = w*(n1*(r-a1[i])-b_sum-sa1[i]);
 
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
             const ImpDouble y_tilde = y->val;
