@@ -683,7 +683,7 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     const ImpInt f12 = index_vec(f1, f2, f);
     Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
 
-    update_side(f1, f2, false);
+    update_side(f1, f2, true);
 
     Vec G1(W1.size(), 0), G2(H1.size(), 0);
 
@@ -693,14 +693,14 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     gd_side(f2, H1, P1, G2);
     cg(f2, f1, H1, P1, G2, Q1);
 
-    update_side(f1, f2, true);
+    update_side(f1, f2, false);
 }
 
 void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
     const ImpInt f12 = index_vec(f1, f2, f);
     Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
 
-    update_cross(f1, f2, false);
+    update_cross(f1, f2, true);
 
     Vec GW(W1.size()), GH(H1.size());
 
@@ -710,7 +710,7 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
     gd_cross(f2, f12, H1, P1, GH);
     cg(f2, f1, H1, P1, GH, Q1);
 
-    update_cross(f1, f2, true);
+    update_cross(f1, f2, false);
 }
 
 void ImpProblem::one_epoch() {
