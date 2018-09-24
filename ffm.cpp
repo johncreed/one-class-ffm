@@ -664,6 +664,8 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
 
         if ((f1 < fu && f2 < fu) || (f1>fu+1 && f2>fu+1))
             hs_side(m1, n1, S, Hs, Q1, X, Y);
+        else
+            hs_cross(m1, n1, S, Hs, Q1, X, Y);
 
         sHs = inner(S.data(), Hs.data(), Df1k);
         gamma = r2;
