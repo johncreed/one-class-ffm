@@ -449,7 +449,7 @@ void ImpProblem::cache_sasb() {
     fill(sa.begin(), sa.end(), 0);
     fill(sb.begin(), sb.end(), 0);
 
-    const Vec o1(m, 0), o2(n, 0);
+    const Vec o1(m, 1), o2(n, 1);
     Vec tk(k);
 
     for (ImpInt f1 = 0; f1 < fu; f1++) {
