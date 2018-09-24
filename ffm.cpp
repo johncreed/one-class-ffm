@@ -857,7 +857,6 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 } 
 
 void ImpProblem::solve() {
-    init();
     //init_va(4);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
