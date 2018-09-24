@@ -468,7 +468,7 @@ void ImpProblem::cache_sasb() {
     }
 }
 
-void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
+void ImpProblem::gd_side(const ImpInt &f1, const Vec &Q1, Vec &G) {
 
     const ImpInt base = (f1 < fu)? 0: fu;
     const ImpInt fi = f1-base;
@@ -486,7 +486,6 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     const Vec &sa1 = (f1 < fu)? sa:sb;
     const ImpDouble b_sum = sum(b1);
 
-    axpy(W1.data(), G.data(), W1.size(), lambda);
 
     for (ImpLong i = 0; i < m1; i++) {
         const ImpDouble *q1 = qp+i*k; 
@@ -535,8 +534,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
     }
 }
 
-void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12,
-       const Vec &W1, const Vec &Q1, Vec &G) {
+void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, Vec &G) {
 
     const Vec &a1 = (f1 < fu)? a: b;
     const Vec &b1 = (f1 < fu)? b: a;
@@ -566,7 +564,6 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12,
     }
 
     const ImpDouble *tp = T.data(), *qp = Q1.data();
-    axpy(W1.data(), G.data(), G.size(), lambda);
 
     for (ImpLong i = 0; i < m1; i++) {
         Vec pi(k, 0);
@@ -687,10 +684,10 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
 
     Vec G1(W1.size(), 0), G2(H1.size(), 0);
 
-    gd_side(f1, W1, Q1, G1);
+    gd_side(f1, Q1, G1);
     cg(f1, f2, W1, Q1, G1, P1);
 
-    gd_side(f2, H1, P1, G2);
+    gd_side(f2, P1, G2);
     cg(f2, f1, H1, P1, G2, Q1);
 
     update_side(f1, f2, true);
@@ -704,10 +701,10 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 
     Vec GW(W1.size()), GH(H1.size());
 
-    gd_cross(f1, f12, W1, Q1, GW);
+    gd_cross(f1, f12, Q1, GW);
     cg(f1, f2, W1, Q1, GW, P1);
 
-    gd_cross(f2, f12, H1, P1, GH);
+    gd_cross(f2, f12, P1, GH);
     cg(f2, f1, H1, P1, GH, Q1);
 
     update_cross(f1, f2, true);
