@@ -482,14 +482,12 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     const ImpLong m1 = (f1 < fu)? m:n;
     const ImpLong n1 = (f1 < fu)? n:m;
 
-    const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
     const Vec &b1 = (f1 < fu)? b:a;
     const ImpDouble b_sum = sum(b1);
 
-    axpy(W1.data(), G.data(), Df1k, lambda);
+    axpy(W1.data(), G.data(), W1.size(), lambda);
 
     for (ImpLong i = 0; i < m1; i++) {
-
         const ImpDouble *q1 = qp+i*k; 
         ImpDouble z_i = w*(n1*(r-a[i])-b_sum-sa[i]);
 
