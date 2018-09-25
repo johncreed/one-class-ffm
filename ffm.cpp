@@ -530,7 +530,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
             for (ImpInt d = 0; d < k; d++)
-                Hs[idx*k+d] = q1[d]*val*z_1;
+                Hs[idx*k+d] += q1[d]*val*z_1;
         }
     }
 }
