@@ -369,7 +369,7 @@ void ImpProblem::update_side(const ImpInt &f1, const ImpInt &f2, bool add) {
 
     for (ImpLong i = 0; i < U1->m; i++) {
         gaps[i] = inner(pp+i*k, qp+i*k, k);
-        a1[i] += flag*gaps[i];
+        a1[i] -= flag*gaps[i];
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             y->val += flag*gaps[i];
         }
