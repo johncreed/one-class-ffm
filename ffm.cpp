@@ -648,7 +648,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
     ImpInt nr_cg = 0, max_cg = 100;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-9, alpha = 0, beta = 0, gamma = 0, sHs;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-2, alpha = 0, beta = 0, gamma = 0, sHs;
 
     Vec S(Df1k, 0), R(Df1k, 0), Hs(Df1k, 0);
 
@@ -659,7 +659,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
         g2 += G[jd]*G[jd];
     }
 
-    cout << g2 << endl;
+    //cout << g2 << endl;
     r2 = g2;
 
     while (g2*cg_eps < r2 && nr_cg < max_cg) {
@@ -668,7 +668,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
         for (ImpLong jd = 0; jd < Df1k; jd++)
             S[jd] = R[jd] + beta*S[jd];
 
-        if ((f1 < fu && f2 < fu) || (f1>fu+1 && f2>fu+1))
+        if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
             hs_side(m1, n1, S, Hs, Q1, X, Y);
         else
             hs_cross(m1, n1, S, Hs, Q1, X, Y);
@@ -728,13 +728,11 @@ void ImpProblem::one_epoch() {
             solve_side(f1, f2);
     }
 
-    /*
     for (ImpInt f1 = fu; f1 < f; f1++) {
         for (ImpInt f2 = f1; f2 < f; f2++) {
             solve_side(f1, f2);
         }
     }
-    */
 
     /*
     for (ImpInt f1 = 0; f1 < fu; f1++) {
@@ -872,7 +870,6 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 void ImpProblem::solve() {
     //init_va(4);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
-        func();
         one_epoch();
         func();
         //validate();
@@ -920,12 +917,7 @@ void ImpProblem::func() {
     ImpDouble res = 0; 
     for (ImpInt i = 0; i < m; i++) {
         for(ImpInt j = 0; j < n; j++){
-            ImpDouble y_hat = 0;
-            for(ImpInt f1 = 0; f1 < f; f1++) {
-                for(ImpInt f2 = 0; f2 < f; f2++){
-                    y_hat += pq(i, j, f1, f2);
-                }
-            }
+            ImpDouble y_hat = a[i]+b[j];
             bool pos_term = false;
             for(Node* y = U->Y[i]; y < U->Y[i+1]; y++){
                 if ( y->idx == j ) {
@@ -941,8 +933,8 @@ void ImpProblem::func() {
     }
     
     for(ImpInt f1 = 0; f1 < f; f1++) {
-        for(ImpInt f2 = 0; f2 < f; f2++){
-            res += norm_block(f1, f2);
+        for(ImpInt f2 = f1; f2 < f; f2++){
+            res += lambda*norm_block(f1, f2);
         }
     }
     printf("func val: %10.5f\n", res);
