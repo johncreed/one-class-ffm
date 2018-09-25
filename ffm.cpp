@@ -862,8 +862,78 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 void ImpProblem::solve() {
     //init_va(4);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
+        func();
         one_epoch();
+        func();
         //validate();
         //print_epoch_info(iter);
     }
+}
+
+// p^(i,j)_(f1,f2)
+ImpDouble* ImpProblem::p(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
+    ImpInt f12 = index_vec(f1, f2, f);
+    Vec &Q12 = Q[f12];
+   if( f1 < fu )
+      return Q12.data() + i * k;
+   else
+      return Q12.data() + j * k; 
+}
+
+// q^(i,j)_(f1,f2)
+ImpDouble* ImpProblem::q(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
+    ImpInt f12 = index_vec(f1, f2, f);
+    Vec &Q12 = Q[f12];
+   if( f1 < fu )
+      return Q12.data() + i * k;
+   else
+      return Q12.data() + j * k; 
+}
+
+ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
+    ImpDouble  *pp = p(i, j, f1, f2), *qp = q(i, j, f2, f1);
+    return inner(qp, pp, k);
+}
+
+ImpDouble ImpProblem::norm_block(const ImpInt &f1,const ImpInt &f2) {
+    ImpInt f12 = index_vec(f1, f2, f);
+    ImpDouble *Pp = P[f12].data(), *Qp = Q[f12].data();
+    ImpDouble res = 0;
+    ImpLong P12_sz = (f1 < fu)? m : n;
+    ImpLong Q12_sz = (f2 < fu)? m : n;
+    res += inner(Pp, Pp, P12_sz * k);
+    res += inner(Qp, Qp, Q12_sz * k);
+    return res;
+}
+
+void ImpProblem::func() {
+    ImpDouble res = 0; 
+    for (ImpInt i = 0; i < m; i++) {
+        for(ImpInt j = 0; j < n; j++){
+            ImpDouble y_hat = 0;
+            for(ImpInt f1 = 0; f1 < f; f1++) {
+                for(ImpInt f2 = 0; f2 < f; f2++){
+                    y_hat += pq(i, j, f1, f2);
+                }
+            }
+            bool pos_term = false;
+            for(Node* y = U->Y[i]; y < U->Y[i+1]; y++){
+                if ( y->idx == j ) {
+                    pos_term = true;
+                    break;
+                }
+            }
+            if( pos_term )
+                res += (1 - y_hat) * (1 - y_hat);
+            else
+                res += w * (r - y_hat) * (r - y_hat);
+        }
+    }
+    
+    for(ImpInt f1 = 0; f1 < f; f1++) {
+        for(ImpInt f2 = 0; f2 < f; f2++){
+            res += norm_block(f1, f2);
+        }
+    }
+    printf("func val: %10.5f\n", res);
 }
