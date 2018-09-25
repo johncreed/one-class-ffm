@@ -338,7 +338,8 @@ ImpDouble ImpProblem::calc_cross(const ImpLong &i, const ImpLong &j) {
             cross_value += inner(pp+i*k, qp+j*k, k);
         }
     }
-    return cross_value;
+    return 0;
+    //return cross_value;
 }
 
 void ImpProblem::init_y_tilde() {
@@ -442,7 +443,7 @@ void ImpProblem::init() {
         }
     }
 
-    cache_sasb();
+    //cache_sasb();
     calc_side();
     init_y_tilde();
 }
@@ -647,6 +648,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
         S[jd] = R[jd];
         g2 += G[jd]*G[jd];
     }
+    cout << g2 << endl;
 
     r2 = g2;
 
@@ -716,11 +718,13 @@ void ImpProblem::one_epoch() {
             solve_side(f1, f2);
     }
 
+    /*
     for (ImpInt f1 = fu; f1 < f; f1++) {
         for (ImpInt f2 = f1; f2 < f; f2++) {
             solve_side(f1, f2);
         }
     }
+    */
 
     /*
     for (ImpInt f1 = 0; f1 < fu; f1++) {
