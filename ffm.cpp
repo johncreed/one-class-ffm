@@ -238,7 +238,7 @@ void ImpData::transY(const vector<Node*> &YT) {
     nnz_y = nnz;
     for (ImpLong nnz_i = 0; nnz_i < nnz; nnz_i++) {
         M[nnz_i].idx = perm[nnz_i].first;
-        //M[nnz_i].val = perm[nnz_i].second->val;
+        M[nnz_i].val = perm[nnz_i].second->val;
     }
 
     Y[0] = M.data();
