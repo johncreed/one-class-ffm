@@ -77,6 +77,7 @@ public:
 
     void init();
     void solve();
+    void func();
 
 private:
     ImpDouble loss, reg, lambda, w, r;
@@ -106,6 +107,10 @@ private:
     void UTx(const Node *x0, const Node* x1, const Vec &A, ImpDouble *c);
     void UTX(const vector<Node*> &X, ImpLong m1, const Vec &A, Vec &C);
     void QTQ(const Vec &C, const ImpLong &l);
+    ImpDouble* p(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
+    ImpDouble* q(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
+    ImpDouble pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
+    ImpDouble norm_block(const ImpInt &f1,const ImpInt &f2);
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
     void gd_side(const ImpInt &f1, const Vec &Q1, Vec &G);
