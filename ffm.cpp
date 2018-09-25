@@ -160,6 +160,7 @@ void ImpData::split_fields() {
     Xs.resize(f);
     Ds.resize(f);
 
+
     vector<ImpLong> f_sum_nnz(f, 0);
     vector<vector<ImpLong>> f_nnz(f);
 
@@ -201,8 +202,11 @@ void ImpData::split_fields() {
     for (ImpInt fi = 0; fi < f; fi++) {
         Node* fM = Ns[fi].data();
         Xs[fi][0] = fM;
-        for (ImpLong i = 0; i < m; i++)
-            Xs[fi][i+1] = fM + f_nnz[fi][i];
+        ImpLong start = 0;
+        for (ImpLong i = 0; i < m; i++) {
+            Xs[fi][i+1] = fM + start + f_nnz[fi][i];
+            start += f_nnz[fi][i];
+        }
     }
 
     X.clear();
@@ -320,9 +324,9 @@ void ImpProblem::calc_side() {
             add_side(P[f12], Q[f12], m, a);
         }
     }
-    for (ImpInt f1 = 0; f1 < fv; f1++) {
-        for (ImpInt f2 = f1; f2 < fv; f2++) {
-            const ImpInt f12 = index_vec(fu+f1, fu+f2, f);
+    for (ImpInt f1 = fu; f1 < f; f1++) {
+        for (ImpInt f2 = f1; f2 < f; f2++) {
+            const ImpInt f12 = index_vec(f1, f2, f);
             add_side(P[f12], Q[f12], n, b);
         }
     }
@@ -508,9 +512,11 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &Q1, Vec &G) {
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
         const Vec &S, Vec &Hs, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y) {
-    const ImpDouble *qp = Q1.data();
+
+    fill(Hs.begin(), Hs.end(), 0);
     axpy(S.data(), Hs.data(), S.size(), lambda);
 
+    const ImpDouble *qp = Q1.data();
     for (ImpLong i = 0; i < m1; i++) {
         const ImpDouble* q1 = qp+i*k; 
         ImpDouble d_1 = 0;
@@ -523,8 +529,9 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
             for (ImpInt d = 0; d < k; d++)
-                z_1 += q1[d]*val*S[idx*k+d]*d_1;
+                z_1 += q1[d]*val*S[idx*k+d];
         }
+        z_1 *= d_1;
         for (Node* x = UX[i]; x < UX[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
@@ -590,8 +597,10 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, Ve
 void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1,
         const Vec &S, Vec &Hs, const Vec &Q1, const vector<Node*> &X, const vector<Node*> &Y) {
     
-    const ImpDouble *qp = Q1.data();
+    fill(Hs.begin(), Hs.end(), 0);
     axpy(S.data(), Hs.data(), S.size(), lambda);
+
+    const ImpDouble *qp = Q1.data();
 
     Vec QTQ(k*k, 0), T(m1*k, 0);
 
@@ -638,18 +647,19 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
 
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
-    ImpInt nr_cg = 0, max_cg = 25;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-5, alpha = 0, beta = 0, gamma = 0, sHs;
+    ImpInt nr_cg = 0, max_cg = 100;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-9, alpha = 0, beta = 0, gamma = 0, sHs;
 
     Vec S(Df1k, 0), R(Df1k, 0), Hs(Df1k, 0);
 
     for (ImpLong jd = 0; jd < Df1k; jd++) {
-        R[jd] = -G[jd];
+        W1[jd] = 0;
+        R[jd] = G[jd];
         S[jd] = R[jd];
         g2 += G[jd]*G[jd];
     }
-    cout << g2 << endl;
 
+    cout << g2 << endl;
     r2 = g2;
 
     while (g2*cg_eps < r2 && nr_cg < max_cg) {
