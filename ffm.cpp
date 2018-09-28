@@ -75,7 +75,7 @@ void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row, const ImpI
     assert(col % 2 == 0);
     const ImpDouble *v1p = V1.data(), *v2p = V2.data();
     for(ImpInt i = 0; i < row; i++) {
-        vv[i] = alpha * inner(v1p, v2p, col) + vv[i]; 
+        vv[i] = alpha * inner(v1p+i*col, v2p+i*col, col) + vv[i]; 
     }
 }
 
@@ -393,7 +393,9 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     shared_ptr<ImpData> V1 = (sub_type)? V:U;
 
     Vec gaps(U1->m, 0);
-    hadmard_product(P1, Q1, U1->m, k, 1, gaps);
+    Vec XS(P1.size(), 0);
+    UTX(X12, m1, S, XS);
+    hadmard_product(XS, Q1, m1, k, 1, gaps);
 
     for (ImpLong i = 0; i < U1->m; i++) {
         a1[i] += gaps[i];
@@ -673,7 +675,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
     ImpInt nr_cg = 0, max_cg = 100;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-5, alpha = 0, beta = 0, gamma = 0, sHs;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-2, alpha = 0, beta = 0, gamma = 0, sHs;
 
     Vec S(Df1k, 0), R(Df1k, 0), Hs(Df1k, 0);
 
@@ -720,15 +722,15 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     gd_side(f1, W1, Q1, G1);
     cg(f1, f2, S1, Q1, G1, P1);
     update_side(sub_type, S1, Q1, W1, U1, P1);
-    //fill(G1.begin(), G1.end(), 0);
-    //gd_side(f1, W1, Q1, G1);
-/*
+    fill(G1.begin(), G1.end(), 0);
+    gd_side(f1, W1, Q1, G1);
+
     gd_side(f2, H1, P1, G2);
     cg(f2, f1, S2, P1, G2, Q1);
     update_side(sub_type, S2, P1, H1, U2, Q1);
     fill(G2.begin(), G2.end(), 0);
     gd_side(f2, H1, P1, G2);
-*/
+
 }
 
 void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
