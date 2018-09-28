@@ -538,32 +538,28 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
-        const Vec &S, Vec &Hs, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y) {
+        const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y) {
 
-    fill(Hs.begin(), Hs.end(), 0);
-    axpy(S.data(), Hs.data(), S.size(), lambda);
+    fill(Hv.begin(), Hv.end(), 0);
+    axpy(V.data(), Hv.data(), V.size(), lambda);
 
     const ImpDouble *qp = Q1.data();
     for (ImpLong i = 0; i < m1; i++) {
         const ImpDouble* q1 = qp+i*k; 
-        ImpDouble d_1 = 0;
-        for (Node* y = Y[i]; y < Y[i+1]; y++)
-            d_1++;
-        d_1 = (1-w)*d_1 + w*n1;
-
+        ImpDouble d_1 = (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
         ImpDouble z_1 = 0;
         for (Node* x = UX[i]; x < UX[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
             for (ImpInt d = 0; d < k; d++)
-                z_1 += q1[d]*val*S[idx*k+d];
+                z_1 += q1[d]*val*V[idx*k+d];
         }
         z_1 *= d_1;
         for (Node* x = UX[i]; x < UX[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
             for (ImpInt d = 0; d < k; d++)
-                Hs[idx*k+d] += q1[d]*val*z_1;
+                Hv[idx*k+d] += q1[d]*val*z_1;
         }
     }
 }
