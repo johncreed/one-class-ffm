@@ -369,13 +369,13 @@ void ImpProblem::init_y_tilde() {
     for (ImpLong i = 0; i < m; i++) {
         for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
             ImpLong j = y->idx;
-            y->val = a[i]-b[j]-calc_cross(i, j) - 1;
+            y->val = a[i]+b[j]+calc_cross(i, j) - 1;
         }
     }
     for (ImpLong j = 0; j < n; j++) {
         for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
             ImpLong i = y->idx;
-            y->val = a[i]-b[j]-calc_cross(i, j) - 1;
+            y->val = a[i]+b[j]+calc_cross(i, j) - 1;
         }
     }
 }
@@ -521,7 +521,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     const ImpDouble *qp = Q1.data();
     for (ImpLong i = 0; i < m1; i++) {
         const ImpDouble *q1 = qp+i*k; 
-        ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+sa1[i]);
+        ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+0*sa1[i]);
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
             const ImpDouble y_tilde = y->val;
             z_i += (1-w)*y_tilde-w*(1-r);
@@ -722,14 +722,10 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     gd_side(f1, W1, Q1, G1);
     cg(f1, f2, S1, Q1, G1, P1);
     update_side(sub_type, S1, Q1, W1, U1, P1);
-    fill(G1.begin(), G1.end(), 0);
-    gd_side(f1, W1, Q1, G1);
 
     gd_side(f2, H1, P1, G2);
     cg(f2, f1, S2, P1, G2, Q1);
     update_side(sub_type, S2, P1, H1, U2, Q1);
-    fill(G2.begin(), G2.end(), 0);
-    gd_side(f2, H1, P1, G2);
 
 }
 
