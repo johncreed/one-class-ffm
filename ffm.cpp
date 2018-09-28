@@ -751,13 +751,11 @@ void ImpProblem::one_epoch() {
         for (ImpInt f2 = f1; f2 < fu; f2++)
             solve_side(f1, f2);
     }
-/*
     for (ImpInt f1 = fu; f1 < f; f1++) {
         for (ImpInt f2 = f1; f2 < f; f2++) {
             solve_side(f1, f2);
         }
     }
-*/
 
     /*
     for (ImpInt f1 = 0; f1 < fu; f1++) {
