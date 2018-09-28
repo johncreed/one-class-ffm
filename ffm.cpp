@@ -22,6 +22,10 @@ void axpy(const ImpDouble *x, ImpDouble *y, const ImpLong &l, const ImpDouble &l
     cblas_daxpy(l, lambda, x, 1, y, 1);
 }
 
+void scal(ImpDouble *x, const ImpLong &l, const ImpDouble &lambda) {
+    cblas_dscal(l, lambda, x, 1);
+}
+
 void mm(const ImpDouble *a, const ImpDouble *b, ImpDouble *c,
         const ImpLong l, const ImpLong n, const ImpInt k) {
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
@@ -60,6 +64,19 @@ ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)
     ImpDouble product;
     _mm_store_sd(&product, XMM);
     return product;
+}
+
+void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row, const ImpInt &col
+        , const ImpDouble &alpha, Vec &vv){
+    //cout << " V1 " << V1.size() << " V2 " << V2.size() << " vv  " << vv.size() << endl;
+    //cout << " row " << row << " col " << col << " V1/col" << V1.size() / col << endl;
+    //cout << flush;
+    assert(V1.size() == V2.size() && V1.size()/col == vv.size());
+    assert(col % 2 == 0);
+    const ImpDouble *v1p = V1.data(), *v2p = V2.data();
+    for(ImpInt i = 0; i < row; i++) {
+        vv[i] = alpha * inner(v1p, v2p, col) + vv[i]; 
+    }
 }
 
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
@@ -284,7 +301,9 @@ void ImpProblem::UTx(const Node* x0, const Node* x1, const Vec &A, ImpDouble *c)
 
 void ImpProblem::UTX(const vector<Node*> &X, const ImpLong m1, const Vec &A, Vec &C) {
     fill(C.begin(), C.end(), 0);
-
+    //cout << X.size() << " " << m1 + 1 << endl << flush;
+    assert( X.size() == m1 + 1);
+    assert( C.size() == m1 * k);
     ImpDouble* c = C.data();
     for (ImpLong i = 0; i < m1; i++)
         UTx(X[i], X[i+1], A, c+i*k);
@@ -350,39 +369,42 @@ void ImpProblem::init_y_tilde() {
     for (ImpLong i = 0; i < m; i++) {
         for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
             ImpLong j = y->idx;
-            y->val = 1-a[i]-b[j]-calc_cross(i, j);
+            y->val = a[i]-b[j]-calc_cross(i, j) - 1;
         }
     }
     for (ImpLong j = 0; j < n; j++) {
         for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
             ImpLong i = y->idx;
-            y->val = 1-a[i]-b[j]-calc_cross(i, j);
+            y->val = a[i]-b[j]-calc_cross(i, j) - 1;
         }
     }
 }
 
-void ImpProblem::update_side(const ImpInt &f1, const ImpInt &f2, bool add) {
-    const ImpLong f12 = index_vec(f1, f2, f);
-    const ImpDouble *pp = P[f12].data(), *qp = Q[f12].data();
+void ImpProblem::update_side(const bool &sub_type, const Vec &S
+        , const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
+    // Update W1 and P1
+    axpy( S.data(), W1.data(), S.size(), 1);
+    const ImpLong m1 = (sub_type)? m : n;
+    UTX(X12, m1, W1, P1);
+    
+    // Update y_tilde and pq
+    Vec &a1 = (sub_type)? a:b;
+    shared_ptr<ImpData> U1 = (sub_type)? U:V;
+    shared_ptr<ImpData> V1 = (sub_type)? V:U;
 
-    Vec &a1 = (f1 < fu)? a:b;
-    shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
-    shared_ptr<ImpData> V1 = (f1 < fu)? V:U;
-
-    const int flag = add*2-1;
     Vec gaps(U1->m, 0);
+    hadmard_product(P1, Q1, U1->m, k, 1, gaps);
 
     for (ImpLong i = 0; i < U1->m; i++) {
-        gaps[i] = inner(pp+i*k, qp+i*k, k);
-        a1[i] -= flag*gaps[i];
+        a1[i] += gaps[i];
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
-            y->val += flag*gaps[i];
+            y->val += gaps[i];
         }
     }
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
-            y->val += flag*gaps[i];
+            y->val += gaps[i];
         }
     }
 }
@@ -475,8 +497,9 @@ void ImpProblem::cache_sasb() {
     }
 }
 
-void ImpProblem::gd_side(const ImpInt &f1, const Vec &Q1, Vec &G) {
+void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
 
+    axpy( W1.data(), G.data(), G.size(), lambda);
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
     const vector<Node*> &Y = U1->Y;
 
@@ -496,10 +519,10 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &Q1, Vec &G) {
     const ImpDouble *qp = Q1.data();
     for (ImpLong i = 0; i < m1; i++) {
         const ImpDouble *q1 = qp+i*k; 
-        ImpDouble z_i = w*(n1*(r-a1[i])-b_sum-sa1[i]);
+        ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+sa1[i]);
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
             const ImpDouble y_tilde = y->val;
-            z_i += y_tilde*(1-w)-w*(r-1);
+            z_i += (1-w)*y_tilde-w*(1-r);
         }
         for (Node* x = X[i]; x < X[i+1]; x++) {
             const ImpLong idx = x->idx;
@@ -508,6 +531,8 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &Q1, Vec &G) {
                 G[idx*k+d] += q1[d]*val*z_i;
         }
     }
+    
+    cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
@@ -632,7 +657,7 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1,
     }
 }
 
-void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
+void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         const Vec &Q1, const Vec &G, Vec &P1) {
 
     const ImpInt base = (f1 < fu)? 0: fu;
@@ -648,13 +673,12 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
     ImpInt nr_cg = 0, max_cg = 100;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-2, alpha = 0, beta = 0, gamma = 0, sHs;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-5, alpha = 0, beta = 0, gamma = 0, sHs;
 
     Vec S(Df1k, 0), R(Df1k, 0), Hs(Df1k, 0);
 
     for (ImpLong jd = 0; jd < Df1k; jd++) {
-        W1[jd] = 0;
-        R[jd] = G[jd];
+        R[jd] = -G[jd];
         S[jd] = R[jd];
         g2 += G[jd]*G[jd];
     }
@@ -664,10 +688,6 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
 
     while (g2*cg_eps < r2 && nr_cg < max_cg) {
         nr_cg++;
-
-        for (ImpLong jd = 0; jd < Df1k; jd++)
-            S[jd] = R[jd] + beta*S[jd];
-
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
             hs_side(m1, n1, S, Hs, Q1, X, Y);
         else
@@ -676,32 +696,39 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &W1,
         sHs = inner(S.data(), Hs.data(), Df1k);
         gamma = r2;
         alpha = gamma/sHs;
-        for (ImpLong jd = 0; jd < Df1k; jd++) {
-            W1[jd] += alpha*S[jd];
-            R[jd] -= alpha*Hs[jd];
-        }
+        axpy(S.data(), S1.data(), Df1k, alpha);
+        axpy(Hs.data(), R.data(), Df1k, -alpha);
         r2 = inner(R.data(), R.data(), Df1k);
         beta = r2/gamma;
+        scal(S.data(), Df1k, beta);
+        axpy(R.data(), S.data(), Df1k, 1);
     }
-    UTX(X, m1, W1, P1);
     cout << "nr_cg: " << nr_cg << endl;
 }
 
 void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     const ImpInt f12 = index_vec(f1, f2, f);
+    const bool sub_type = (f1 < fu)? 1 : 0;
+    const shared_ptr<ImpData> X12 = (sub_type)? U : V;
+    const ImpInt base = (sub_type)? 0 : fu;
+    const vector<Node*> &U1 = X12->Xs[f1-base], &U2 = X12->Xs[f2-base];
     Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
 
-    update_side(f1, f2, true);
-
     Vec G1(W1.size(), 0), G2(H1.size(), 0);
+    Vec S1(W1.size(), 0), S2(H1.size(), 0);
 
-    gd_side(f1, Q1, G1);
-    cg(f1, f2, W1, Q1, G1, P1);
-
-    gd_side(f2, P1, G2);
-    cg(f2, f1, H1, P1, G2, Q1);
-
-    update_side(f1, f2, false);
+    gd_side(f1, W1, Q1, G1);
+    cg(f1, f2, S1, Q1, G1, P1);
+    update_side(sub_type, S1, Q1, W1, U1, P1);
+    //fill(G1.begin(), G1.end(), 0);
+    //gd_side(f1, W1, Q1, G1);
+/*
+    gd_side(f2, H1, P1, G2);
+    cg(f2, f1, S2, P1, G2, Q1);
+    update_side(sub_type, S2, P1, H1, U2, Q1);
+    fill(G2.begin(), G2.end(), 0);
+    gd_side(f2, H1, P1, G2);
+*/
 }
 
 void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
@@ -714,6 +741,7 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 
     gd_cross(f1, f12, Q1, GW);
     cg(f1, f2, W1, Q1, GW, P1);
+    fprintf(stderr,"Please Remember update W1 and P1 in cross_cg\n");
 
     gd_cross(f2, f12, P1, GH);
     cg(f2, f1, H1, P1, GH, Q1);
@@ -727,12 +755,13 @@ void ImpProblem::one_epoch() {
         for (ImpInt f2 = f1; f2 < fu; f2++)
             solve_side(f1, f2);
     }
-
+/*
     for (ImpInt f1 = fu; f1 < f; f1++) {
         for (ImpInt f2 = f1; f2 < f; f2++) {
             solve_side(f1, f2);
         }
     }
+*/
 
     /*
     for (ImpInt f1 = 0; f1 < fu; f1++) {
@@ -939,3 +968,5 @@ void ImpProblem::func() {
     }
     printf("func val: %10.5f\n", res);
 }
+
+

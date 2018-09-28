@@ -101,7 +101,7 @@ private:
     void init_y_tilde();
     ImpDouble calc_cross(const ImpLong &i, const ImpLong &j);
 
-    void update_side(const ImpInt &f1, const ImpInt &f2, bool add);
+    void update_side(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
     void update_cross(const ImpInt &f1, const ImpInt &f2, bool add);
 
     void UTx(const Node *x0, const Node* x1, const Vec &A, ImpDouble *c);
@@ -113,7 +113,7 @@ private:
     ImpDouble norm_block(const ImpInt &f1,const ImpInt &f2);
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
-    void gd_side(const ImpInt &f1, const Vec &Q1, Vec &G);
+    void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
     void hs_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y);
 
     void solve_cross(const ImpInt &f1, const ImpInt &f2);
