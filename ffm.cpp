@@ -677,33 +677,31 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     ImpInt nr_cg = 0, max_cg = 100;
     ImpDouble g2 = 0, r2, cg_eps = 1e-2, alpha = 0, beta = 0, gamma = 0, sHs;
 
-    Vec S(Df1k, 0), R(Df1k, 0), Hs(Df1k, 0);
+    Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
 
     for (ImpLong jd = 0; jd < Df1k; jd++) {
         R[jd] = -G[jd];
-        S[jd] = R[jd];
+        V[jd] = R[jd];
         g2 += G[jd]*G[jd];
     }
 
-    //cout << g2 << endl;
     r2 = g2;
-
     while (g2*cg_eps < r2 && nr_cg < max_cg) {
         nr_cg++;
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
-            hs_side(m1, n1, S, Hs, Q1, X, Y);
+            hs_side(m1, n1, V, Hv, Q1, X, Y);
         else
-            hs_cross(m1, n1, S, Hs, Q1, X, Y);
+            hs_cross(m1, n1, V, Hv, Q1, X, Y);
 
-        sHs = inner(S.data(), Hs.data(), Df1k);
+        sHs = inner(V.data(), Hv.data(), Df1k);
         gamma = r2;
         alpha = gamma/sHs;
-        axpy(S.data(), S1.data(), Df1k, alpha);
-        axpy(Hs.data(), R.data(), Df1k, -alpha);
+        axpy(V.data(), S1.data(), Df1k, alpha);
+        axpy(Hv.data(), R.data(), Df1k, -alpha);
         r2 = inner(R.data(), R.data(), Df1k);
         beta = r2/gamma;
-        scal(S.data(), Df1k, beta);
-        axpy(R.data(), S.data(), Df1k, 1);
+        scal(V.data(), Df1k, beta);
+        axpy(R.data(), V.data(), Df1k, 1);
     }
     cout << "nr_cg: " << nr_cg << endl;
 }
