@@ -133,7 +133,7 @@ void ImpData::read(bool has_label, ImpLong max_m) {
     Y.resize(m+1);
 
     if (has_label) {
-        nnz_y = nnz_y;
+        nnz_y = y_nnz;
         M.resize(y_nnz);
     }
 
