@@ -541,6 +541,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
                 G[idx*k+d] += q1[d]*val*z_i;
         }
     }
+    cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
@@ -676,7 +677,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
 
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
-    ImpInt nr_cg = 0, max_cg = 100;
+    ImpInt nr_cg = 0, max_cg = 20;
     ImpDouble g2 = 0, r2, cg_eps = 1e-2, alpha = 0, beta = 0, gamma = 0, vHv;
 
     Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
@@ -729,7 +730,8 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     update_side(sub_type, S1, Q1, W1, U1, P1);
 
     ImpDouble new_fun = func();
-    cout << "real:" <<fun - new_fun  << endl;
+    cout << "act:" <<new_fun-fun  << endl;
+    cout << "fuc:" << new_fun << endl;
     fun = new_fun;
 
     gd_side(f2, H1, P1, G2);
@@ -741,8 +743,8 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
 
     update_side(sub_type, S2, P1, H1, U2, Q1);
     new_fun = func();
-    cout << "real:" <<fun - new_fun  << endl;
-
+    cout << "act:" <<new_fun-fun  << endl;
+    cout << "fuc:" << new_fun << endl;
 }
 
 void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
