@@ -77,7 +77,7 @@ public:
 
     void init();
     void solve();
-    void func();
+    ImpDouble func();
 
 private:
     ImpDouble loss, reg, lambda, w, r;

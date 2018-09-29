@@ -18,6 +18,13 @@ ImpDouble sum(const Vec &v) {
     return sum;
 }
 
+void debug_vec(const Vec &v, char* name) {
+    cout << name << endl;
+    for (ImpDouble i: v)
+        cout << i<<" ";
+    cout << endl;
+}
+
 void axpy(const ImpDouble *x, ImpDouble *y, const ImpLong &l, const ImpDouble &lambda) {
     cblas_daxpy(l, lambda, x, 1, y, 1);
 }
@@ -81,7 +88,7 @@ void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row, const ImpI
 
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
     default_random_engine ENGINE(rand());
-    vec.resize(nr_rows*nr_cols);
+    vec.resize(nr_rows*nr_cols, 0.1);
     uniform_real_distribution<ImpDouble> dist(0, 0.1*qrsqrt(nr_cols));
 
     auto gen = std::bind(dist, ENGINE);
@@ -518,6 +525,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
 
     const Vec &sa1 = (f1 < fu)? sa:sb;
 
+
     const ImpDouble *qp = Q1.data();
     for (ImpLong i = 0; i < m1; i++) {
         const ImpDouble *q1 = qp+i*k; 
@@ -533,8 +541,6 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
                 G[idx*k+d] += q1[d]*val*z_i;
         }
     }
-    
-    cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
@@ -671,7 +677,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
     ImpInt nr_cg = 0, max_cg = 100;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-2, alpha = 0, beta = 0, gamma = 0, sHs;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-2, alpha = 0, beta = 0, gamma = 0, vHv;
 
     Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
 
@@ -689,9 +695,9 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         else
             hs_cross(m1, n1, V, Hv, Q1, X, Y);
 
-        sHs = inner(V.data(), Hv.data(), Df1k);
+        vHv = inner(V.data(), Hv.data(), Df1k);
         gamma = r2;
-        alpha = gamma/sHs;
+        alpha = gamma/vHv;
         axpy(V.data(), S1.data(), Df1k, alpha);
         axpy(Hv.data(), R.data(), Df1k, -alpha);
         r2 = inner(R.data(), R.data(), Df1k);
@@ -699,7 +705,6 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         scal(V.data(), Df1k, beta);
         axpy(R.data(), V.data(), Df1k, 1);
     }
-    cout << "nr_cg: " << nr_cg << endl;
 }
 
 void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
@@ -713,13 +718,30 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     Vec G1(W1.size(), 0), G2(H1.size(), 0);
     Vec S1(W1.size(), 0), S2(H1.size(), 0);
 
+    ImpDouble fun = func();
     gd_side(f1, W1, Q1, G1);
     cg(f1, f2, S1, Q1, G1, P1);
+
+    Vec HS1(W1.size(), 0);
+    hs_side(m, n, S1, HS1, Q1, U1, X12->Y);
+    cout << "pre:"<< inner(S1.data(), G1.data(), S1.size()) + 0.5*inner(S1.data(), HS1.data(), S1.size()) << endl;
+
     update_side(sub_type, S1, Q1, W1, U1, P1);
+
+    ImpDouble new_fun = func();
+    cout << "real:" <<fun - new_fun  << endl;
+    fun = new_fun;
 
     gd_side(f2, H1, P1, G2);
     cg(f2, f1, S2, P1, G2, Q1);
+
+    Vec HS2(H1.size(), 0);
+    hs_side(n, m, S2, HS2, P1, U2, X12->Y);
+    cout << "pre:"<< inner(S2.data(), G2.data(), S2.size()) + 0.5*inner(S2.data(), HS2.data(), S2.size()) << endl;
+
     update_side(sub_type, S2, P1, H1, U2, Q1);
+    new_fun = func();
+    cout << "real:" <<fun - new_fun  << endl;
 
 }
 
@@ -747,11 +769,13 @@ void ImpProblem::one_epoch() {
         for (ImpInt f2 = f1; f2 < fu; f2++)
             solve_side(f1, f2);
     }
+    /*
     for (ImpInt f1 = fu; f1 < f; f1++) {
         for (ImpInt f2 = f1; f2 < f; f2++) {
             solve_side(f1, f2);
         }
     }
+    */
 
     /*
     for (ImpInt f1 = 0; f1 < fu; f1++) {
@@ -887,12 +911,16 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 } 
 
 void ImpProblem::solve() {
-    //init_va(4);
+    //ImpDouble old = func();
+ //   cout << "func:" << old << endl;
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-        func();
-        //validate();
-        //print_epoch_info(iter);
+/*
+        ImpDouble new_func = func();
+        cout << "real:" << new_func - old << endl;
+        cout << "func:" << new_func << endl;
+        old = new_func;
+*/
     }
 }
 
@@ -923,16 +951,14 @@ ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, cons
 
 ImpDouble ImpProblem::norm_block(const ImpInt &f1,const ImpInt &f2) {
     ImpInt f12 = index_vec(f1, f2, f);
-    ImpDouble *Pp = P[f12].data(), *Qp = Q[f12].data();
+    Vec &W1 = W[f12], H1 = H[f12];
     ImpDouble res = 0;
-    ImpLong P12_sz = (f1 < fu)? m : n;
-    ImpLong Q12_sz = (f2 < fu)? m : n;
-    res += inner(Pp, Pp, P12_sz * k);
-    res += inner(Qp, Qp, Q12_sz * k);
+    res += inner(W1.data(), W1.data(), W1.size());
+    res += inner(H1.data(), H1.data(), H1.size());
     return res;
 }
 
-void ImpProblem::func() {
+ImpDouble ImpProblem::func() {
     ImpDouble res = 0; 
     for (ImpInt i = 0; i < m; i++) {
         for(ImpInt j = 0; j < n; j++){
@@ -956,7 +982,7 @@ void ImpProblem::func() {
             res += lambda*norm_block(f1, f2);
         }
     }
-    printf("func val: %10.5f\n", res);
+    return 0.5*res;
 }
 
 
