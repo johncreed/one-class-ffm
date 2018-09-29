@@ -418,24 +418,30 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     }
 }
 
-void ImpProblem::update_cross(const ImpInt &f1, const ImpInt &f2, bool add) {
-    const ImpLong f12 = index_vec(f1, f2, f);
-    const ImpDouble *pp = P[f12].data(), *qp = Q[f12].data();
-    const int flag = add*2-1;
-    for (ImpLong i = 0; i < m; i++) {
-        for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
+void ImpProblem::update_cross(const bool &sub_type, const Vec &S
+        , const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
+    // Update W1 and P1
+    axpy( S.data(), W1.data(), S.size(), 1);
+    const ImpLong m1 = (sub_type)? m : n;
+    UTX(X12, m1, W1, P1);
+    
+    // Update y_tilde
+    shared_ptr<ImpData> U1 = (sub_type)? U:V;
+    shared_ptr<ImpData> V1 = (sub_type)? V:U;
+
+    for (ImpLong i = 0; i < U1->m; i++) {
+        for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             ImpLong j = y->idx;
-            y->val += flag*inner(pp+i*k, qp+j*k, k);
+            y->val += inner( S.data()+i*k, Q1.data()+j*k, k);
         }
     }
-    for (ImpLong j = 0; j < n; j++) {
-        for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
-            ImpLong i = y->idx;
-            y->val += flag*inner(pp+i*k, qp+j*k, k);
+    for (ImpLong j = 0; j < V1->m; j++) {
+        for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
+            const ImpLong i = y->idx;
+            y->val += inner( S.data()+i*k, Q1.data()+j*k, k);
         }
     }
 }
-
 
 void ImpProblem::init() {
     lambda = param->lambda;
@@ -571,8 +577,9 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
     }
 }
 
-void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, Vec &G) {
+void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1,Vec &G) {
 
+    axpy( W1.data(), G.data(), W1.size(), lambda );
     const Vec &a1 = (f1 < fu)? a: b;
     const Vec &b1 = (f1 < fu)? b: a;
 
@@ -587,14 +594,13 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, Ve
 
     Vec QTQ(k*k, 0), T(m1*k, 0), o1(n1, 1), oQ(k, 0), bQ(k, 0), pk(k, 0);
 
-    mv(Q1.data(), o1.data(), oQ.data(), k, n, 0, true);
-    mv(Q1.data(), b1.data(), bQ.data(), k, n, 0, true);
+    mv(Q1.data(), o1.data(), oQ.data(), n1, k, 0, true);
+    mv(Q1.data(), b1.data(), bQ.data(), n1, k, 0, true);
 
     for (ImpInt al = 0; al < fu; al++) {
         for (ImpInt be = fu; be < f; be++) {
             const ImpInt fab = index_vec(al, be, f);
-            if (fab == f12) continue;
-            const Vec &Qa = Qs[f12], &Pa = Ps[f12];
+            const Vec &Qa = Qs[fab], &Pa = Ps[fab];
             mm(Qa.data(), Q1.data(), QTQ.data(), k, n1);
             mm(Pa.data(), QTQ.data(), T.data(), m1, k, k, 1);
         }
@@ -606,14 +612,14 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, Ve
         fill(pk.begin(), pk.end(), 0);
         const ImpDouble *t1 = tp+i*k;
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
-            const ImpDouble scale = (1-w)*y->val-w*(r-1);
+            const ImpDouble scale = (1-w)*y->val-w*(1-r);
             const ImpLong j = y->idx;
             const ImpDouble *q1 = qp+j*k;
             for (ImpInt d = 0; d < k; d++)
                 pk[d] += scale*q1[d];
         }
 
-        const ImpDouble z_i = n1*(r-a1[i]);
+        const ImpDouble z_i = a1[i]-r;
         for (Node* x = X[i]; x < X[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
@@ -752,24 +758,23 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
 
 void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
     const ImpInt f12 = index_vec(f1, f2, f);
+    const vector<Node*> &U1 = U->Xs[f1], &V1 = V->Xs[f2-fu];
     Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
 
-    update_cross(f1, f2, true);
-
     Vec GW(W1.size()), GH(H1.size());
+    Vec SW(W1.size()), SH(H1.size());
 
-    gd_cross(f1, f12, Q1, GW);
-    cg(f1, f2, W1, Q1, GW, P1);
-    fprintf(stderr,"Please Remember update W1 and P1 in cross_cg\n");
+    gd_cross(f1, f12, Q1, W1, GW);
+    cg(f1, f2, SW, Q1, GW, P1);
+    update_cross(1, SW, Q1, W1, U1, P1);
 
-    gd_cross(f2, f12, P1, GH);
-    cg(f2, f1, H1, P1, GH, Q1);
-
-    update_cross(f1, f2, false);
+    gd_cross(f2, f12, P1, H1, GH);
+    cg(f2, f1, SH, P1, GH, Q1);
+    update_cross(0, SH, P1, H1, V1, Q1);
 }
 
 void ImpProblem::one_epoch() {
-
+/*
     for (ImpInt f1 = 0; f1 < fu; f1++) {
         for (ImpInt f2 = f1; f2 < fu; f2++)
             solve_side(f1, f2);
@@ -780,14 +785,13 @@ void ImpProblem::one_epoch() {
             solve_side(f1, f2);
         }
     }
+*/
 
-    /*
     for (ImpInt f1 = 0; f1 < fu; f1++) {
         for (ImpInt f2 = fu; f2 < f; f2++)
             solve_cross(f1, f2);
     }
     cache_sasb();
-    */
 }
 
 void ImpProblem::init_va(ImpInt size) {
@@ -915,41 +919,24 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 } 
 
 void ImpProblem::solve() {
-    //ImpDouble old = func();
- //   cout << "func:" << old << endl;
+    ImpDouble old = func();
+    cout << "func:" << old << endl;
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-/*
+
         ImpDouble new_func = func();
         cout << "real:" << new_func - old << endl;
         cout << "func:" << new_func << endl;
         old = new_func;
-*/
+
     }
 }
 
-// p^(i,j)_(f1,f2)
-ImpDouble* ImpProblem::p(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
-    ImpInt f12 = index_vec(f1, f2, f);
-    Vec &Q12 = Q[f12];
-   if( f1 < fu )
-      return Q12.data() + i * k;
-   else
-      return Q12.data() + j * k; 
-}
-
-// q^(i,j)_(f1,f2)
-ImpDouble* ImpProblem::q(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
-    ImpInt f12 = index_vec(f1, f2, f);
-    Vec &Q12 = Q[f12];
-   if( f1 < fu )
-      return Q12.data() + i * k;
-   else
-      return Q12.data() + j * k; 
-}
-
 ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
-    ImpDouble  *pp = p(i, j, f1, f2), *qp = q(i, j, f2, f1);
+    ImpInt f12 = index_vec(f1, f2, f);
+    ImpInt Pi = (f1 < fu)? i : j;
+    ImpInt Qj = (f2 < fu)? i : j;
+    ImpDouble  *pp = P[f12].data()+Pi*k, *qp = Q[f12].data()+Qj*k;
     return inner(qp, pp, k);
 }
 
@@ -966,7 +953,12 @@ ImpDouble ImpProblem::func() {
     ImpDouble res = 0; 
     for (ImpInt i = 0; i < m; i++) {
         for(ImpInt j = 0; j < n; j++){
-            ImpDouble y_hat = a[i]+b[j];
+            ImpDouble y_hat = 0;
+            for(ImpInt f1 = 0; f1 < f; f1++){
+                for(ImpInt f2 = f1; f2 < f; f2++){
+                    y_hat += pq(i, j, f1, f2);
+                }
+            }
             bool pos_term = false;
             for(Node* y = U->Y[i]; y < U->Y[i+1]; y++){
                 if ( y->idx == j ) {

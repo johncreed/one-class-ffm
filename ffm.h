@@ -102,13 +102,11 @@ private:
     ImpDouble calc_cross(const ImpLong &i, const ImpLong &j);
 
     void update_side(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
-    void update_cross(const ImpInt &f1, const ImpInt &f2, bool add);
+    void update_cross(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
 
     void UTx(const Node *x0, const Node* x1, const Vec &A, ImpDouble *c);
     void UTX(const vector<Node*> &X, ImpLong m1, const Vec &A, Vec &C);
     void QTQ(const Vec &C, const ImpLong &l);
-    ImpDouble* p(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
-    ImpDouble* q(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
     ImpDouble pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
     ImpDouble norm_block(const ImpInt &f1,const ImpInt &f2);
 
@@ -117,7 +115,7 @@ private:
     void hs_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y);
 
     void solve_cross(const ImpInt &f1, const ImpInt &f2);
-    void gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, Vec &G);
+    void gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1, Vec &G);
     void hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y);
 
     void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G, Vec &P1);
