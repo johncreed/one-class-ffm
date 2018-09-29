@@ -736,7 +736,7 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     cg(f2, f1, S2, P1, G2, Q1);
 
     Vec HS2(H1.size(), 0);
-    hs_side(n, m, S2, HS2, P1, U2, X12->Y);
+    hs_side(m, n, S2, HS2, P1, U2, X12->Y);
     cout << "pre:"<< inner(S2.data(), G2.data(), S2.size()) + 0.5*inner(S2.data(), HS2.data(), S2.size()) << endl;
 
     update_side(sub_type, S2, P1, H1, U2, Q1);
