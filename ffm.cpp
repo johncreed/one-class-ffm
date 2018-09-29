@@ -716,6 +716,9 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     const vector<Node*> &U1 = X12->Xs[f1-base], &U2 = X12->Xs[f2-base];
     Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
 
+    const ImpLong m1 = (sub_type)? m: n;
+    const ImpLong n1 = (sub_type)? n: m;
+
     Vec G1(W1.size(), 0), G2(H1.size(), 0);
     Vec S1(W1.size(), 0), S2(H1.size(), 0);
 
@@ -724,7 +727,7 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     cg(f1, f2, S1, Q1, G1, P1);
 
     Vec HS1(W1.size(), 0);
-    hs_side(m, n, S1, HS1, Q1, U1, X12->Y);
+    hs_side(m1, n1, S1, HS1, Q1, U1, X12->Y);
     cout << "pre:"<< inner(S1.data(), G1.data(), S1.size()) + 0.5*inner(S1.data(), HS1.data(), S1.size()) << endl;
 
     update_side(sub_type, S1, Q1, W1, U1, P1);
@@ -738,7 +741,7 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     cg(f2, f1, S2, P1, G2, Q1);
 
     Vec HS2(H1.size(), 0);
-    hs_side(m, n, S2, HS2, P1, U2, X12->Y);
+    hs_side(m1, n1, S2, HS2, P1, U2, X12->Y);
     cout << "pre:"<< inner(S2.data(), G2.data(), S2.size()) + 0.5*inner(S2.data(), HS2.data(), S2.size()) << endl;
 
     update_side(sub_type, S2, P1, H1, U2, Q1);
@@ -771,13 +774,12 @@ void ImpProblem::one_epoch() {
         for (ImpInt f2 = f1; f2 < fu; f2++)
             solve_side(f1, f2);
     }
-    /*
+
     for (ImpInt f1 = fu; f1 < f; f1++) {
         for (ImpInt f2 = f1; f2 < f; f2++) {
             solve_side(f1, f2);
         }
     }
-    */
 
     /*
     for (ImpInt f1 = 0; f1 < fu; f1++) {
