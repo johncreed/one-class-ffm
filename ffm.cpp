@@ -368,8 +368,7 @@ ImpDouble ImpProblem::calc_cross(const ImpLong &i, const ImpLong &j) {
             cross_value += inner(pp+i*k, qp+j*k, k);
         }
     }
-    return 0;
-    //return cross_value;
+    return cross_value;
 }
 
 void ImpProblem::init_y_tilde() {
