@@ -18,13 +18,6 @@ ImpDouble sum(const Vec &v) {
     return sum;
 }
 
-void debug_vec(const Vec &v, char* name) {
-    cout << name << endl;
-    for (ImpDouble i: v)
-        cout << i<<" ";
-    cout << endl;
-}
-
 void axpy(const ImpDouble *x, ImpDouble *y, const ImpLong &l, const ImpDouble &lambda) {
     cblas_daxpy(l, lambda, x, 1, y, 1);
 }
@@ -75,11 +68,6 @@ ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)
 
 void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row, const ImpInt &col
         , const ImpDouble &alpha, Vec &vv){
-    //cout << " V1 " << V1.size() << " V2 " << V2.size() << " vv  " << vv.size() << endl;
-    //cout << " row " << row << " col " << col << " V1/col" << V1.size() / col << endl;
-    //cout << flush;
-    assert(V1.size() == V2.size() && V1.size()/col == vv.size());
-    assert(col % 2 == 0);
     const ImpDouble *v1p = V1.data(), *v2p = V2.data();
     for(ImpInt i = 0; i < row; i++) {
         vv[i] = alpha * inner(v1p+i*col, v2p+i*col, col) + vv[i]; 
@@ -308,9 +296,6 @@ void ImpProblem::UTx(const Node* x0, const Node* x1, const Vec &A, ImpDouble *c)
 
 void ImpProblem::UTX(const vector<Node*> &X, const ImpLong m1, const Vec &A, Vec &C) {
     fill(C.begin(), C.end(), 0);
-    //cout << X.size() << " " << m1 + 1 << endl << flush;
-    assert( X.size() == m1 + 1);
-    assert( C.size() == m1 * k);
     ImpDouble* c = C.data();
     for (ImpLong i = 0; i < m1; i++)
         UTx(X[i], X[i+1], A, c+i*k);
@@ -462,8 +447,6 @@ void ImpProblem::init() {
     sa.resize(m, 0);
     sb.resize(n, 0);
 
-    CTC.resize(k*k);
-
     const ImpInt nr_blocks = f*(f+1)/2;
 
     W.resize(nr_blocks);
@@ -546,7 +529,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
                 G[idx*k+d] += q1[d]*val*z_i;
         }
     }
-    cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
+    //cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
@@ -626,7 +609,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
                 G[idx*k+d] += (pk[d]+w*(t1[d]+z_i*oQ[d]+bQ[d]))*val;
         }
     }
-    cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
+    //cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
 }
 
 
@@ -722,38 +705,16 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     const vector<Node*> &U1 = X12->Xs[f1-base], &U2 = X12->Xs[f2-base];
     Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
 
-    const ImpLong m1 = (sub_type)? m: n;
-    const ImpLong n1 = (sub_type)? n: m;
-
     Vec G1(W1.size(), 0), G2(H1.size(), 0);
     Vec S1(W1.size(), 0), S2(H1.size(), 0);
 
-    ImpDouble fun = func();
     gd_side(f1, W1, Q1, G1);
     cg(f1, f2, S1, Q1, G1, P1);
-
-    Vec HS1(W1.size(), 0);
-    hs_side(m1, n1, S1, HS1, Q1, U1, X12->Y);
-    cout << "pre:"<< inner(S1.data(), G1.data(), S1.size()) + 0.5*inner(S1.data(), HS1.data(), S1.size()) << endl;
-
     update_side(sub_type, S1, Q1, W1, U1, P1);
-
-    ImpDouble new_fun = func();
-    cout << "act:" <<new_fun-fun  << endl;
-    cout << "fuc:" << new_fun << endl;
-    fun = new_fun;
 
     gd_side(f2, H1, P1, G2);
     cg(f2, f1, S2, P1, G2, Q1);
-
-    Vec HS2(H1.size(), 0);
-    hs_side(m1, n1, S2, HS2, P1, U2, X12->Y);
-    cout << "pre:"<< inner(S2.data(), G2.data(), S2.size()) + 0.5*inner(S2.data(), HS2.data(), S2.size()) << endl;
-
     update_side(sub_type, S2, P1, H1, U2, Q1);
-    new_fun = func();
-    cout << "act:" <<new_fun-fun  << endl;
-    cout << "fuc:" << new_fun << endl;
 }
 
 void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
@@ -766,31 +727,11 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 
     gd_cross(f1, f12, Q1, W1, GW);
     cg(f1, f2, SW, Q1, GW, P1);
-
-    Vec HS1(W1.size(), 0);
-    hs_cross(m, n, SW, HS1, Q1, U1, U->Y);
-    cout << "pre:"<< inner(SW.data(), GW.data(), SW.size()) + 0.5*inner(SW.data(), HS1.data(), SW.size()) << endl;
-
-    ImpDouble fun = func();
     update_cross(1, SW, Q1, W1, U1, P1);
-
-    ImpDouble new_fun = func();
-    cout << "act:" <<new_fun-fun  << endl;
-    cout << "fuc:" << new_fun << endl;
-    fun = new_fun;
 
     gd_cross(f2, f12, P1, H1, GH);
     cg(f2, f1, SH, P1, GH, Q1);
-
-    Vec HS2(H1.size(), 0);
-    hs_cross(n, m, SH, HS2, P1, V1, V->Y);
-    cout << "pre:"<< inner(SH.data(), GH.data(), SH.size()) + 0.5*inner(SH.data(), HS2.data(), SH.size()) << endl;
-
     update_cross(0, SH, P1, H1, V1, Q1);
-
-    new_fun = func();
-    cout << "act:" <<new_fun-fun  << endl;
-    cout << "fuc:" << new_fun << endl;
 }
 
 void ImpProblem::one_epoch() {
@@ -937,16 +878,9 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 } 
 
 void ImpProblem::solve() {
-    ImpDouble old = func();
-    cout << "func:" << old << endl;
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-
-        ImpDouble new_func = func();
-        cout << "real:" << new_func - old << endl;
-        cout << "func:" << new_func << endl;
-        old = new_func;
-
+        //cout << "fun:" << func() << endl;
     }
 }
 
