@@ -1,5 +1,6 @@
 #include "ffm.h"
 
+
 ImpDouble qrsqrt(ImpDouble x)
 {
     ImpDouble xhalf = 0.5*x;
@@ -759,24 +760,27 @@ void ImpProblem::init_va(ImpInt size) {
         return;
 
     mt = Ut->m;
-    Pt.resize(fu*(f+f-fu)/2);
-    Qt.resize(fu*(f+f-fu)/2);
 
-    for (ImpInt f1 = 0; f1 < fu; f1++) {
+    const ImpInt nr_blocks = f*(f+1)/2;
+
+    Pt.resize(nr_blocks);
+    Qt.resize(nr_blocks);
+
+    for (ImpInt f1 = 0; f1 < f; f1++) {
+        const shared_ptr<ImpData> d1 = ((f1<fu)? Ut: V);
         for (ImpInt f2 = f1; f2 < f; f2++) {
+            const shared_ptr<ImpData> d2 = ((f2<fu)? Ut: V);
             const ImpInt f12 = index_vec(f1, f2, f);
-            Pt[f12].resize(mt*k);
-            Qt[f12].resize(mt*k);
+            Pt[f12].resize(d1->m*k);
+            Qt[f12].resize(d2->m*k);
         }
     }
 
     va_loss.resize(size);
     top_k.resize(size);
-    ImpInt start = 5;
+    ImpInt start = 1;
 
     cout << "iter";
-    cout.width(12);
-    cout << "loss";
     for (ImpInt i = 0; i < size; i++) {
         top_k[i] = start;
         cout.width(12);
@@ -793,15 +797,19 @@ void ImpProblem::validate() {
 
     vector<ImpLong> hit_counts(nr_th*nr_k, 0);
 
-   for (ImpInt f1 = 0; f1 < fu; f1++) {
-       const vector<Node*> &X1 = U->Xs[f1];
-       for (ImpInt f2 = f1; f2 < f; f2++) {
-           const ImpInt f12 = index_vec(f1, f2, f);
-            UTX(X1, Ut->m, W[f12], Pt[f12]);
-            if (f2 < fu)
-                UTX(X1, Ut->m, H[f12], Qt[f12]);
-       }
-   }
+    for (ImpInt f1 = 0; f1 < f; f1++) {
+        const shared_ptr<ImpData> d1 = ((f1<fu)? Ut: V);
+        const ImpInt fi = ((f1>=fu)? f1-fu: f1);
+
+        for (ImpInt f2 = f1; f2 < f; f2++) {
+            const shared_ptr<ImpData> d2 = ((f2<fu)? Ut: V);
+            const ImpInt fj = ((f2>=fu)? f2-fu: f2);
+
+            const ImpInt f12 = index_vec(f1, f2, f);
+            UTX(d1->Xs[fi], d1->m, W[f12], Pt[f12]);
+            UTX(d2->Xs[fj], d2->m, H[f12], Qt[f12]);
+        }
+    }
 
 #pragma omp parallel for schedule(static) reduction(+: valid_samples)
     for (ImpLong i = 0; i < Ut->m; i++) {
@@ -814,14 +822,28 @@ void ImpProblem::validate() {
     fill(va_loss.begin(), va_loss.end(), 0);
 
     for (ImpInt i = 0; i < nr_k; i++) {
-        for (ImpLong num_th = 0; num_th < nr_th; num_th++) {
+
+        for (ImpLong num_th = 0; num_th < nr_th; num_th++)
             va_loss[i] += hit_counts[i+num_th*nr_k];
-        }
+
         va_loss[i] /= ImpDouble(valid_samples*top_k[i]);
     }
 }
 
 void ImpProblem::pred_z(ImpLong i, Vec &z) {
+    for(ImpInt j = 0; j < n; j++){
+        ImpDouble score = 0;
+        for(ImpInt f1 = 0; f1 < f; f1++){
+            for(ImpInt f2 = f1; f2 < f; f2++){
+                ImpInt f12 = index_vec(f1, f2, f);
+                ImpInt Pi = (f1 < fu)? i : j;
+                ImpInt Qj = (f2 < fu)? i : j;
+                ImpDouble  *pp = Pt[f12].data()+Pi*k, *qp = Qt[f12].data()+Qj*k;
+                score += inner(qp, pp, k);
+            }
+        }
+        z[j] = score;
+    }
 }
 
 void ImpProblem::prec_k(Vec &z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts) {
@@ -841,7 +863,6 @@ void ImpProblem::prec_k(Vec &z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong
             cout << argmax << " ";
 #endif
             z[argmax] = MIN_Z;
-
             for (Node* nd = Ut->Y[i]; nd < Ut->Y[i+1]; nd++) {
                 if (argmax == nd->idx) {
                     hit_count[state]++;
@@ -865,8 +886,7 @@ void ImpProblem::prec_k(Vec &z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong
 
 void ImpProblem::print_epoch_info(ImpInt t) {
     ImpInt nr_k = top_k.size();
-    cout << "iter";
-    cout.width(4);
+    cout.width(2);
     cout << t+1;
     if (!Ut->file_name.empty()) {
         for (ImpInt i = 0; i < nr_k; i++ ) {
@@ -878,9 +898,11 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 } 
 
 void ImpProblem::solve() {
+    init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-        //cout << "fun:" << func() << endl;
+        validate();
+        print_epoch_info(iter);
     }
 }
 

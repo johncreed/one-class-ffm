@@ -30,7 +30,7 @@ typedef unsigned int ImpInt;
 typedef unsigned long int ImpLong;
 typedef vector<ImpDouble> Vec;
 
-const ImpInt MIN_Z = -10000;
+const int MIN_Z = -1000;
 
 class Parameter {
 public:
@@ -89,7 +89,7 @@ private:
     ImpLong mt;
 
     vector<Vec> W, H, P, Q, Pt, Qt;
-    Vec a, b, va_loss, CTC, sa, sb;
+    Vec a, b, va_loss, sa, sb;
 
     vector<ImpInt> top_k;
 
