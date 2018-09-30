@@ -483,7 +483,7 @@ void ImpProblem::init() {
         }
     }
 
-    //cache_sasb();
+    cache_sasb();
     calc_side();
     init_y_tilde();
 }
@@ -534,7 +534,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     const ImpDouble *qp = Q1.data();
     for (ImpLong i = 0; i < m1; i++) {
         const ImpDouble *q1 = qp+i*k; 
-        ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+0*sa1[i]);
+        ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+sa1[i]);
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
             const ImpDouble y_tilde = y->val;
             z_i += (1-w)*y_tilde-w*(1-r);
@@ -626,6 +626,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
                 G[idx*k+d] += (pk[d]+w*(t1[d]+z_i*oQ[d]+bQ[d]))*val;
         }
     }
+    cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
 }
 
 
@@ -765,15 +766,34 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 
     gd_cross(f1, f12, Q1, W1, GW);
     cg(f1, f2, SW, Q1, GW, P1);
+
+    Vec HS1(W1.size(), 0);
+    hs_cross(m, n, SW, HS1, Q1, U1, U->Y);
+    cout << "pre:"<< inner(SW.data(), GW.data(), SW.size()) + 0.5*inner(SW.data(), HS1.data(), SW.size()) << endl;
+
+    ImpDouble fun = func();
     update_cross(1, SW, Q1, W1, U1, P1);
+
+    ImpDouble new_fun = func();
+    cout << "act:" <<new_fun-fun  << endl;
+    cout << "fuc:" << new_fun << endl;
+    fun = new_fun;
 
     gd_cross(f2, f12, P1, H1, GH);
     cg(f2, f1, SH, P1, GH, Q1);
+
+    Vec HS2(H1.size(), 0);
+    hs_cross(n, m, SH, HS2, P1, V1, V->Y);
+    cout << "pre:"<< inner(SH.data(), GH.data(), SH.size()) + 0.5*inner(SH.data(), HS2.data(), SH.size()) << endl;
+
     update_cross(0, SH, P1, H1, V1, Q1);
+
+    new_fun = func();
+    cout << "act:" <<new_fun-fun  << endl;
+    cout << "fuc:" << new_fun << endl;
 }
 
 void ImpProblem::one_epoch() {
-/*
     for (ImpInt f1 = 0; f1 < fu; f1++) {
         for (ImpInt f2 = f1; f2 < fu; f2++)
             solve_side(f1, f2);
@@ -784,7 +804,6 @@ void ImpProblem::one_epoch() {
             solve_side(f1, f2);
         }
     }
-*/
 
     for (ImpInt f1 = 0; f1 < fu; f1++) {
         for (ImpInt f2 = fu; f2 < f; f2++)
