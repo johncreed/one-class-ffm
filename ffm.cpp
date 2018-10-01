@@ -692,7 +692,6 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         scal(V.data(), Df1k, beta);
         axpy(R.data(), V.data(), Df1k, 1);
     }
-    cout << nr_cg << endl;
 }
 
 void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
