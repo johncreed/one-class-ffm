@@ -659,7 +659,13 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     ImpDouble g2 = 0, r2, cg_eps = 9e-2, alpha = 0, beta = 0, gamma = 0, vHv;
 
     Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
-    Vec QTQ(k*k, 0), VQTQ(Df1k, 0);
+    Vec QTQ, VQTQ;
+
+    if (!(f1 < fu && f2 < fu) && !(f1>=fu && f2>=fu)) {
+        QTQ.resize(k*k, 0);
+        VQTQ.resize(Df1k, 0);
+        mm(Q1.data(), Q1.data(), QTQ.data(), k, n1);
+    }
 
     for (ImpLong jd = 0; jd < Df1k; jd++) {
         R[jd] = -G[jd];
@@ -677,7 +683,6 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
             hs_side(m1, n1, V, Hv, Q1, X, Y);
         else {
-            mm(Q1.data(), Q1.data(), QTQ.data(), k, n1);
             mm(V.data(), QTQ.data(), VQTQ.data(), Df1, k, k);
             hs_cross(m1, n1, V, VQTQ, Hv, Q1, X, Y);
         }
