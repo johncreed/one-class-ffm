@@ -70,9 +70,8 @@ ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)
 void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row, const ImpInt &col
         , const ImpDouble &alpha, Vec &vv){
     const ImpDouble *v1p = V1.data(), *v2p = V2.data();
-    for(ImpInt i = 0; i < row; i++) {
+    for(ImpInt i = 0; i < row; i++)
         vv[i] = alpha * inner(v1p+i*col, v2p+i*col, col) + vv[i]; 
-    }
 }
 
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
@@ -414,16 +413,19 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S
     shared_ptr<ImpData> U1 = (sub_type)? U:V;
     shared_ptr<ImpData> V1 = (sub_type)? V:U;
 
+    Vec XS(P1.size(), 0);
+    UTX(X12, m1, S, XS);
+
     for (ImpLong i = 0; i < U1->m; i++) {
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             const ImpLong j = y->idx;
-            y->val += inner( S.data()+i*k, Q1.data()+j*k, k);
+            y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
         }
     }
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
-            y->val += inner( S.data()+i*k, Q1.data()+j*k, k);
+            y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
         }
     }
 }
@@ -655,7 +657,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
     ImpInt nr_cg = 0, max_cg = 20;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-2, alpha = 0, beta = 0, gamma = 0, vHv;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-8, alpha = 0, beta = 0, gamma = 0, vHv;
 
     Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
     Vec QTQ, VQTQ;
@@ -738,22 +740,18 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 void ImpProblem::one_epoch() {
 
     if (param->self_side) {
-        for (ImpInt f1 = 0; f1 < fu; f1++) {
+        for (ImpInt f1 = 0; f1 < fu; f1++)
             for (ImpInt f2 = f1; f2 < fu; f2++)
                 solve_side(f1, f2);
-        }
 
-        for (ImpInt f1 = fu; f1 < f; f1++) {
-            for (ImpInt f2 = f1; f2 < f; f2++) {
+        for (ImpInt f1 = fu; f1 < f; f1++)
+            for (ImpInt f2 = f1; f2 < f; f2++)
                 solve_side(f1, f2);
-            }
-        }
     }
 
-    for (ImpInt f1 = 0; f1 < fu; f1++) {
+    for (ImpInt f1 = 0; f1 < fu; f1++)
         for (ImpInt f2 = fu; f2 < f; f2++)
             solve_cross(f1, f2);
-    }
 
     if (param->self_side)
         cache_sasb();
@@ -792,6 +790,8 @@ void ImpProblem::init_va(ImpInt size) {
         cout << "va_p@" << start;
         start *= 2;
     }
+    cout.width(12);
+    cout << "ploss";
     cout << endl;
 }
 
@@ -833,7 +833,8 @@ void ImpProblem::validate() {
         }
     }
 
-#pragma omp parallel for schedule(static) reduction(+: valid_samples)
+    ImpDouble ploss = 0;
+#pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Ut->m; i++) {
         Vec z(n, MIN_Z);
         const ImpDouble a_i = at[i];
@@ -842,18 +843,23 @@ void ImpProblem::validate() {
             for(ImpInt f1 = 0; f1 < fu; f1++) {
                 for(ImpInt f2 = fu; f2 < f; f2++){
                     ImpInt f12 = index_vec(f1, f2, f);
-                    ImpDouble  *pp = Pt[f12].data()+i*k, *qp = Qt[f12].data()+j*k;
+                    ImpDouble *pp = Pt[f12].data()+i*k, *qp = Qt[f12].data()+j*k;
                     score += inner(qp, pp, k);
                 }
             }
             z[j] = score+a_i+bt[j];
         }
+        for(Node* y = Ut->Y[i]; y < Ut->Y[i+1]; y++){
+            const ImpLong j = y->idx;
+            ploss += (1-z[j])*(1-z[j]);
+        }
         prec_k(z, i, top_k, hit_counts);
         valid_samples++;
     }
 
-    fill(va_loss.begin(), va_loss.end(), 0);
+    loss = sqrt(ploss/Ut->m);
 
+    fill(va_loss.begin(), va_loss.end(), 0);
     for (ImpInt i = 0; i < nr_k; i++) {
 
         for (ImpLong num_th = 0; num_th < nr_th; num_th++)
@@ -911,6 +917,8 @@ void ImpProblem::print_epoch_info(ImpInt t) {
             cout << setprecision(3) << va_loss[i]*100;
         }
     }
+    cout.width(13);
+    cout << setprecision(3) << loss;
     cout << endl;
 } 
 
@@ -940,6 +948,7 @@ ImpDouble ImpProblem::norm_block(const ImpInt &f1,const ImpInt &f2) {
     res += inner(H1.data(), H1.data(), H1.size());
     return res;
 }
+
 
 ImpDouble ImpProblem::func() {
     ImpDouble res = 0; 

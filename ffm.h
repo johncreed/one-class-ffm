@@ -80,7 +80,8 @@ public:
     ImpDouble func();
 
 private:
-    ImpDouble loss, reg, lambda, w, r;
+    ImpDouble loss, lambda, w, r;
+
     shared_ptr<ImpData> U, Ut, V;
     shared_ptr<Parameter> param;
 
