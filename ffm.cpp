@@ -297,6 +297,7 @@ void ImpProblem::UTx(const Node* x0, const Node* x1, const Vec &A, ImpDouble *c)
 void ImpProblem::UTX(const vector<Node*> &X, const ImpLong m1, const Vec &A, Vec &C) {
     fill(C.begin(), C.end(), 0);
     ImpDouble* c = C.data();
+#pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m1; i++)
         UTx(X[i], X[i+1], A, c+i*k);
 }
