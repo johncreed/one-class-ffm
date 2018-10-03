@@ -468,7 +468,8 @@ void ImpProblem::init() {
     }
 
     cache_sasb();
-    calc_side();
+    if (param->self_side)
+        calc_side();
     init_y_tilde();
 }
 
@@ -530,7 +531,6 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
                 G[idx*k+d] += q1[d]*val*z_i;
         }
     }
-    //cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
@@ -607,7 +607,6 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
                 G[idx*k+d] += (pk[d]+w*(t1[d]+z_i*oQ[d]+bQ[d]))*val;
         }
     }
-    //cout << "nrm2 " << cblas_dnrm2( G.size(), G.data(), 1) << endl;
 }
 
 
@@ -656,7 +655,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
     ImpInt nr_cg = 0, max_cg = 20;
-    ImpDouble g2 = 0, r2, cg_eps = 9e-2, alpha = 0, beta = 0, gamma = 0, vHv;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-6, alpha = 0, beta = 0, gamma = 0, vHv;
 
     Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
     Vec QTQ, VQTQ;
@@ -737,14 +736,17 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 }
 
 void ImpProblem::one_epoch() {
-    for (ImpInt f1 = 0; f1 < fu; f1++) {
-        for (ImpInt f2 = f1; f2 < fu; f2++)
-            solve_side(f1, f2);
-    }
 
-    for (ImpInt f1 = fu; f1 < f; f1++) {
-        for (ImpInt f2 = f1; f2 < f; f2++) {
-            solve_side(f1, f2);
+    if (param->self_side) {
+        for (ImpInt f1 = 0; f1 < fu; f1++) {
+            for (ImpInt f2 = f1; f2 < fu; f2++)
+                solve_side(f1, f2);
+        }
+
+        for (ImpInt f1 = fu; f1 < f; f1++) {
+            for (ImpInt f2 = f1; f2 < f; f2++) {
+                solve_side(f1, f2);
+            }
         }
     }
 
@@ -752,7 +754,9 @@ void ImpProblem::one_epoch() {
         for (ImpInt f2 = fu; f2 < f; f2++)
             solve_cross(f1, f2);
     }
-    cache_sasb();
+
+    if (param->self_side)
+        cache_sasb();
 }
 
 void ImpProblem::init_va(ImpInt size) {
@@ -812,10 +816,38 @@ void ImpProblem::validate() {
         }
     }
 
+    Vec at(Ut->m, 0), bt(V->m, 0);
+
+    if (param->self_side) {
+        for (ImpInt f1 = 0; f1 < fu; f1++) {
+            for (ImpInt f2 = f1; f2 < fu; f2++) {
+                const ImpInt f12 = index_vec(f1, f2, f);
+                add_side(Pt[f12], Qt[f12], Ut->m, at);
+            }
+        }
+        for (ImpInt f1 = fu; f1 < f; f1++) {
+            for (ImpInt f2 = f1; f2 < f; f2++) {
+                const ImpInt f12 = index_vec(f1, f2, f);
+                add_side(Pt[f12], Qt[f12], V->m, bt);
+            }
+        }
+    }
+
 #pragma omp parallel for schedule(static) reduction(+: valid_samples)
     for (ImpLong i = 0; i < Ut->m; i++) {
         Vec z(n, MIN_Z);
-        pred_z(i, z);
+        const ImpDouble a_i = at[i];
+        for(ImpInt j = 0; j < n; j++){
+            ImpDouble score = 0;
+            for(ImpInt f1 = 0; f1 < fu; f1++) {
+                for(ImpInt f2 = fu; f2 < f; f2++){
+                    ImpInt f12 = index_vec(f1, f2, f);
+                    ImpDouble  *pp = Pt[f12].data()+i*k, *qp = Qt[f12].data()+j*k;
+                    score += inner(qp, pp, k);
+                }
+            }
+            z[j] = score+a_i+bt[j];
+        }
         prec_k(z, i, top_k, hit_counts);
         valid_samples++;
     }
@@ -828,22 +860,6 @@ void ImpProblem::validate() {
             va_loss[i] += hit_counts[i+num_th*nr_k];
 
         va_loss[i] /= ImpDouble(valid_samples*top_k[i]);
-    }
-}
-
-void ImpProblem::pred_z(ImpLong i, Vec &z) {
-    for(ImpInt j = 0; j < n; j++){
-        ImpDouble score = 0;
-        for(ImpInt f1 = 0; f1 < f; f1++){
-            for(ImpInt f2 = f1; f2 < f; f2++){
-                ImpInt f12 = index_vec(f1, f2, f);
-                ImpInt Pi = (f1 < fu)? i : j;
-                ImpInt Qj = (f2 < fu)? i : j;
-                ImpDouble  *pp = Pt[f12].data()+Pi*k, *qp = Qt[f12].data()+Qj*k;
-                score += inner(qp, pp, k);
-            }
-        }
-        z[j] = score;
     }
 }
 

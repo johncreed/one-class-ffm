@@ -37,8 +37,8 @@ public:
     ImpFloat omega, lambda, r;
     ImpInt nr_pass, k, nr_threads;
     string model_path, predict_path;
-    bool item_bias;
-    Parameter():omega(0.1), lambda(1e-5), r(-1), nr_pass(20), k(4), nr_threads(1), item_bias(true) {};
+    bool self_side;
+    Parameter():omega(0.1), lambda(1e-5), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true) {};
 };
 
 class Node {
