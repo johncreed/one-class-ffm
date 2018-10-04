@@ -128,7 +128,7 @@ private:
 
     void pred_z(ImpLong i, Vec &z);
     void pred_items();
-    void prec_k(Vec &z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts);
+    void prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts);
     void validate();
     void print_epoch_info(ImpInt t);
 

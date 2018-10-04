@@ -859,22 +859,20 @@ void ImpProblem::validate() {
         }
     }
 
+    Vec R(Uva->m*n, 0);
+    for(ImpInt f1 = 0; f1 < fu; f1++) {
+        for(ImpInt f2 = fu; f2 < f; f2++) {
+            ImpInt f12 = index_vec(f1, f2, f);
+            ImpDouble *p1 = Pva[f12].data(), *q1 = Qva[f12].data();
+            cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                    Uva->m, n, k, 1, p1, k, q1, k, 1, R.data(), n);
+        }
+    }
+
     ImpDouble ploss = 0;
 #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
-        Vec z(n, MIN_Z);
-        const ImpDouble a_i = at[i];
-        for(ImpInt j = 0; j < n; j++){
-            ImpDouble score = 0;
-            for(ImpInt f1 = 0; f1 < fu; f1++) {
-                for(ImpInt f2 = fu; f2 < f; f2++){
-                    ImpInt f12 = index_vec(f1, f2, f);
-                    ImpDouble *pp = Pva[f12].data()+i*k, *qp = Qva[f12].data()+j*k;
-                    score += inner(qp, pp, k);
-                }
-            }
-            z[j] = score+a_i+bt[j];
-        }
+        ImpDouble *z = R.data() + i*n;
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
             ploss += (1-z[j])*(1-z[j]);
@@ -895,7 +893,7 @@ void ImpProblem::validate() {
     }
 }
 
-void ImpProblem::prec_k(Vec &z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts) {
+void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts) {
     ImpInt valid_count = 0;
     const ImpInt nr_k = top_k.size();
     vector<ImpLong> hit_count(nr_k, 0);
@@ -907,7 +905,7 @@ void ImpProblem::prec_k(Vec &z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong
 #endif
     for (ImpInt state = 0; state < nr_k; state++) {
         while(valid_count < top_k[state]) {
-            ImpLong argmax = distance(z.begin(), max_element(z.begin(), z.end()));
+            ImpLong argmax = distance(z, max_element(z, z+n));
 #ifdef EBUG
             cout << argmax << " ";
 #endif
