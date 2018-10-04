@@ -1,6 +1,5 @@
 #include "ffm.h"
 
-
 ImpDouble qrsqrt(ImpDouble x)
 {
     ImpDouble xhalf = 0.5*x;
@@ -554,13 +553,16 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
         for (Node* x = UX[i]; x < UX[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
-            for (ImpInt d = 0; d < k; d++)
-                Hv[idx*k+d] += q1[d]*val*z_1;
+            for (ImpInt d = 0; d < k; d++) {
+                const ImpLong jd = idx*k+d;
+                Hv[jd] += q1[d]*val*z_1;
+            }
         }
     }
 }
 
 void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1,Vec &G) {
+
 
     axpy( W1.data(), G.data(), W1.size(), lambda );
     const Vec &a1 = (f1 < fu)? a: b;
@@ -606,15 +608,17 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
         for (Node* x = X[i]; x < X[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
-            for (ImpInt d = 0; d < k; d++)
-                G[idx*k+d] += (pk[d]+w*(t1[d]+z_i*oQ[d]+bQ[d]))*val;
+            for (ImpInt d = 0; d < k; d++) {
+                const ImpLong jd = idx*k+d;
+                G[jd] += (pk[d]+w*(t1[d]+z_i*oQ[d]+bQ[d]))*val;
+            }
         }
     }
 }
 
 
 void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
-        const Vec &VQTQ, Vec &Hs, const Vec &Q1, const vector<Node*> &X, const vector<Node*> &Y) {
+        const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &X, const vector<Node*> &Y) {
     
     const ImpDouble *qp = Q1.data();
 
@@ -636,7 +640,7 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
             const ImpDouble val = x->val;
             for (ImpInt d = 0; d < k; d++) {
                 const ImpLong jd = idx*k+d;
-                Hs[jd] += ((1-w)*ka[d]+w*tau[d])*val;
+                Hv[jd] += ((1-w)*ka[d]+w*tau[d])*val;
             }
         }
     }
@@ -658,7 +662,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
     ImpInt nr_cg = 0, max_cg = 20;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-8, alpha = 0, beta = 0, gamma = 0, vHv;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-3, alpha = 0, beta = 0, gamma = 0, vHv;
 
     Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
     Vec QTQ, VQTQ;
