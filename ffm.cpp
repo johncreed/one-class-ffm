@@ -402,26 +402,26 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     }
 }
 
-void ImpProblem::update_cross(const bool &sub_type, const Vec &S
-        , const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
-    // Update W1 and P1
+void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
+        const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
     axpy( S.data(), W1.data(), S.size(), 1);
     const ImpLong m1 = (sub_type)? m : n;
     UTX(X12, m1, W1, P1);
     
-    // Update y_tilde
     shared_ptr<ImpData> U1 = (sub_type)? U:V;
     shared_ptr<ImpData> V1 = (sub_type)? V:U;
 
     Vec XS(P1.size(), 0);
     UTX(X12, m1, S, XS);
 
+    #pragma omp parallel for schedule(guided) 
     for (ImpLong i = 0; i < U1->m; i++) {
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             const ImpLong j = y->idx;
             y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
         }
     }
+    #pragma omp parallel for schedule(guided) 
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
