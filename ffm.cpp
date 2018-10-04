@@ -536,13 +536,13 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
-        const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y) {
+        const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX,
+        const vector<Node*> &Y, Vec &Hv_) {
 
     const ImpDouble *qp = Q1.data();
+    const ImpInt nr_threads = param->nr_threads;
     
     ImpInt block_size = Hv.size();
-    ImpInt nr_thread = param->nr_threads;
-    Vec Hv_(block_size*nr_thread, 0);
     
     #pragma omp parallel for schedule(guided) 
         for (ImpLong i = 0; i < m1; i++) {
@@ -567,7 +567,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
             }
         }
     
-    for(ImpInt i = 0; i < nr_thread; i++)
+    for(ImpInt i = 0; i < nr_threads; i++)
         axpy(Hv_.data()+i*block_size, Hv.data(), block_size, 1);
 }
 
@@ -628,13 +628,12 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
 
 
 void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
-        const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &X, const vector<Node*> &Y) {
+        const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &X, const vector<Node*> &Y, Vec &Hv_) {
     
     const ImpDouble *qp = Q1.data();
     
     ImpInt block_size = Hv.size();
-    ImpInt nr_thread = param->nr_threads;
-    Vec Hv_(block_size*nr_thread, 0);
+    ImpInt nr_threads = param->nr_threads;
 
     #pragma omp parallel for schedule(guided)
         for (ImpLong i = 0; i < m1; i++) {
@@ -661,7 +660,7 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
             }
         }
 
-    for(ImpInt i = 0; i < nr_thread; i++)
+    for(ImpInt i = 0; i < nr_threads; i++)
         axpy(Hv_.data()+i*block_size, Hv.data(), block_size, 1);
 }
 
@@ -679,6 +678,8 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpLong n1 = (f1 < fu)? n:m;
 
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
+    const ImpInt nr_threads = param->nr_threads;
+    Vec Hv_(nr_threads*Df1k);
 
     ImpInt nr_cg = 0, max_cg = 20;
     ImpDouble g2 = 0, r2, cg_eps = 1e-4, alpha = 0, beta = 0, gamma = 0, vHv;
@@ -703,13 +704,14 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         nr_cg++;
 
         fill(Hv.begin(), Hv.end(), 0);
-        axpy(V.data(), Hv.data(), V.size(), lambda);
+        fill(Hv_.begin(), Hv_.end(), 0);
 
+        axpy(V.data(), Hv.data(), V.size(), lambda);
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
-            hs_side(m1, n1, V, Hv, Q1, X, Y);
+            hs_side(m1, n1, V, Hv, Q1, X, Y, Hv_);
         else {
             mm(V.data(), QTQ.data(), VQTQ.data(), Df1, k, k);
-            hs_cross(m1, n1, V, VQTQ, Hv, Q1, X, Y);
+            hs_cross(m1, n1, V, VQTQ, Hv, Q1, X, Y, Hv_);
         }
 
         vHv = inner(V.data(), Hv.data(), Df1k);
