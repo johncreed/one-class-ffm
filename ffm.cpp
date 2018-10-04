@@ -923,8 +923,8 @@ void ImpProblem::print_epoch_info(ImpInt t) {
         }
         cout.width(13);
         cout << setprecision(3) << loss;
-        cout << endl;
     }
+    cout << endl;
 } 
 
 void ImpProblem::solve() {
