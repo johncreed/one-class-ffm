@@ -764,23 +764,23 @@ void ImpProblem::one_epoch() {
 
 void ImpProblem::init_va(ImpInt size) {
 
-    if (Ut->file_name.empty())
+    if (Uva->file_name.empty())
         return;
 
-    mt = Ut->m;
+    mt = Uva->m;
 
     const ImpInt nr_blocks = f*(f+1)/2;
 
-    Pt.resize(nr_blocks);
-    Qt.resize(nr_blocks);
+    Pva.resize(nr_blocks);
+    Qva.resize(nr_blocks);
 
     for (ImpInt f1 = 0; f1 < f; f1++) {
-        const shared_ptr<ImpData> d1 = ((f1<fu)? Ut: V);
+        const shared_ptr<ImpData> d1 = ((f1<fu)? Uva: V);
         for (ImpInt f2 = f1; f2 < f; f2++) {
-            const shared_ptr<ImpData> d2 = ((f2<fu)? Ut: V);
+            const shared_ptr<ImpData> d2 = ((f2<fu)? Uva: V);
             const ImpInt f12 = index_vec(f1, f2, f);
-            Pt[f12].resize(d1->m*k);
-            Qt[f12].resize(d2->m*k);
+            Pva[f12].resize(d1->m*k);
+            Qva[f12].resize(d2->m*k);
         }
     }
 
@@ -808,39 +808,39 @@ void ImpProblem::validate() {
     vector<ImpLong> hit_counts(nr_th*nr_k, 0);
 
     for (ImpInt f1 = 0; f1 < f; f1++) {
-        const shared_ptr<ImpData> d1 = ((f1<fu)? Ut: V);
+        const shared_ptr<ImpData> d1 = ((f1<fu)? Uva: V);
         const ImpInt fi = ((f1>=fu)? f1-fu: f1);
 
         for (ImpInt f2 = f1; f2 < f; f2++) {
-            const shared_ptr<ImpData> d2 = ((f2<fu)? Ut: V);
+            const shared_ptr<ImpData> d2 = ((f2<fu)? Uva: V);
             const ImpInt fj = ((f2>=fu)? f2-fu: f2);
 
             const ImpInt f12 = index_vec(f1, f2, f);
-            UTX(d1->Xs[fi], d1->m, W[f12], Pt[f12]);
-            UTX(d2->Xs[fj], d2->m, H[f12], Qt[f12]);
+            UTX(d1->Xs[fi], d1->m, W[f12], Pva[f12]);
+            UTX(d2->Xs[fj], d2->m, H[f12], Qva[f12]);
         }
     }
 
-    Vec at(Ut->m, 0), bt(V->m, 0);
+    Vec at(Uva->m, 0), bt(V->m, 0);
 
     if (param->self_side) {
         for (ImpInt f1 = 0; f1 < fu; f1++) {
             for (ImpInt f2 = f1; f2 < fu; f2++) {
                 const ImpInt f12 = index_vec(f1, f2, f);
-                add_side(Pt[f12], Qt[f12], Ut->m, at);
+                add_side(Pva[f12], Qva[f12], Uva->m, at);
             }
         }
         for (ImpInt f1 = fu; f1 < f; f1++) {
             for (ImpInt f2 = f1; f2 < f; f2++) {
                 const ImpInt f12 = index_vec(f1, f2, f);
-                add_side(Pt[f12], Qt[f12], V->m, bt);
+                add_side(Pva[f12], Qva[f12], V->m, bt);
             }
         }
     }
 
     ImpDouble ploss = 0;
 #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
-    for (ImpLong i = 0; i < Ut->m; i++) {
+    for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z(n, MIN_Z);
         const ImpDouble a_i = at[i];
         for(ImpInt j = 0; j < n; j++){
@@ -848,13 +848,13 @@ void ImpProblem::validate() {
             for(ImpInt f1 = 0; f1 < fu; f1++) {
                 for(ImpInt f2 = fu; f2 < f; f2++){
                     ImpInt f12 = index_vec(f1, f2, f);
-                    ImpDouble *pp = Pt[f12].data()+i*k, *qp = Qt[f12].data()+j*k;
+                    ImpDouble *pp = Pva[f12].data()+i*k, *qp = Qva[f12].data()+j*k;
                     score += inner(qp, pp, k);
                 }
             }
             z[j] = score+a_i+bt[j];
         }
-        for(Node* y = Ut->Y[i]; y < Ut->Y[i+1]; y++){
+        for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
             ploss += (1-z[j])*(1-z[j]);
         }
@@ -862,7 +862,7 @@ void ImpProblem::validate() {
         valid_samples++;
     }
 
-    loss = sqrt(ploss/Ut->m);
+    loss = sqrt(ploss/Uva->m);
 
     fill(va_loss.begin(), va_loss.end(), 0);
     for (ImpInt i = 0; i < nr_k; i++) {
@@ -891,7 +891,7 @@ void ImpProblem::prec_k(Vec &z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong
             cout << argmax << " ";
 #endif
             z[argmax] = MIN_Z;
-            for (Node* nd = Ut->Y[i]; nd < Ut->Y[i+1]; nd++) {
+            for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {
                 if (argmax == nd->idx) {
                     hit_count[state]++;
                     break;
@@ -916,7 +916,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
     ImpInt nr_k = top_k.size();
     cout.width(2);
     cout << t+1;
-    if (!Ut->file_name.empty()) {
+    if (!Uva->file_name.empty()) {
         for (ImpInt i = 0; i < nr_k; i++ ) {
             cout.width(13);
             cout << setprecision(3) << va_loss[i]*100;
@@ -931,7 +931,7 @@ void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-        if (!Ut->file_name.empty())
+        if (!Uva->file_name.empty())
             validate();
         print_epoch_info(iter);
     }
