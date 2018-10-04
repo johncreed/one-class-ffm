@@ -71,9 +71,9 @@ public:
 
 class ImpProblem {
 public:
-    ImpProblem(shared_ptr<ImpData> &U, shared_ptr<ImpData> &Ut,
+    ImpProblem(shared_ptr<ImpData> &U, shared_ptr<ImpData> &Uva,
             shared_ptr<ImpData> &V, shared_ptr<Parameter> &param)
-        :U(U), Ut(Ut), V(V), param(param) {};
+        :U(U), Uva(Uva), V(V), param(param) {};
 
     void init();
     void solve();
@@ -82,14 +82,14 @@ public:
 private:
     ImpDouble loss, lambda, w, r;
 
-    shared_ptr<ImpData> U, Ut, V;
+    shared_ptr<ImpData> U, Uva, V;
     shared_ptr<Parameter> param;
 
     ImpInt k, fu, fv, f;
     ImpLong m, n;
     ImpLong mt;
 
-    vector<Vec> W, H, P, Q, Pt, Qt;
+    vector<Vec> W, H, P, Q, Pva, Qva;
     Vec a, b, va_loss, sa, sb;
 
     vector<ImpInt> top_k;
