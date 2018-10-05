@@ -62,9 +62,9 @@ public:
     vector<ImpLong> Ds;
 
     ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
-    void read(bool has_label, ImpLong max_m=ULONG_MAX);
+    void read(bool has_label);
     void print_data_info();
-    void split_fields();
+    void split_fields(const ImpLong *ds=nullptr);
     void transY(const vector<Node*> &YT);
 };
 
@@ -126,7 +126,7 @@ private:
     void one_epoch();
     void init_va(ImpInt size);
 
-    void pred_z(ImpLong i, Vec &z);
+    void pred_z(const ImpLong i, ImpDouble *z);
     void pred_items();
     void prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts);
     void validate();

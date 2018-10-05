@@ -178,8 +178,8 @@ int main(int argc, char *argv[])
         V->print_data_info();
 
         if (!Ut->file_name.empty()) {
-            Ut->read(true, Ut->m);
-            Ut->split_fields();
+            Ut->read(true);
+            Ut->split_fields(U->Ds.data());
             Ut->print_data_info();
         }
 

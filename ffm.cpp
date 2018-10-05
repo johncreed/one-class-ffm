@@ -66,11 +66,13 @@ ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)
     return product;
 }
 
-void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row, const ImpInt &col
-        , const ImpDouble &alpha, Vec &vv){
+void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row,
+        const ImpInt &col,const ImpDouble &alpha, Vec &vv){
     const ImpDouble *v1p = V1.data(), *v2p = V2.data();
+
+    #pragma omp parallel for schedule(guided) 
     for(ImpInt i = 0; i < row; i++)
-        vv[i] = alpha * inner(v1p+i*col, v2p+i*col, col) + vv[i]; 
+        vv[i] += alpha*inner(v1p+i*col, v2p+i*col, col); 
 }
 
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
@@ -82,7 +84,7 @@ void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
     generate(vec.begin(), vec.end(), gen);
 }
 
-void ImpData::read(bool has_label, ImpLong max_m) {
+void ImpData::read(bool has_label) {
     ifstream fs(file_name);
     string line, label_block, label_str;
     char dummy;
@@ -166,7 +168,7 @@ void ImpData::read(bool has_label, ImpLong max_m) {
     fs.close();
 }
 
-void ImpData::split_fields() {
+void ImpData::split_fields(const ImpLong *ds) {
     Ns.resize(f);
     Xs.resize(f);
     Ds.resize(f);
@@ -198,6 +200,8 @@ void ImpData::split_fields() {
         for (Node* x = X[i]; x < X[i+1]; x++) {
             ImpInt fid = x->fid;
             ImpLong idx = x->idx;
+            if (ds!= nullptr && ds[fid] <= idx)
+                continue;
             ImpDouble val = x->val;
 
             f_sum_nnz[fid]++;
@@ -357,12 +361,14 @@ ImpDouble ImpProblem::calc_cross(const ImpLong &i, const ImpLong &j) {
 }
 
 void ImpProblem::init_y_tilde() {
+    #pragma omp parallel for schedule(guided) 
     for (ImpLong i = 0; i < m; i++) {
         for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
             ImpLong j = y->idx;
             y->val = a[i]+b[j]+calc_cross(i, j) - 1;
         }
     }
+    #pragma omp parallel for schedule(guided) 
     for (ImpLong j = 0; j < n; j++) {
         for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
             ImpLong i = y->idx;
@@ -383,17 +389,19 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     shared_ptr<ImpData> U1 = (sub_type)? U:V;
     shared_ptr<ImpData> V1 = (sub_type)? V:U;
 
-    Vec gaps(U1->m, 0);
+    Vec gaps(m1, 0);
     Vec XS(P1.size(), 0);
     UTX(X12, m1, S, XS);
     hadmard_product(XS, Q1, m1, k, 1, gaps);
 
+    #pragma omp parallel for schedule(guided) 
     for (ImpLong i = 0; i < U1->m; i++) {
         a1[i] += gaps[i];
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             y->val += gaps[i];
         }
     }
+    #pragma omp parallel for schedule(guided) 
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
@@ -756,11 +764,11 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 
     gd_cross(f1, f12, Q1, W1, GW);
     cg(f1, f2, SW, Q1, GW, P1);
-    update_cross(1, SW, Q1, W1, U1, P1);
+    update_cross(true, SW, Q1, W1, U1, P1);
 
     gd_cross(f2, f12, P1, H1, GH);
     cg(f2, f1, SH, P1, GH, Q1);
-    update_cross(0, SH, P1, H1, V1, Q1);
+    update_cross(false, SH, P1, H1, V1, Q1);
 }
 
 void ImpProblem::one_epoch() {
@@ -821,6 +829,15 @@ void ImpProblem::init_va(ImpInt size) {
     cout << endl;
 }
 
+void ImpProblem::pred_z(const ImpLong i, ImpDouble *z) {
+    for(ImpInt f1 = 0; f1 < fu; f1++) {
+        for(ImpInt f2 = fu; f2 < f; f2++) {
+            ImpInt f12 = index_vec(f1, f2, f);
+            ImpDouble *p1 = Pva[f12].data()+i*k, *q1 = Qva[f12].data();
+            mv(q1, p1, z, n, k, 1, false);
+        }
+    }
+}
 
 void ImpProblem::validate() {
     const ImpInt nr_th = param->nr_threads, nr_k = top_k.size();
@@ -859,25 +876,16 @@ void ImpProblem::validate() {
         }
     }
 
-    Vec R(Uva->m*n, 0);
-    for(ImpInt f1 = 0; f1 < fu; f1++) {
-        for(ImpInt f2 = fu; f2 < f; f2++) {
-            ImpInt f12 = index_vec(f1, f2, f);
-            ImpDouble *p1 = Pva[f12].data(), *q1 = Qva[f12].data();
-            cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-                    Uva->m, n, k, 1, p1, k, q1, k, 1, R.data(), n);
-        }
-    }
-
     ImpDouble ploss = 0;
 #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
-        ImpDouble *z = R.data() + i*n;
+        Vec z(bt);
+        pred_z(i, z.data());
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-            ploss += (1-z[j])*(1-z[j]);
+            ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
-        prec_k(z, i, top_k, hit_counts);
+        prec_k(z.data(), i, top_k, hit_counts);
         valid_samples++;
     }
 
@@ -950,9 +958,10 @@ void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-        if (!Uva->file_name.empty())
+        if (!Uva->file_name.empty() && iter % 5 == 0) {
             validate();
-        print_epoch_info(iter);
+            print_epoch_info(iter);
+        }
     }
 }
 
