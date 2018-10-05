@@ -837,7 +837,7 @@ void ImpProblem::init_va(ImpInt size) {
 
     va_loss.resize(size);
     top_k.resize(size);
-    ImpInt start = 1;
+    ImpInt start = 5;
 
     cout << "iter";
     for (ImpInt i = 0; i < size; i++) {
