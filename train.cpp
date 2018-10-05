@@ -175,8 +175,8 @@ int main(int argc, char *argv[])
         V->split_fields();
 
         if (!Ut->file_name.empty()) {
-            Ut->read(true);
-            Ut->split_fields(U->Ds.data());
+            Ut->read(true, U->Ds.data());
+            Ut->split_fields();
         }
 
         ImpProblem prob(U, Ut, V, option.param);

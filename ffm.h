@@ -62,9 +62,9 @@ public:
     vector<ImpLong> Ds;
 
     ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
-    void read(bool has_label);
+    void read(bool has_label, const ImpLong* ds=nullptr);
     void print_data_info();
-    void split_fields(const ImpLong *ds=nullptr);
+    void split_fields();
     void transY(const vector<Node*> &YT);
 };
 

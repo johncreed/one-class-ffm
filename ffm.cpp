@@ -84,7 +84,7 @@ void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
     generate(vec.begin(), vec.end(), gen);
 }
 
-void ImpData::read(bool has_label) {
+void ImpData::read(bool has_label, const ImpLong *ds) {
     ifstream fs(file_name);
     string line, label_block, label_str;
     char dummy;
@@ -108,6 +108,8 @@ void ImpData::read(bool has_label) {
 
         while (iss >> fid >> dummy >> idx >> dummy >> val) {
             f = max(f, fid+1);
+            if (ds!= nullptr && ds[fid] <= idx)
+                continue;
             x_nnz++;
         }
     }
@@ -145,6 +147,8 @@ void ImpData::read(bool has_label) {
         }
 
         while (iss >> fid >> dummy >> idx >> dummy >> val) {
+            if (ds!= nullptr && ds[fid] <= idx)
+                continue;
             nnz_i++;
             N[nnz_i-1].fid = fid;
             N[nnz_i-1].idx = idx;
@@ -168,7 +172,7 @@ void ImpData::read(bool has_label) {
     fs.close();
 }
 
-void ImpData::split_fields(const ImpLong *ds) {
+void ImpData::split_fields() {
     Ns.resize(f);
     Xs.resize(f);
     Ds.resize(f);
@@ -200,8 +204,6 @@ void ImpData::split_fields(const ImpLong *ds) {
         for (Node* x = X[i]; x < X[i+1]; x++) {
             ImpInt fid = x->fid;
             ImpLong idx = x->idx;
-            if (ds!= nullptr && ds[fid] <= idx)
-                continue;
             ImpDouble val = x->val;
 
             f_sum_nnz[fid]++;
