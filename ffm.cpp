@@ -525,9 +525,15 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
 
     const Vec &sa1 = (f1 < fu)? sa:sb;
 
+    const ImpLong block_size = G.size();
+    const ImpInt nr_threads = param->nr_threads;
+    Vec G_(nr_threads*block_size, 0);
 
     const ImpDouble *qp = Q1.data();
+
+    #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m1; i++) {
+        const ImpInt id = omp_get_thread_num();
         const ImpDouble *q1 = qp+i*k; 
         ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+sa1[i]);
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
@@ -537,10 +543,14 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
         for (Node* x = X[i]; x < X[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
-            for (ImpInt d = 0; d < k; d++)
-                G[idx*k+d] += q1[d]*val*z_i;
+            for (ImpInt d = 0; d < k; d++) {
+                const ImpLong jd = idx*k+d;
+                G_[jd+id*block_size] += q1[d]*val*z_i;
+            }
         }
     }
+    for(ImpInt i = 0; i < nr_threads; i++)
+        axpy(G_.data()+i*block_size, G.data(), block_size, 1);
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
@@ -550,7 +560,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
     const ImpDouble *qp = Q1.data();
     const ImpInt nr_threads = param->nr_threads;
     
-    ImpInt block_size = Hv.size();
+    const ImpLong block_size = Hv.size();
     
     #pragma omp parallel for schedule(guided) 
         for (ImpLong i = 0; i < m1; i++) {
@@ -570,7 +580,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
                 const ImpDouble val = x->val;
                 for (ImpInt d = 0; d < k; d++) {
                     const ImpLong jd = idx*k+d;
-                    Hv_[jd+ block_size*id] += q1[d]*val*z_1;
+                    Hv_[jd+block_size*id] += q1[d]*val*z_1;
                 }
             }
         }
@@ -595,7 +605,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
     const vector<Node*> &X = (f1 < fu)? U->Xs[f1]:V->Xs[f1-fu];
     const vector<Node*> &Y = (f1 < fu)? U->Y: V->Y;
 
-    Vec QTQ(k*k, 0), T(m1*k, 0), o1(n1, 1), oQ(k, 0), bQ(k, 0), pk(k, 0);
+    Vec QTQ(k*k, 0), T(m1*k, 0), o1(n1, 1), oQ(k, 0), bQ(k, 0);
 
     mv(Q1.data(), o1.data(), oQ.data(), n1, k, 0, true);
     mv(Q1.data(), b1.data(), bQ.data(), n1, k, 0, true);
@@ -609,10 +619,16 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
         }
     }
 
+    const ImpLong block_size = G.size();
+    const ImpInt nr_threads = param->nr_threads;
+    Vec G_(nr_threads*block_size, 0);
+
     const ImpDouble *tp = T.data(), *qp = Q1.data();
 
+    #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m1; i++) {
-        fill(pk.begin(), pk.end(), 0);
+        Vec pk(k, 0);
+        const ImpInt id = omp_get_thread_num();
         const ImpDouble *t1 = tp+i*k;
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
             const ImpDouble scale = (1-w)*y->val-w*(1-r);
@@ -628,24 +644,27 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
             const ImpDouble val = x->val;
             for (ImpInt d = 0; d < k; d++) {
                 const ImpLong jd = idx*k+d;
-                G[jd] += (pk[d]+w*(t1[d]+z_i*oQ[d]+bQ[d]))*val;
+                G_[jd+id*block_size] += (pk[d]+w*(t1[d]+z_i*oQ[d]+bQ[d]))*val;
             }
         }
     }
+    for(ImpInt i = 0; i < nr_threads; i++)
+        axpy(G_.data()+i*block_size, G.data(), block_size, 1);
 }
 
 
 void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
-        const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &X, const vector<Node*> &Y, Vec &Hv_) {
+        const Vec &VQTQ, Vec &Hv, const Vec &Q1,
+        const vector<Node*> &X, const vector<Node*> &Y, Vec &Hv_) {
     
     const ImpDouble *qp = Q1.data();
-    
-    ImpInt block_size = Hv.size();
-    ImpInt nr_threads = param->nr_threads;
+
+    const ImpLong block_size = Hv.size();
+    const ImpInt nr_threads = param->nr_threads;
 
     #pragma omp parallel for schedule(guided)
         for (ImpLong i = 0; i < m1; i++) {
-            ImpInt id = omp_get_thread_num();
+            const ImpInt id = omp_get_thread_num();
             Vec tau(k, 0), phi(k, 0), ka(k, 0);
             UTx(X[i], X[i+1], V, phi.data());
             UTx(X[i], X[i+1], VQTQ, tau.data());
@@ -715,6 +734,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         fill(Hv_.begin(), Hv_.end(), 0);
 
         axpy(V.data(), Hv.data(), V.size(), lambda);
+
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
             hs_side(m1, n1, V, Hv, Q1, X, Y, Hv_);
         else {
