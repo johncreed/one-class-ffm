@@ -219,17 +219,16 @@ void ImpData::split_fields() {
 
     for(ImpInt fi = 0; fi < f; fi++){
         freq[fi].resize(Ds[fi]);
-        fill(freq.begin(), freq.end(), 0);
+        fill(freq[fi].begin(), freq[fi].end(), 0);
     }
 
     for( ImpLong i = 0; i < m; i++){
-        for(Node*x = X[i]; x < X[i+1]; x++){
+        for(Node* x = X[i]; x < X[i+1]; x++){
             ImpInt fid = x->fid;
             ImpLong idx = x->idx;
             freq[fid][idx]++;
         }
     }
-
     for (ImpInt fi = 0; fi < f; fi++) {
         Node* fM = Ns[fi].data();
         Xs[fi][0] = fM;
