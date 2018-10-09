@@ -37,7 +37,7 @@ public:
     ImpFloat omega, lambda, r;
     ImpInt nr_pass, k, nr_threads;
     string model_path, predict_path;
-    bool self_side;
+    bool self_side, freq = false;
     Parameter():omega(0.1), lambda(1e-5), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true) {};
 };
 
@@ -60,6 +60,7 @@ public:
     vector<vector<Node>> Ns;
     vector<vector<Node*>> Xs;
     vector<ImpLong> Ds;
+    vector<vector<ImpLong>> freq;
 
     ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
     void read(bool has_label, const ImpLong* ds=nullptr);

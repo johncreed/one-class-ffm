@@ -45,6 +45,7 @@ string train_help()
     "-c <threads>: set number of cores\n"
     "-k <rank>: set number of rank\n"
     "--no-item: set item-bias\n"
+    "--freq: enable freq-aware lambda\n"
     );
 }
 
@@ -137,6 +138,9 @@ Option parse_option(int argc, char **argv)
         else if(args[i].compare("--ns") == 0)
         {
             option.param->self_side = false;
+        }
+        else if(args[i].compare("--freq") == 0){
+            option.param->freq = true;
         }
         else
         {

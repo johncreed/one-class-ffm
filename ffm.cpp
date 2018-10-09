@@ -176,6 +176,7 @@ void ImpData::split_fields() {
     Ns.resize(f);
     Xs.resize(f);
     Ds.resize(f);
+    freq.resize(f);
 
 
     vector<ImpLong> f_sum_nnz(f, 0);
@@ -213,6 +214,19 @@ void ImpData::split_fields() {
             Ns[fid][nnz_i].fid = fid;
             Ns[fid][nnz_i].idx = idx;
             Ns[fid][nnz_i].val = val;
+        }
+    }
+
+    for(ImpInt fi = 0; fi < f; fi++){
+        freq[fi].resize(Ds[fi]);
+        fill(freq.begin(), freq.end(), 0);
+    }
+
+    for( ImpLong i = 0; i < m; i++){
+        for(Node*x = X[i]; x < X[i+1]; x++){
+            ImpInt fid = x->fid;
+            ImpLong idx = x->idx;
+            freq[fid][idx]++;
         }
     }
 
@@ -510,7 +524,7 @@ void ImpProblem::cache_sasb() {
 
 void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
 
-    axpy( W1.data(), G.data(), G.size(), lambda);
+
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
     const vector<Node*> &Y = U1->Y;
 
@@ -532,6 +546,17 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     Vec G_(nr_threads*block_size, 0);
 
     const ImpDouble *qp = Q1.data();
+    
+    if(param->freq){
+        vector<vector<ImpLong>> &freq = U1->freq;
+        const ImpLong df1 = U1->Ds[fi];
+        assert( df1 == freq.size());
+        for(ImpInt i = 0; i < df1; i++)
+            axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[fi][i]) );
+    }
+    else{
+        axpy( W1.data(), G.data(), G.size(), lambda);
+    }
 
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m1; i++) {
@@ -594,7 +619,6 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
 void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1,Vec &G) {
 
 
-    axpy( W1.data(), G.data(), W1.size(), lambda );
     const Vec &a1 = (f1 < fu)? a: b;
     const Vec &b1 = (f1 < fu)? b: a;
 
@@ -604,8 +628,21 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
     const ImpLong &m1 = (f1 < fu)? m:n;
     const ImpLong &n1 = (f1 < fu)? n:m;
 
-    const vector<Node*> &X = (f1 < fu)? U->Xs[f1]:V->Xs[f1-fu];
-    const vector<Node*> &Y = (f1 < fu)? U->Y: V->Y;
+    const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
+    const ImpInt fi = (f1 < fu)? f1 : f1 - fu;
+    const vector<Node*> &X = U1->Xs[fi];
+    const vector<Node*> &Y = U1->Y;
+
+    if(param->freq){
+        vector<vector<ImpLong>> &freq = U1->freq;
+        const ImpLong df1 = U1->Ds[fi];
+        assert( df1 == freq.size());
+        for(ImpInt i = 0; i < df1; i++)
+            axpy( W1.data()+i*k, G.data()+i*k, k, lambda *ImpDouble(freq[fi][i]));
+    }
+    else{
+        axpy( W1.data(), G.data(), G.size(), lambda);
+    }
 
     Vec QTQ(k*k, 0), T(m1*k, 0), o1(n1, 1), oQ(k, 0), bQ(k, 0);
 
@@ -735,7 +772,15 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         fill(Hv.begin(), Hv.end(), 0);
         fill(Hv_.begin(), Hv_.end(), 0);
 
-        axpy(V.data(), Hv.data(), V.size(), lambda);
+        if(param->freq){
+            vector<vector<ImpLong>> &freq = U1->freq;
+            assert( Df1 == freq.size());
+            for(ImpInt i = 0; i < Df1; i++)
+                axpy( V.data()+i*k, Hv.data()+i*k, k, lambda * ImpDouble(freq[fi][i]) );
+        }
+        else{
+            axpy( V.data(), Hv.data(), V.size(), lambda);
+        }
 
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
             hs_side(m1, n1, V, Hv, Q1, X, Y, Hv_);
