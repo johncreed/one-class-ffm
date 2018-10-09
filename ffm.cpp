@@ -544,6 +544,17 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     Vec G_(nr_threads*block_size, 0);
 
     const ImpDouble *qp = Q1.data();
+    
+    if(param->freq){
+        vector<vector<ImpLong>> &freq = U1->freq;
+        const ImpLong df1 = U1->Ds[fi];
+        assert( df1 == freq.size());
+        for(ImpInt i = 0; i < df1; i++)
+            axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[fi][i]) );
+    }
+    else{
+        axpy( W1.data(), G.data(), G.size(), lambda);
+    }
 
     if(param->freq){
         const vector<ImpLong> &freq = U1->freq[fi];
