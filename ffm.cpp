@@ -629,7 +629,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
         axpy(Hv_.data()+i*block_size, Hv.data(), block_size, 1);
 }
 
-void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1,Vec &G) {
+void ImpProblem::gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1,Vec &G) {
 
 
     const Vec &a1 = (f1 < fu)? a: b;
@@ -638,6 +638,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
     const vector<Vec> &Ps = (f1 < fu)? P:Q;
     const vector<Vec> &Qs = (f1 < fu)? Q:P;
 
+    // Outer loop (m1), Inner loop (n1)
     const ImpLong &m1 = (f1 < fu)? m:n;
     const ImpLong &n1 = (f1 < fu)? n:m;
 
@@ -659,9 +660,11 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
 
     Vec QTQ(k*k, 0), T(m1*k, 0), o1(n1, 1), oQ(k, 0), bQ(k, 0);
 
+    // Calculate qo and qb
     mv(Q1.data(), o1.data(), oQ.data(), n1, k, 0, true);
     mv(Q1.data(), b1.data(), bQ.data(), n1, k, 0, true);
 
+    // Calculate T
     for (ImpInt al = 0; al < fu; al++) {
         for (ImpInt be = fu; be < f; be++) {
             const ImpInt fab = index_vec(al, be, f);
@@ -671,6 +674,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
         }
     }
 
+    // Omp variable
     const ImpLong block_size = G.size();
     const ImpInt nr_threads = param->nr_threads;
     Vec G_(nr_threads*block_size, 0);
@@ -851,11 +855,11 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
     Vec GW(W1.size()), GH(H1.size());
     Vec SW(W1.size()), SH(H1.size());
 
-    gd_cross(f1, f12, Q1, W1, GW);
+    gd_cross(f1, Q1, W1, GW);
     cg(f1, f2, SW, Q1, GW, P1);
     update_cross(true, SW, Q1, W1, U1, P1);
 
-    gd_cross(f2, f12, P1, H1, GH);
+    gd_cross(f2, P1, H1, GH);
     cg(f2, f1, SH, P1, GH, Q1);
     update_cross(false, SH, P1, H1, V1, Q1);
 }
