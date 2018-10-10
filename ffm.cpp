@@ -521,28 +521,27 @@ void ImpProblem::cache_sasb() {
     }
 }
 
-void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
+void ImpProblem::gd_side(const bool sub_type, const ImpInt &f1, const shared_ptr<ImpData> U1, const Vec &W1, const Vec &Q1, Vec &G) {
 
     // Get tilde(Y)
-    const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
     const vector<Node*> &Y = U1->Y;
 
     // Get X_f1
-    const ImpInt base = (f1 < fu)? 0: fu;
+    const ImpInt base = (sub_type)? 0: fu;
     const ImpInt fi = f1-base;
     const vector<Node*> &X = U1->Xs[fi];
 
-    // # of X_f1 instance, # of Q1 instance
-    const ImpLong m1 = (f1 < fu)? m:n;
-    const ImpLong n1 = (f1 < fu)? n:m;
+    // Outer loop (m1), Inner loop (n1)
+    const ImpLong m1 = (sub_type)? m:n;
+    const ImpLong n1 = (sub_type)? n:m;
 
     // Set side_i, side_j to no-sum, sum.
-    const Vec &a1 = (f1 < fu)? a:b;  // no-sum : (m1)
-    const Vec &b1 = (f1 < fu)? b:a; // sum : (n1)
+    const Vec &a1 = (sub_type)? a:b;  // no-sum : (m1)
+    const Vec &b1 = (sub_type)? b:a; // sum : (n1)
     const ImpDouble b_sum = sum(b1);
 
     // Set cross to sum_i or sum_j
-    const Vec &sa1 = (f1 < fu)? sa:sb; // (m1)
+    const Vec &sa1 = (sub_type)? sa:sb; // (m1)
 
     
     // Initail omp variables G_
@@ -817,21 +816,21 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
 void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     const ImpInt f12 = index_vec(f1, f2, f);
     const bool sub_type = (f1 < fu)? 1 : 0;
-    const shared_ptr<ImpData> X12 = (sub_type)? U : V;
+    const shared_ptr<ImpData> U1 = (sub_type)? U : V;
     const ImpInt base = (sub_type)? 0 : fu;
-    const vector<Node*> &U1 = X12->Xs[f1-base], &U2 = X12->Xs[f2-base];
+    const vector<Node*> &X1 = U1->Xs[f1-base], &X2 = U1->Xs[f2-base];
     Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
 
     Vec G1(W1.size(), 0), G2(H1.size(), 0);
     Vec S1(W1.size(), 0), S2(H1.size(), 0);
 
-    gd_side(f1, W1, Q1, G1);
+    gd_side(sub_type, f1, U1, W1, Q1, G1);
     cg(f1, f2, S1, Q1, G1, P1);
-    update_side(sub_type, S1, Q1, W1, U1, P1);
+    update_side(sub_type, S1, Q1, W1, X1, P1);
 
-    gd_side(f2, H1, P1, G2);
+    gd_side(sub_type, f2, U1, H1, P1, G2);
     cg(f2, f1, S2, P1, G2, Q1);
-    update_side(sub_type, S2, P1, H1, U2, Q1);
+    update_side(sub_type, S2, P1, H1, X2, Q1);
 }
 
 void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {

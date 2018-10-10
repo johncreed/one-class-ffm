@@ -113,7 +113,7 @@ private:
     ImpDouble norm_block(const ImpInt &f1,const ImpInt &f2);
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
-    void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
+    void gd_side(const bool sub_type, const ImpInt &f1, const shared_ptr<ImpData> U1, const Vec &W1, const Vec &Q1, Vec &G);
     void hs_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
 
     void solve_cross(const ImpInt &f1, const ImpInt &f2);
