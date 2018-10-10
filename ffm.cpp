@@ -760,7 +760,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     Vec Hv_(nr_threads*Df1k);
 
     ImpInt nr_cg = 0, max_cg = 20;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-4, alpha = 0, beta = 0, gamma = 0, vHv;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-4, alpha = 0, beta = 0, r2_new = 0, vHv;
 
     Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
     Vec QTQ, VQTQ;
@@ -802,14 +802,14 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         }
 
         vHv = inner(V.data(), Hv.data(), Df1k);
-        gamma = r2;
-        alpha = gamma/vHv;
+        alpha = r2/vHv;
         axpy(V.data(), S1.data(), Df1k, alpha);
         axpy(Hv.data(), R.data(), Df1k, -alpha);
-        r2 = inner(R.data(), R.data(), Df1k);
-        beta = r2/gamma;
+        r2_new = inner(R.data(), R.data(), Df1k);
+        beta = r2_new/r2;
         scal(V.data(), Df1k, beta);
         axpy(R.data(), V.data(), Df1k, 1);
+        r2 = r2_new;
     }
 }
 
