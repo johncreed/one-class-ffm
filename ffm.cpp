@@ -591,7 +591,7 @@ void ImpProblem::gd_side(const bool sub_type, const ImpInt &f1, const shared_ptr
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
-        const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX,
+        const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &X,
         const vector<Node*> &Y, Vec &Hv_) {
 
     const ImpDouble *qp = Q1.data();
@@ -603,18 +603,19 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
         for (ImpLong i = 0; i < m1; i++) {
             ImpInt id = omp_get_thread_num();
             const ImpDouble* q1 = qp+i*k;
+            
             // z vector
-            ImpDouble d_1 = (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
             ImpDouble z_1 = 0;
-            for (Node* x = UX[i]; x < UX[i+1]; x++) {
+            for (Node* x = X[i]; x < X[i+1]; x++) {
                 const ImpLong idx = x->idx;
                 const ImpDouble val = x->val;
                 for (ImpInt d = 0; d < k; d++)
                     z_1 += q1[d]*val*V[idx*k+d];
             }
-            z_1 *= d_1;
+            z_1 += (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
+
             // Hv
-            for (Node* x = UX[i]; x < UX[i+1]; x++) {
+            for (Node* x = X[i]; x < X[i+1]; x++) {
                 const ImpLong idx = x->idx;
                 const ImpDouble val = x->val;
                 for (ImpInt d = 0; d < k; d++) {
@@ -742,35 +743,43 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
         axpy(Hv_.data()+i*block_size, Hv.data(), block_size, 1);
 }
 
+// Solve f1 with fix f2.
 void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         const Vec &Q1, const Vec &G, Vec &P1) {
 
     const ImpInt base = (f1 < fu)? 0: fu;
     const ImpInt fi = f1-base;
-
+    
+    // Get f1's X and tilde(Y)
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
     const vector<Node*> &Y = U1->Y;
     const vector<Node*> &X = U1->Xs[fi];
 
+    // Outer loop (m1), Inner loop (n1)
     const ImpLong m1 = (f1 < fu)? m:n;
     const ImpLong n1 = (f1 < fu)? n:m;
 
+    // Get # of feature in f1, i.e, D_f1
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
-    const ImpInt nr_threads = param->nr_threads;
-    Vec Hv_(nr_threads*Df1k);
 
-    ImpInt nr_cg = 0, max_cg = 20;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-4, alpha = 0, beta = 0, r2_new = 0, vHv;
-
-    Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
+    // Initialize QTQ
     Vec QTQ, VQTQ;
-
     if (!(f1 < fu && f2 < fu) && !(f1>=fu && f2>=fu)) {
         QTQ.resize(k*k, 0);
         VQTQ.resize(Df1k, 0);
         mm(Q1.data(), Q1.data(), QTQ.data(), k, n1);
     }
 
+    ImpInt nr_cg = 0, max_cg = 20;
+    ImpDouble g2 = 0, r2, cg_eps = 1e-4, alpha = 0, beta = 0, r2_new = 0, vHv;
+
+    Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
+    
+    // Omp parallel variable Hv_
+    const ImpInt nr_threads = param->nr_threads;
+    Vec Hv_(nr_threads*Df1k, 0);
+
+    // Conguate gradient method
     for (ImpLong jd = 0; jd < Df1k; jd++) {
         R[jd] = -G[jd];
         V[jd] = R[jd];
@@ -794,6 +803,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
             axpy( V.data(), Hv.data(), V.size(), lambda);
         }
 
+        // Compute hessian-vector product and stort to Hv
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
             hs_side(m1, n1, V, Hv, Q1, X, Y, Hv_);
         else {
