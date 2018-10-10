@@ -523,28 +523,58 @@ void ImpProblem::cache_sasb() {
 
 void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
 
+    // Get tilde(Y)
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
     const vector<Node*> &Y = U1->Y;
 
+    // Get X_f1
     const ImpInt base = (f1 < fu)? 0: fu;
     const ImpInt fi = f1-base;
     const vector<Node*> &X = U1->Xs[fi];
 
+    // # of X_f1 instance, # of Q1 instance
     const ImpLong m1 = (f1 < fu)? m:n;
     const ImpLong n1 = (f1 < fu)? n:m;
 
-    const Vec &a1 = (f1 < fu)? a:b;
-    const Vec &b1 = (f1 < fu)? b:a;
+    // Set side_i, side_j to no-sum, sum.
+    const Vec &a1 = (f1 < fu)? a:b;  // no-sum : (m1)
+    const Vec &b1 = (f1 < fu)? b:a; // sum : (n1)
     const ImpDouble b_sum = sum(b1);
 
-    const Vec &sa1 = (f1 < fu)? sa:sb;
+    // Set cross to sum_i or sum_j
+    const Vec &sa1 = (f1 < fu)? sa:sb; // (m1)
 
+    
+    // Initail omp variables G_
     const ImpLong block_size = G.size();
     const ImpInt nr_threads = param->nr_threads;
     Vec G_(nr_threads*block_size, 0);
 
     const ImpDouble *qp = Q1.data();
+    #pragma omp parallel for schedule(guided)
+    for (ImpLong i = 0; i < m1; i++) {
+        const ImpInt id = omp_get_thread_num();
+        const ImpDouble *q1 = qp+i*k;
 
+        // Z vector
+        ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+sa1[i]);
+        for (Node* y = Y[i]; y < Y[i+1]; y++) {
+            const ImpDouble y_tilde = y->val;
+            z_i += (1-w)*y_tilde-w*(1-r);
+        }
+
+        // G_
+        for (Node* x = X[i]; x < X[i+1]; x++) {
+            const ImpLong idx = x->idx;
+            const ImpDouble val = x->val;
+            for (ImpInt d = 0; d < k; d++) {
+                const ImpLong jd = idx*k+d;
+                G_[jd+id*block_size] += q1[d]*val*z_i;
+            }
+        }
+    }
+    
+    // G <-- lambda * W1
     if(param->freq){
         const vector<ImpLong> &freq = U1->freq[fi];
         const ImpLong df1 = U1->Ds[fi];
@@ -556,24 +586,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
         axpy( W1.data(), G.data(), G.size(), lambda);
     }
 
-    #pragma omp parallel for schedule(guided)
-    for (ImpLong i = 0; i < m1; i++) {
-        const ImpInt id = omp_get_thread_num();
-        const ImpDouble *q1 = qp+i*k;
-        ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+sa1[i]);
-        for (Node* y = Y[i]; y < Y[i+1]; y++) {
-            const ImpDouble y_tilde = y->val;
-            z_i += (1-w)*y_tilde-w*(1-r);
-        }
-        for (Node* x = X[i]; x < X[i+1]; x++) {
-            const ImpLong idx = x->idx;
-            const ImpDouble val = x->val;
-            for (ImpInt d = 0; d < k; d++) {
-                const ImpLong jd = idx*k+d;
-                G_[jd+id*block_size] += q1[d]*val*z_i;
-            }
-        }
-    }
+    // Reduction omp variable G_ to G
     for(ImpInt i = 0; i < nr_threads; i++)
         axpy(G_.data()+i*block_size, G.data(), block_size, 1);
 }
@@ -591,6 +604,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
         for (ImpLong i = 0; i < m1; i++) {
             ImpInt id = omp_get_thread_num();
             const ImpDouble* q1 = qp+i*k;
+            // z vector
             ImpDouble d_1 = (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
             ImpDouble z_1 = 0;
             for (Node* x = UX[i]; x < UX[i+1]; x++) {
@@ -600,6 +614,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
                     z_1 += q1[d]*val*V[idx*k+d];
             }
             z_1 *= d_1;
+            // Hv
             for (Node* x = UX[i]; x < UX[i+1]; x++) {
                 const ImpLong idx = x->idx;
                 const ImpDouble val = x->val;
@@ -839,15 +854,17 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 void ImpProblem::one_epoch() {
 
     if (param->self_side) {
+        // Solve f1 , f2 < fu
         for (ImpInt f1 = 0; f1 < fu; f1++)
             for (ImpInt f2 = f1; f2 < fu; f2++)
                 solve_side(f1, f2);
-
+        // Solve f1, f2 >= fu
         for (ImpInt f1 = fu; f1 < f; f1++)
             for (ImpInt f2 = f1; f2 < f; f2++)
                 solve_side(f1, f2);
     }
 
+    // Solve f1 < fu , f2 >= fu
     for (ImpInt f1 = 0; f1 < fu; f1++)
         for (ImpInt f2 = fu; f2 < f; f2++)
             solve_cross(f1, f2);
