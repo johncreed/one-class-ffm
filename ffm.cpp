@@ -70,9 +70,9 @@ void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row,
         const ImpInt &col,const ImpDouble &alpha, Vec &vv){
     const ImpDouble *v1p = V1.data(), *v2p = V2.data();
 
-    #pragma omp parallel for schedule(guided) 
+    #pragma omp parallel for schedule(guided)
     for(ImpInt i = 0; i < row; i++)
-        vv[i] += alpha*inner(v1p+i*col, v2p+i*col, col); 
+        vv[i] += alpha*inner(v1p+i*col, v2p+i*col, col);
 }
 
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
@@ -376,14 +376,14 @@ ImpDouble ImpProblem::calc_cross(const ImpLong &i, const ImpLong &j) {
 }
 
 void ImpProblem::init_y_tilde() {
-    #pragma omp parallel for schedule(guided) 
+    #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m; i++) {
         for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
             ImpLong j = y->idx;
             y->val = a[i]+b[j]+calc_cross(i, j) - 1;
         }
     }
-    #pragma omp parallel for schedule(guided) 
+    #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < n; j++) {
         for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
             ImpLong i = y->idx;
@@ -398,7 +398,7 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     axpy( S.data(), W1.data(), S.size(), 1);
     const ImpLong m1 = (sub_type)? m : n;
     UTX(X12, m1, W1, P1);
-    
+
     // Update y_tilde and pq
     Vec &a1 = (sub_type)? a:b;
     shared_ptr<ImpData> U1 = (sub_type)? U:V;
@@ -409,14 +409,14 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     UTX(X12, m1, S, XS);
     hadmard_product(XS, Q1, m1, k, 1, gaps);
 
-    #pragma omp parallel for schedule(guided) 
+    #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < U1->m; i++) {
         a1[i] += gaps[i];
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             y->val += gaps[i];
         }
     }
-    #pragma omp parallel for schedule(guided) 
+    #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
@@ -430,21 +430,21 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
     axpy( S.data(), W1.data(), S.size(), 1);
     const ImpLong m1 = (sub_type)? m : n;
     UTX(X12, m1, W1, P1);
-    
+
     shared_ptr<ImpData> U1 = (sub_type)? U:V;
     shared_ptr<ImpData> V1 = (sub_type)? V:U;
 
     Vec XS(P1.size(), 0);
     UTX(X12, m1, S, XS);
 
-    #pragma omp parallel for schedule(guided) 
+    #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < U1->m; i++) {
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             const ImpLong j = y->idx;
             y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
         }
     }
-    #pragma omp parallel for schedule(guided) 
+    #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
@@ -523,7 +523,6 @@ void ImpProblem::cache_sasb() {
 
 void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
 
-
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
     const vector<Node*> &Y = U1->Y;
 
@@ -545,13 +544,13 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     Vec G_(nr_threads*block_size, 0);
 
     const ImpDouble *qp = Q1.data();
-    
+
     if(param->freq){
-        vector<vector<ImpLong>> &freq = U1->freq;
+        const vector<ImpLong> &freq = U1->freq[fi];
         const ImpLong df1 = U1->Ds[fi];
         assert( df1 == freq.size());
-        for(ImpInt i = 0; i < df1; i++)
-            axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[fi][i]) );
+        for(ImpLong i = 0; i < df1; i++)
+            axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[i]));
     }
     else{
         axpy( W1.data(), G.data(), G.size(), lambda);
@@ -560,7 +559,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
-        const ImpDouble *q1 = qp+i*k; 
+        const ImpDouble *q1 = qp+i*k;
         ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+sa1[i]);
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
             const ImpDouble y_tilde = y->val;
@@ -585,13 +584,13 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
 
     const ImpDouble *qp = Q1.data();
     const ImpInt nr_threads = param->nr_threads;
-    
+
     const ImpLong block_size = Hv.size();
-    
-    #pragma omp parallel for schedule(guided) 
+
+    #pragma omp parallel for schedule(guided)
         for (ImpLong i = 0; i < m1; i++) {
             ImpInt id = omp_get_thread_num();
-            const ImpDouble* q1 = qp+i*k; 
+            const ImpDouble* q1 = qp+i*k;
             ImpDouble d_1 = (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
             ImpDouble z_1 = 0;
             for (Node* x = UX[i]; x < UX[i+1]; x++) {
@@ -610,7 +609,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
                 }
             }
         }
-    
+
     for(ImpInt i = 0; i < nr_threads; i++)
         axpy(Hv_.data()+i*block_size, Hv.data(), block_size, 1);
 }
@@ -633,11 +632,11 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
     const vector<Node*> &Y = U1->Y;
 
     if(param->freq){
-        vector<vector<ImpLong>> &freq = U1->freq;
+        vector<ImpLong> &freq = U1->freq[fi];
         const ImpLong df1 = U1->Ds[fi];
         assert( df1 == freq.size());
-        for(ImpInt i = 0; i < df1; i++)
-            axpy( W1.data()+i*k, G.data()+i*k, k, lambda *ImpDouble(freq[fi][i]));
+        for(ImpLong i = 0; i < df1; i++)
+            axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[i]));
     }
     else{
         axpy( W1.data(), G.data(), G.size(), lambda);
@@ -694,7 +693,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
 void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
         const Vec &VQTQ, Vec &Hv, const Vec &Q1,
         const vector<Node*> &X, const vector<Node*> &Y, Vec &Hv_) {
-    
+
     const ImpDouble *qp = Q1.data();
 
     const ImpLong block_size = Hv.size();
@@ -772,10 +771,10 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         fill(Hv_.begin(), Hv_.end(), 0);
 
         if(param->freq){
-            vector<vector<ImpLong>> &freq = U1->freq;
+            vector<ImpLong> &freq = U1->freq[fi];
             assert( Df1 == freq.size());
-            for(ImpInt i = 0; i < Df1; i++)
-                axpy( V.data()+i*k, Hv.data()+i*k, k, lambda * ImpDouble(freq[fi][i]) );
+            for(ImpLong i = 0; i < Df1; i++)
+                axpy( V.data()+i*k, Hv.data()+i*k, k, lambda * ImpDouble(freq[i]));
         }
         else{
             axpy( V.data(), Hv.data(), V.size(), lambda);
@@ -1018,7 +1017,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
         cout << setprecision(3) << loss;
     }
     cout << endl;
-} 
+}
 
 void ImpProblem::solve() {
     init_va(5);
@@ -1050,7 +1049,7 @@ ImpDouble ImpProblem::norm_block(const ImpInt &f1,const ImpInt &f2) {
 
 
 ImpDouble ImpProblem::func() {
-    ImpDouble res = 0; 
+    ImpDouble res = 0;
     for (ImpInt i = 0; i < m; i++) {
         for(ImpInt j = 0; j < n; j++){
             ImpDouble y_hat = 0;
@@ -1072,7 +1071,7 @@ ImpDouble ImpProblem::func() {
                 res += w * (r - y_hat) * (r - y_hat);
         }
     }
-    
+
     for(ImpInt f1 = 0; f1 < f; f1++) {
         for(ImpInt f2 = f1; f2 < f; f2++){
             res += lambda*norm_block(f1, f2);
