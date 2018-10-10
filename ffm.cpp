@@ -721,16 +721,16 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
     #pragma omp parallel for schedule(guided)
         for (ImpLong i = 0; i < m1; i++) {
             const ImpInt id = omp_get_thread_num();
-            Vec tau(k, 0), phi(k, 0), ka(k, 0);
+            Vec ka(k, 0), phi(k, 0), tau(k, 0);
             UTx(X[i], X[i+1], V, phi.data());
-            UTx(X[i], X[i+1], VQTQ, tau.data());
+            UTx(X[i], X[i+1], VQTQ, ka.data());
 
             for (Node* y = Y[i]; y < Y[i+1]; y++) {
                 const ImpLong idx = y->idx;
                 const ImpDouble *dp = qp + idx*k;
                 const ImpDouble val = inner(phi.data(), dp, k);
                 for (ImpInt d = 0; d < k; d++)
-                    ka[d] += val*dp[d];
+                    tau[d] += val*dp[d];
             }
 
             for (Node* x = X[i]; x < X[i+1]; x++) {
@@ -738,7 +738,7 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
                 const ImpDouble val = x->val;
                 for (ImpInt d = 0; d < k; d++) {
                     const ImpLong jd = idx*k+d;
-                    Hv_[jd+id*block_size] += ((1-w)*ka[d]+w*tau[d])*val;
+                    Hv_[jd+id*block_size] += ((1-w)*tau[d]+w*ka[d])*val;
                 }
             }
         }
