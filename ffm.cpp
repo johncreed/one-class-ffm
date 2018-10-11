@@ -612,7 +612,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
                 for (ImpInt d = 0; d < k; d++)
                     z_1 += q1[d]*val*M[idx*k+d];
             }
-            z_1 += (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
+            z_1 *= (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
 
             // Hv
             for (Node* x = X[i]; x < X[i+1]; x++) {
