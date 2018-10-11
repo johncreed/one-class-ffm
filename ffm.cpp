@@ -66,7 +66,7 @@ ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)
     return product;
 }
 
-void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row,
+void row_wise_inner(const Vec &V1, const Vec &V2, const ImpInt &row,
         const ImpInt &col,const ImpDouble &alpha, Vec &vv){
     const ImpDouble *v1p = V1.data(), *v2p = V2.data();
 
@@ -407,7 +407,7 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     Vec gaps(m1, 0);
     Vec XS(P1.size(), 0);
     UTX(X12, m1, S, XS);
-    hadmard_product(XS, Q1, m1, k, 1, gaps);
+    row_wise_inner(XS, Q1, m1, k, 1, gaps);
 
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < U1->m; i++) {
