@@ -56,14 +56,7 @@ const ImpInt index_vec(const ImpInt f1, const ImpInt f2, const ImpInt f) {
 
 ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)
 {
-    __m128d XMM = _mm_setzero_pd();
-    for(ImpInt d = 0; d < k; d += 2)
-        XMM = _mm_add_pd(XMM, _mm_mul_pd(
-                  _mm_load_pd(p+d), _mm_load_pd(q+d)));
-    XMM = _mm_hadd_pd(XMM, XMM);
-    ImpDouble product;
-    _mm_store_sd(&product, XMM);
-    return product;
+    return cblas_ddot(k, p, 1, q, 1);
 }
 
 void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row,
