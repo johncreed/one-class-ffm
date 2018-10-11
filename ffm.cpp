@@ -591,7 +591,7 @@ void ImpProblem::gd_side(const bool sub_type, const ImpInt &f1, const shared_ptr
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
-        const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &X,
+        const Vec &M, Vec &Hv, const Vec &Q1, const vector<Node*> &X,
         const vector<Node*> &Y, Vec &Hv_) {
 
     const ImpDouble *qp = Q1.data();
@@ -610,7 +610,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
                 const ImpLong idx = x->idx;
                 const ImpDouble val = x->val;
                 for (ImpInt d = 0; d < k; d++)
-                    z_1 += q1[d]*val*V[idx*k+d];
+                    z_1 += q1[d]*val*M[idx*k+d];
             }
             z_1 += (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
 
@@ -709,8 +709,8 @@ void ImpProblem::gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1,Vec &G)
 }
 
 
-void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
-        const Vec &VQTQ, Vec &Hv, const Vec &Q1,
+void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &M,
+        const Vec &MQTQ, Vec &Hv, const Vec &Q1,
         const vector<Node*> &X, const vector<Node*> &Y, Vec &Hv_) {
 
     const ImpDouble *qp = Q1.data();
@@ -722,8 +722,8 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
         for (ImpLong i = 0; i < m1; i++) {
             const ImpInt id = omp_get_thread_num();
             Vec ka(k, 0), phi(k, 0), tau(k, 0);
-            UTx(X[i], X[i+1], V, phi.data());
-            UTx(X[i], X[i+1], VQTQ, ka.data());
+            UTx(X[i], X[i+1], M, phi.data());
+            UTx(X[i], X[i+1], MQTQ, ka.data());
 
             for (Node* y = Y[i]; y < Y[i+1]; y++) {
                 const ImpLong idx = y->idx;
@@ -767,17 +767,17 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
 
     // Initialize QTQ
-    Vec QTQ, VQTQ;
+    Vec QTQ, MQTQ;
     if (!(f1 < fu && f2 < fu) && !(f1>=fu && f2>=fu)) {
         QTQ.resize(k*k, 0);
-        VQTQ.resize(Df1k, 0);
+        MQTQ.resize(Df1k, 0);
         mm(Q1.data(), Q1.data(), QTQ.data(), k, n1);
     }
 
     ImpInt nr_cg = 0, max_cg = 20;
     ImpDouble g2 = 0, r2, cg_eps = 1e-4, alpha = 0, beta = 0, r2_new = 0, vHv;
 
-    Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
+    Vec M(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
     
     // Omp parallel variable Hv_
     const ImpInt nr_threads = param->nr_threads;
@@ -786,7 +786,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     // Conguate gradient method
     for (ImpLong jd = 0; jd < Df1k; jd++) {
         R[jd] = -G[jd];
-        V[jd] = R[jd];
+        M[jd] = R[jd];
         g2 += G[jd]*G[jd];
     }
 
@@ -801,28 +801,28 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
             vector<ImpLong> &freq = U1->freq[fi];
             assert( Df1 == freq.size());
             for(ImpLong i = 0; i < Df1; i++)
-                axpy( V.data()+i*k, Hv.data()+i*k, k, lambda * ImpDouble(freq[i]));
+                axpy( M.data()+i*k, Hv.data()+i*k, k, lambda * ImpDouble(freq[i]));
         }
         else{
-            axpy( V.data(), Hv.data(), V.size(), lambda);
+            axpy( M.data(), Hv.data(), M.size(), lambda);
         }
 
         // Compute hessian-vector product and stort to Hv
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
-            hs_side(m1, n1, V, Hv, Q1, X, Y, Hv_);
+            hs_side(m1, n1, M, Hv, Q1, X, Y, Hv_);
         else {
-            mm(V.data(), QTQ.data(), VQTQ.data(), Df1, k, k);
-            hs_cross(m1, n1, V, VQTQ, Hv, Q1, X, Y, Hv_);
+            mm(M.data(), QTQ.data(), MQTQ.data(), Df1, k, k);
+            hs_cross(m1, n1, M, MQTQ, Hv, Q1, X, Y, Hv_);
         }
 
-        vHv = inner(V.data(), Hv.data(), Df1k);
+        vHv = inner(M.data(), Hv.data(), Df1k);
         alpha = r2/vHv;
-        axpy(V.data(), S1.data(), Df1k, alpha);
+        axpy(M.data(), S1.data(), Df1k, alpha);
         axpy(Hv.data(), R.data(), Df1k, -alpha);
         r2_new = inner(R.data(), R.data(), Df1k);
         beta = r2_new/r2;
-        scal(V.data(), Df1k, beta);
-        axpy(R.data(), V.data(), Df1k, 1);
+        scal(M.data(), Df1k, beta);
+        axpy(R.data(), M.data(), Df1k, 1);
         r2 = r2_new;
     }
 }
