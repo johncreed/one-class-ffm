@@ -173,14 +173,17 @@ int main(int argc, char *argv[])
 
         U->read(true);
         U->split_fields();
+        U->print_data_info();
 
         V->read(false);
         V->transY(U->Y);
         V->split_fields();
+        V->print_data_info();
 
         if (!Ut->file_name.empty()) {
             Ut->read(true, U->Ds.data());
             Ut->split_fields();
+            Ut->print_data_info();
         }
 
         ImpProblem prob(U, Ut, V, option.param);

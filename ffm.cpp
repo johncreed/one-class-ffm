@@ -223,12 +223,14 @@ void ImpData::split_fields() {
     }
 
     for( ImpLong i = 0; i < m; i++){
+        ImpLong nnz = Y[i+1] - Y[i];
         for(Node* x = X[i]; x < X[i+1]; x++){
             ImpInt fid = x->fid;
             ImpLong idx = x->idx;
-            freq[fid][idx]++;
+            freq[fid][idx] += nnz;
         }
     }
+
     for (ImpInt fi = 0; fi < f; fi++) {
         Node* fM = Ns[fi].data();
         Xs[fi][0] = fM;
@@ -481,16 +483,31 @@ void ImpProblem::init() {
     P.resize(nr_blocks);
     Q.resize(nr_blocks);
 
-    for (ImpInt f1 = 0; f1 < f; f1++) {
-        const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
-        const ImpInt fi = ((f1>=fu)? f1-fu: f1);
-        for (ImpInt f2 = f1; f2 < f; f2++) {
-            const shared_ptr<ImpData> d2 = ((f2<fu)? U: V);
-            const ImpInt fj = ((f2>=fu)? f2-fu: f2);
-            const ImpInt f12 = index_vec(f1, f2, f);
-            init_pair(f12, fi, fj, d1, d2);
+    if(param->self_side) {
+        for (ImpInt f1 = 0; f1 < f; f1++) {
+            const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
+            const ImpInt fi = ((f1>=fu)? f1-fu: f1);
+            for (ImpInt f2 = f1; f2 < f; f2++) {
+                const shared_ptr<ImpData> d2 = ((f2<fu)? U: V);
+                const ImpInt fj = ((f2>=fu)? f2-fu: f2);
+                const ImpInt f12 = index_vec(f1, f2, f);
+                init_pair(f12, fi, fj, d1, d2);
+            }
         }
     }
+    else {
+        for (ImpInt f1 = 0; f1 < fu; f1++) {
+            const shared_ptr<ImpData> d1 = U;
+            const ImpInt fi = f1;
+            for (ImpInt f2 = fu; f2 < f; f2++) {
+                const shared_ptr<ImpData> d2 = V;
+                const ImpInt fj = f2-fu;
+                const ImpInt f12 = index_vec(f1, f2, f);
+                init_pair(f12, fi, fj, d1, d2);
+            }
+        }
+    }
+
 
     cache_sasb();
     if (param->self_side)
@@ -919,6 +936,8 @@ void ImpProblem::validate() {
             const ImpInt fj = ((f2>=fu)? f2-fu: f2);
 
             const ImpInt f12 = index_vec(f1, f2, f);
+            if(!param->self_side && (f1>=fu || f2 < fu))
+                continue;
             UTX(d1->Xs[fi], d1->m, W[f12], Pva[f12]);
             UTX(d2->Xs[fj], d2->m, H[f12], Qva[f12]);
         }
@@ -1026,7 +1045,6 @@ void ImpProblem::solve() {
         if (!Uva->file_name.empty() && iter % 5 == 0) {
             validate();
             print_epoch_info(iter);
-            //cout << setprecision(8) << "func: " << func() << endl;
         }
     }
 }
@@ -1086,6 +1104,8 @@ ImpDouble ImpProblem::func() {
             ImpDouble y_hat = 0;
             for(ImpInt f1 = 0; f1 < f; f1++){
                 for(ImpInt f2 = f1; f2 < f; f2++){
+                    if(!param->self_side && (f1>=fu || f2 < fu))
+                        continue;
                     y_hat += pq(i, j, f1, f2);
                 }
             }
@@ -1103,12 +1123,15 @@ ImpDouble ImpProblem::func() {
         }
     }
 
+    ImpDouble reg = 0;
     for(ImpInt f1 = 0; f1 < f; f1++) {
         for(ImpInt f2 = f1; f2 < f; f2++) {
-            res += reg_block(f1, f2);
+            if(!param->self_side && (f1>=fu || f2 < fu))
+                continue;
+            reg += reg_block(f1, f2);
         }
     }
-    return 0.5*res;
+    //ImpDouble obj = 0.5*(res+reg);
+    //cout << setprecision(8) << "loss: " << res << " reg: " << reg << " func: " << obj;
+    return 0.5*(res+reg);
 }
-
-
