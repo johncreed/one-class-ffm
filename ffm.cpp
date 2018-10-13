@@ -1051,15 +1051,6 @@ ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, cons
     return inner(qp, pp, k);
 }
 
-ImpDouble ImpProblem::norm_block(const ImpInt &f1,const ImpInt &f2) {
-    const ImpInt f12 = index_vec(f1, f2, f);
-    const Vec &W1 = W[f12], H1 = H[f12];
-    ImpDouble res = 0;
-    res += inner(W1.data(), W1.data(), W1.size());
-    res += inner(H1.data(), H1.data(), H1.size());
-    return res;
-}
-
 ImpDouble ImpProblem::reg_block(const ImpInt &f1,const ImpInt &f2) {
     const ImpInt f12 = index_vec(f1, f2, f);
     const Vec &W1 = W[f12], H1 = H[f12];
@@ -1125,7 +1116,7 @@ ImpDouble ImpProblem::func() {
             reg += reg_block(f1, f2);
         }
     }
-    //ImpDouble obj = 0.5*(res+reg);
-    //cout << setprecision(8) << "loss: " << res << " reg: " << reg << " func: " << obj;
+    ImpDouble obj = 0.5*(res+reg);
+    cout << setprecision(8) << "loss: " << res << " reg: " << reg << " func: " << obj << endl;
     return 0.5*(res+reg);
 }

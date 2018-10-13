@@ -109,7 +109,6 @@ private:
     void UTX(const vector<Node*> &X, ImpLong m1, const Vec &A, Vec &C);
     void QTQ(const Vec &C, const ImpLong &l);
     ImpDouble pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
-    ImpDouble norm_block(const ImpInt &f1,const ImpInt &f2);
     ImpDouble reg_block(const ImpInt &f1,const ImpInt &f2);
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
