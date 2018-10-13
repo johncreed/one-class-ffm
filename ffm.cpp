@@ -1037,6 +1037,7 @@ void ImpProblem::solve() {
         if (!Uva->file_name.empty() && iter % 5 == 0) {
             validate();
             print_epoch_info(iter);
+            //cout << setprecision(8) << "func: " << func() << endl;
         }
     }
 }
@@ -1050,14 +1051,44 @@ ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, cons
 }
 
 ImpDouble ImpProblem::norm_block(const ImpInt &f1,const ImpInt &f2) {
-    ImpInt f12 = index_vec(f1, f2, f);
-    Vec &W1 = W[f12], H1 = H[f12];
+    const ImpInt f12 = index_vec(f1, f2, f);
+    const Vec &W1 = W[f12], H1 = H[f12];
     ImpDouble res = 0;
     res += inner(W1.data(), W1.data(), W1.size());
     res += inner(H1.data(), H1.data(), H1.size());
     return res;
 }
 
+ImpDouble ImpProblem::reg_block(const ImpInt &f1,const ImpInt &f2) {
+    const ImpInt f12 = index_vec(f1, f2, f);
+    const Vec &W1 = W[f12], H1 = H[f12];
+    ImpDouble res = 0;
+    if(param->freq) {
+        const ImpInt fi = (f1 < fu)? f1:f1-fu;
+        const ImpLong df1 = (f1 < fu)? U->Ds[fi]:V->Ds[fi];
+        const vector<ImpLong> &freq1 = (f1 < fu)? U->freq[fi]:V->freq[fi];
+        assert( df1 == freq1.size());
+
+        const ImpInt fj = (f2 < fu)? f2:f2-fu;
+        const ImpLong df2 = (f2 < fu)? U->Ds[fj]:V->Ds[fj];
+        const vector<ImpLong> &freq2 = (f2 < fu)? U->freq[fj]:V->freq[fj];
+        assert ( df2 == freq2.size());
+
+        for(ImpLong i = 0; i < df1; i++) {
+            const ImpDouble *pw = W1.data()+i*k;
+            res += lambda*ImpDouble(freq1[i])*inner(pw, pw, k);
+        }
+        for(ImpLong i = 0; i < df2; i++) {
+            const ImpDouble *ph = H1.data()+i*k;
+            res += lambda*ImpDouble(freq2[i])*inner(ph, ph, k);
+        }
+    }
+    else {
+        res += lambda*inner(W1.data(), W1.data(), W1.size());
+        res += lambda*inner(H1.data(), H1.data(), H1.size());
+    }
+    return res;
+}
 
 ImpDouble ImpProblem::func() {
     ImpDouble res = 0;
@@ -1084,8 +1115,8 @@ ImpDouble ImpProblem::func() {
     }
 
     for(ImpInt f1 = 0; f1 < f; f1++) {
-        for(ImpInt f2 = f1; f2 < f; f2++){
-            res += lambda*norm_block(f1, f2);
+        for(ImpInt f2 = f1; f2 < f; f2++) {
+            res += reg_block(f1, f2);
         }
     }
     return 0.5*res;
