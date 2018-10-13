@@ -56,7 +56,6 @@ public:
     vector<Node> M, N;
     vector<Node*> X, Y;
 
-
     vector<vector<Node>> Ns;
     vector<vector<Node*>> Xs;
     vector<ImpLong> Ds;
@@ -111,6 +110,7 @@ private:
     void QTQ(const Vec &C, const ImpLong &l);
     ImpDouble pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
     ImpDouble norm_block(const ImpInt &f1,const ImpInt &f2);
+    ImpDouble reg_block(const ImpInt &f1,const ImpInt &f2);
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
     void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
