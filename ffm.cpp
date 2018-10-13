@@ -56,17 +56,10 @@ const ImpInt index_vec(const ImpInt f1, const ImpInt f2, const ImpInt f) {
 
 ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)
 {
-    __m128d XMM = _mm_setzero_pd();
-    for(ImpInt d = 0; d < k; d += 2)
-        XMM = _mm_add_pd(XMM, _mm_mul_pd(
-                  _mm_load_pd(p+d), _mm_load_pd(q+d)));
-    XMM = _mm_hadd_pd(XMM, XMM);
-    ImpDouble product;
-    _mm_store_sd(&product, XMM);
-    return product;
+    return cblas_ddot(k, p, 1, q, 1);
 }
 
-void hadmard_product(const Vec &V1, const Vec &V2, const ImpInt &row,
+void row_wise_inner(const Vec &V1, const Vec &V2, const ImpInt &row,
         const ImpInt &col,const ImpDouble &alpha, Vec &vv){
     const ImpDouble *v1p = V1.data(), *v2p = V2.data();
 
@@ -396,10 +389,10 @@ void ImpProblem::init_y_tilde() {
 
 void ImpProblem::update_side(const bool &sub_type, const Vec &S
         , const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
-    // Update W1 and P1
-    axpy( S.data(), W1.data(), S.size(), 1);
+    
     const ImpLong m1 = (sub_type)? m : n;
-    UTX(X12, m1, W1, P1);
+    // Update W1
+    axpy( S.data(), W1.data(), S.size(), 1);
 
     // Update y_tilde and pq
     Vec &a1 = (sub_type)? a:b;
@@ -409,7 +402,8 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     Vec gaps(m1, 0);
     Vec XS(P1.size(), 0);
     UTX(X12, m1, S, XS);
-    hadmard_product(XS, Q1, m1, k, 1, gaps);
+    axpy( XS.data(), P1.data(), XS.size(), 1);
+    row_wise_inner(XS, Q1, m1, k, 1, gaps);
 
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < U1->m; i++) {
@@ -431,13 +425,13 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
         const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
     axpy( S.data(), W1.data(), S.size(), 1);
     const ImpLong m1 = (sub_type)? m : n;
-    UTX(X12, m1, W1, P1);
 
     shared_ptr<ImpData> U1 = (sub_type)? U:V;
     shared_ptr<ImpData> V1 = (sub_type)? V:U;
 
     Vec XS(P1.size(), 0);
     UTX(X12, m1, S, XS);
+    axpy( XS.data(), P1.data(), P1.size(), 1);
 
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < U1->m; i++) {
