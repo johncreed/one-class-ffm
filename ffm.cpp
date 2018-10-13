@@ -556,17 +556,6 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
         axpy( W1.data(), G.data(), G.size(), lambda);
     }
 
-    if(param->freq){
-        const vector<ImpLong> &freq = U1->freq[fi];
-        const ImpLong df1 = U1->Ds[fi];
-        assert( df1 == freq.size());
-        for(ImpLong i = 0; i < df1; i++)
-            axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[i]));
-    }
-    else{
-        axpy( W1.data(), G.data(), G.size(), lambda);
-    }
-
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
