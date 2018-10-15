@@ -2,15 +2,40 @@
 
 case $1 in
   0)
+    # Ext & logs_pth
+    ext=mf-mf-ns
+    logs_pth=logs/${ext}
     # Data
     tr=ob.tr.mf.ffm
     te=ob.te.sub.mf.ffm
     item=item.mf.ffm
     # Var
     k=128
-    # extension & logs_pth
-    ext=mf-mf-ns
+    ns='--ns'
+    ;;
+  1)
+    # Ext & logs_pth
+    ext=mf-ffm-ns
     logs_pth=logs/${ext}
+    # Data
+    tr=ob.tr.mf.ffm
+    te=ob.te.sub.mf.ffm
+    item=item.ffm
+    # Var
+    k=128
+    ns='--ns'
+    ;;
+  2)
+    # Ext & logs_pth
+    ext=mf-ffm
+    logs_pth=logs/${ext}
+    # Data
+    tr=ob.tr.mf.ffm
+    te=ob.te.sub.mf.ffm
+    item=item.ffm
+    # Var
+    k=128
+    ns=''
     ;;
   *)
     echo "No match"
@@ -18,16 +43,17 @@ case $1 in
 esac
 
 # Create logs_pth
-mkdir -p logs_pth
+echo "Do $ext"
+mkdir -p $logs_pth
 
 # w in 0.00390625 0.001953125 0.0009765625 0.00048828125
 # l in 0.25 1 4 16
 task(){
   for w in 0.00390625 0.001953125 0.0009765625 0.00048828125
   do
-      for l in 4
+      for l in 1
       do
-        echo "./train -k $k -l $l -t 46 -r -1 -w $w --ns -c 12 -p ${te} ${item} ${tr} > $logs_pth/${tr}.$l.$w.${ext}"
+        echo "./train -k $k -l $l -t 46 -r -1 -w $w $ns -c 12 -p ${te} ${item} ${tr} > $logs_pth/${tr}.$l.$w.${ext}"
       done
   done
 }
