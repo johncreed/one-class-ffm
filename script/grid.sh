@@ -63,7 +63,7 @@ case $1 in
     te=user.va.fm
     item=ad.fm
     # Var
-    k=16
+    k=32
     ns=''
     t=200
     logs_pth=logs/${name}.${k}/${ext}
@@ -77,13 +77,13 @@ esac
 echo "Do $ext"
 mkdir -p $logs_pth
 
-# 2^-2, 2^-7
-# w in 0.25 0.125 0.0625 0.03125 0.015625 0.0078125
+# 2^0, 2^-7
+# w in 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125
 # 2^-8~-11
 # w in 0.00390625 0.001953125 0.0009765625 0.00048828125
 # l in 0.25 1 4 16
 task(){
-  for w in 0.25 0.125  
+  for w in 1 0.5 
   do
       for l in 4
       do
