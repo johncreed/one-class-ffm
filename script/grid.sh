@@ -54,6 +54,20 @@ case $1 in
     t=200
     logs_pth=logs/${name}.${k}/${ext}
     ;;
+  4)
+    # Ext & logs_pth
+    ext=fm-fm
+    # Data
+    name=kdd12
+    tr=user.tr.fm
+    te=user.va.fm
+    item=ad.fm
+    # Var
+    k=16
+    ns=''
+    t=200
+    logs_pth=logs/${name}.${k}/${ext}
+    ;;
   *)
     echo "No match"
     exit
