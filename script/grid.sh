@@ -76,5 +76,6 @@ task(){
 }
 
 # Number of parameter set do in once.
-num_core=2
+echo -n "Number of param run at once: "
+read num_core
 task | xargs -d '\n' -P $num_core -I {} sh -c {} &
