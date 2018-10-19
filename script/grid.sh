@@ -7,7 +7,7 @@ case $1 in
     # Data
     name=ob
     tr=ob.tr.ffm
-    te=ob.va.ffm
+    te=ob.va.sub.ffm
     item=item.ffm
     # Var
     k=32
@@ -21,7 +21,7 @@ case $1 in
     # Data
     name=ob
     tr=ob.tr.fm
-    te=ob.va.fm
+    te=ob.va.sub.fm
     item=item.fm
     # Var
     k=32
@@ -72,7 +72,7 @@ mkdir -p $logs_pth
 # w in 0.00390625 0.001953125 0.0009765625 0.00048828125
 # l in 0.25 1 4 16
 task(){
-  for w in 0.001953125 
+  for w in 0.00390625 0.001953125 
   do
       for l in 4
       do
