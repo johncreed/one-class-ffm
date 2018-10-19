@@ -39,6 +39,7 @@ def convert2ffm( o_f, i_f ):
         print(output,file=svm_f)
 
 if __name__ == '__main__':
-    convert2ffm('ob.tr.mf', 'ob.map.tr.csv')
-    convert2ffm('ob.te.mf', 'ob.map.te.csv')
+    convert2ffm('ob.tr.mf', 'ob.tr.csv')
+    convert2ffm('ob.te.mf', 'ob.te.csv')
+    convert2ffm('ob.va.mf', 'ob.va.csv')
 

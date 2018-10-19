@@ -1,14 +1,25 @@
+#! /usr/bin/python3
+import random as rd
 import sys
-from random import random
 
+if len(sys.argv) != 2:
+    print("./split file")
+    sys.exit()
 
-ratio = 0.1
-a = sys.argv[1]
+prc_filename = lambda x : (x[:x.rfind(".")] ,x[x.rfind(".")+1:])
+name_tpl = prc_filename(sys.argv[1])
 
+sub = open("{}.sub.{}".format(name_tpl[0], name_tpl[1]),"w")
 
-c = 0
-_file = open(a)
-for i in _file:
-    if c%10 == 0:
-        print i.strip()
-    c+=1
+if __name__ == "__main__":
+    try:
+        f = open(sys.argv[1], "r")
+    except IOError:
+        print("File not found.")
+        sys.exit()
+    rd.seed(0)
+    num = 0
+    for line in f:
+        num = rd.randint(0, 9)
+        if num == 0 or num == 1:
+            sub.write(line)
