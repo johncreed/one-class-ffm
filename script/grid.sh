@@ -3,42 +3,31 @@
 case $1 in
   0)
     # Ext & logs_pth
-    ext=mf-mf-ns
-    logs_pth=logs/${ext}
+    ext=ffm-ffm
     # Data
-    tr=ob.tr.mf.ffm
-    te=ob.te.sub.mf.ffm
-    item=item.mf.ffm
+    name=ob
+    tr=ob.tr.ffm
+    te=ob.va.sub.ffm
+    item=item.ffm
     # Var
-    k=128
-    ns='--ns'
-    t=46
+    k=32
+    ns=''
+    t=200
+    logs_pth=logs/${name}.${k}/${ext}
     ;;
   1)
     # Ext & logs_pth
-    ext=mf-ffm-ns
-    logs_pth=logs/${ext}
+    ext=fm-fm
     # Data
-    tr=ob.tr.mf.ffm
-    te=ob.te.sub.mf.ffm
-    item=item.ffm
+    name=ob
+    tr=ob.tr.fm
+    te=ob.va.sub.fm
+    item=item.fm
     # Var
-    k=128
-    ns='--ns'
-    t=46
-    ;;
-  2)
-    # Ext & logs_pth
-    ext=mf-ffm
-    logs_pth=logs/${ext}
-    # Data
-    tr=ob.tr.mf.ffm
-    te=ob.te.sub.mf.ffm
-    item=item.ffm
-    # Var
-    k=128
+    k=32
     ns=''
-    t=46
+    t=200
+    logs_pth=logs/${name}.${k}/${ext}
     ;;
   3)
     # Ext & logs_pth
@@ -83,7 +72,7 @@ mkdir -p $logs_pth
 # w in 0.00390625 0.001953125 0.0009765625 0.00048828125
 # l in 0.25 1 4 16
 task(){
-  for w in 1 0.5 
+  for w in 0.00390625 0.001953125 
   do
       for l in 4
       do
