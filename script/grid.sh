@@ -123,24 +123,28 @@ set_up_solve_type(){
 choose_w_list(){
 # 2^0 ~ 2^-11
 w_all=(1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 0.0009765625 0.00048828125)
-  for i in ${!w_all[@]};
-  do
-    printf "%s: %s(2^-%s)\n" "$i" "${w_all[$i]}" "$i"
-  done
-  w_train=()
-  while true;
-  do
-    echo -n "select idx: "
-    read idx
-    if [ $idx -eq -1 ]
-    then
-      break
-    fi
-    w_train+=(${w_all[${idx}]})
-  done
+w_train=()
 
-  echo -n "w list = [ "
-  echo ${w_train[@]}]
+# Print w_all
+for i in ${!w_all[@]};
+do
+  printf "%s: %s(2^-%s)\n" "$i" "${w_all[$i]}" "$i"
+done
+
+# Create w_train
+while true;
+do
+  echo -n "select idx: "
+  read idx
+  if [ $idx -eq -1 ]
+  then
+    break
+  fi
+  w_train+=(${w_all[${idx}]})
+done
+
+echo -n "w list = [ "
+echo ${w_train[@]}]
 }
 
 
@@ -169,7 +173,11 @@ log_path: ${logs_pth}"
 }
 
 grid(){
+# Empty .task_file.tmp
+echo -n "" > .task_file.tmp
 
+while true
+do
   # Choose solve type
   clear
   list_solve_type
@@ -188,25 +196,46 @@ grid(){
   list_param
   echo "===All cmd to run==="
   task
-
-  # Number of parameter set do in once.
-  echo -n "Number of param run at once: "
-  read num_core
-  echo "++++++++++++++++++++++++++"
-
-  # Start or not
-  echo -n "Start ? [y/n]"
+  echo -n "Save current setting to .task_file.tmp? [y/n] "
   read std
-  echo "++++++++++++++++++++++++++"
   if [[ $std =~ y ]]
   then
+    task >> .task_file.tmp
     # Create logs_pth
     mkdir -p $logs_pth
-    echo "run"
-    task | xargs -d '\n' -P $num_core -I {} sh -c {} &
-  else
-    echo "no run"
   fi
+  
+
+  # Start or not
+  echo -n "Continue? [y/n] "
+  read std
+  if [[ $std =~ n ]]
+  then
+    break
+  fi
+done
+
+# Number of parameter set do in once.
+echo -n "Number of param run at once: "
+read num_core
+echo "++++++++++++++++++++++++++"
+
+# Check all command
+clear
+echo "===All run settings==="
+cat .task_file.tmp
+echo "====================="
+
+echo -n "Start ? [y/n] "
+read std
+if [[ $std =~ y ]]
+then
+  echo "run"
+  cat .task_file.tmp | xargs -d '\n' -P $num_core -I {} sh -c {} &
+else
+  echo "no run"
+fi
+
 }
 
 grid
