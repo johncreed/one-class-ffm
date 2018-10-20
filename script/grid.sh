@@ -24,7 +24,7 @@ case $1 in
     te=ob.va.sub.fm
     item=item.fm
     # Var
-    k=64
+    k=128
     ns=''
     t=80
     logs_pth=logs/${name}.${k}/${ext}
