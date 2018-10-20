@@ -10,10 +10,9 @@ case $1 in
     te=ob.va.sub.ffm
     item=item.ffm
     # Var
-    k=64
+    k=128
     ns=''
     t=70
-    logs_pth=logs/${name}.${k}/${ext}
     ;;
   1)
     # Ext & logs_pth
@@ -27,7 +26,6 @@ case $1 in
     k=128
     ns=''
     t=70
-    logs_pth=logs/${name}.${k}/${ext}
     ;;
   2)
     # Ext & logs_pth
@@ -41,7 +39,6 @@ case $1 in
     k=128
     ns=''
     t=70
-    logs_pth=logs/${name}.${k}/${ext}
     ;;
   3)
     # Ext & logs_pth
@@ -55,7 +52,6 @@ case $1 in
     k=32
     ns=''
     t=200
-    logs_pth=logs/${name}.${k}/${ext}
     ;;
   4)
     # Ext & logs_pth
@@ -69,7 +65,6 @@ case $1 in
     k=64
     ns=''
     t=200
-    logs_pth=logs/${name}.${k}/${ext}
     ;;
   5)
     # Ext & logs_pth
@@ -83,12 +78,12 @@ case $1 in
     k=128
     ns=''
     t=200
-    logs_pth=logs/${name}.${k}/${ext}
     ;;
   *)
     echo "No match"
     exit
 esac
+logs_pth=logs/${name}.${k}/${ext}${ns}
 
 # 2^0 ~ 2^-11
 w_all=(1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 0.0009765625 0.00048828125)
