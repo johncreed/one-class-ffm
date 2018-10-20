@@ -12,7 +12,7 @@ case $1 in
     # Var
     k=64
     ns=''
-    t=80
+    t=70
     logs_pth=logs/${name}.${k}/${ext}
     ;;
   1)
@@ -24,9 +24,23 @@ case $1 in
     te=ob.va.sub.fm
     item=item.fm
     # Var
-    k=64
+    k=128
     ns=''
-    t=80
+    t=70
+    logs_pth=logs/${name}.${k}/${ext}
+    ;;
+  2)
+    # Ext & logs_pth
+    ext=mf-mf
+    # Data
+    name=ob
+    tr=ob.tr.mf
+    te=ob.va.sub.mf
+    item=item.mf
+    # Var
+    k=128
+    ns=''
+    t=70
     logs_pth=logs/${name}.${k}/${ext}
     ;;
   3)
@@ -38,7 +52,7 @@ case $1 in
     te=user.va.ffm
     item=ad.ffm
     # Var
-    k=64
+    k=32
     ns=''
     t=200
     logs_pth=logs/${name}.${k}/${ext}
@@ -53,6 +67,20 @@ case $1 in
     item=ad.fm
     # Var
     k=64
+    ns=''
+    t=200
+    logs_pth=logs/${name}.${k}/${ext}
+    ;;
+  5)
+    # Ext & logs_pth
+    ext=mf-mf
+    # Data
+    name=kdd12
+    tr=user.tr.mf
+    te=user.va.mf
+    item=ad.mf
+    # Var
+    k=128
     ns=''
     t=200
     logs_pth=logs/${name}.${k}/${ext}
