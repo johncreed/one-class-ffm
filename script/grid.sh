@@ -12,6 +12,16 @@ echo -n "sovle (0~5): "
 read solve_type
 }
 
+set_ns(){
+echo -n "Do --ns ? [y/n]: "
+read ns_bool
+if [[ $ns_bool =~ y ]]
+then
+  ns='--ns'
+else
+  ns=''
+fi
+}
 
 set_up_solve_type(){
   echo -n "latent vector size(k): "
@@ -28,7 +38,7 @@ set_up_solve_type(){
       te=ob.va.sub.${tr_ext}
       item=item.${i_ext}
       # Var
-      ns=''
+      set_ns
       t=70
       ext=${tr_ext}-${i_ext}${ns}
       ;;
@@ -42,7 +52,7 @@ set_up_solve_type(){
       te=ob.va.sub.${tr_ext}
       item=item.${i_ext}
       # Var
-      ns=''
+      set_ns
       t=70
       ext=${tr_ext}-${i_ext}${ns}
       ;;
@@ -70,7 +80,7 @@ set_up_solve_type(){
       te=user.va.${tr_ext}
       item=ad.${i_ext}
       # Var
-      ns=''
+      set_ns
       t=200
       ext=${tr_ext}-${i_ext}${ns}
       ;;
@@ -84,7 +94,7 @@ set_up_solve_type(){
       te=user.va.${tr_ext}
       item=ad.${i_ext}
       # Var
-      ns=''
+      set_ns
       t=200
       ext=${tr_ext}-${i_ext}${ns}
       ;;
