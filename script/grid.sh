@@ -10,9 +10,9 @@ case $1 in
     te=ob.va.sub.ffm
     item=item.ffm
     # Var
-    k=32
+    k=64
     ns=''
-    t=200
+    t=70
     logs_pth=logs/${name}.${k}/${ext}
     ;;
   1)
@@ -24,9 +24,23 @@ case $1 in
     te=ob.va.sub.fm
     item=item.fm
     # Var
-    k=32
+    k=128
     ns=''
-    t=200
+    t=70
+    logs_pth=logs/${name}.${k}/${ext}
+    ;;
+  2)
+    # Ext & logs_pth
+    ext=mf-mf
+    # Data
+    name=ob
+    tr=ob.tr.mf
+    te=ob.va.sub.mf
+    item=item.mf
+    # Var
+    k=128
+    ns=''
+    t=70
     logs_pth=logs/${name}.${k}/${ext}
     ;;
   3)
@@ -38,7 +52,7 @@ case $1 in
     te=user.va.ffm
     item=ad.ffm
     # Var
-    k=16
+    k=32
     ns=''
     t=200
     logs_pth=logs/${name}.${k}/${ext}
@@ -52,7 +66,21 @@ case $1 in
     te=user.va.fm
     item=ad.fm
     # Var
-    k=32
+    k=64
+    ns=''
+    t=200
+    logs_pth=logs/${name}.${k}/${ext}
+    ;;
+  5)
+    # Ext & logs_pth
+    ext=mf-mf
+    # Data
+    name=kdd12
+    tr=user.tr.mf
+    te=user.va.mf
+    item=ad.mf
+    # Var
+    k=128
     ns=''
     t=200
     logs_pth=logs/${name}.${k}/${ext}
@@ -62,17 +90,34 @@ case $1 in
     exit
 esac
 
-# Create logs_pth
-echo "Do $ext"
-mkdir -p $logs_pth
+# 2^0 ~ 2^-11
+w_all=(1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 0.0009765625 0.00048828125)
 
-# 2^0, 2^-7
-# w in 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125
-# 2^-8~-11
-# w in 0.00390625 0.001953125 0.0009765625 0.00048828125
+choose_w_list(){
+  for i in ${!w_all[@]};
+  do
+    printf "%s: %s(2^-%s)\n" "$i" "${w_all[$i]}" "$i"
+  done
+  w_train=()
+  while true;
+  do
+    echo -n "select idx: "
+    read idx
+    if [ $idx -eq -1 ]
+    then
+      break
+    fi
+    w_train+=(${w_all[${idx}]})
+  done
+
+  echo -n "w choosed: "
+  echo ${w_train[@]}
+}
+
+
 # l in 0.25 1 4 16
 task(){
-  for w in 0.00390625 0.001953125 
+  for w in ${w_train[@]} 
   do
       for l in 4
       do
@@ -81,7 +126,36 @@ task(){
   done
 }
 
-# Number of parameter set do in once.
-echo -n "Number of param run at once: "
-read num_core
-task | xargs -d '\n' -P $num_core -I {} sh -c {} &
+grid(){
+  
+  # Create logs_pth
+  echo "===Data: $name solve: $ext==="
+  mkdir -p $logs_pth
+  echo "++++++++++++++++++++++++++"
+  
+  # Set w range
+  echo "===Set w range, -1 to exit==="
+  choose_w_list
+  echo "++++++++++++++++++++++++++"
+  
+  # Number of parameter set do in once.
+  echo -n "Number of param run at once: "
+  read num_core
+  echo "++++++++++++++++++++++++++"
+  
+  # Check the right command
+  echo "===All cmd to run==="
+  task
+  echo -n "Start ? [y/n]"
+  read std
+  echo "++++++++++++++++++++++++++"
+  if [[ $std =~ y ]]
+  then
+    echo "run"
+    task | xargs -d '\n' -P $num_core -I {} sh -c {} &
+  else
+    echo "no run"
+  fi
+}
+
+grid
