@@ -938,7 +938,8 @@ void ImpProblem::validate() {
     ImpDouble ploss = 0;
 #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
-        Vec z(bt);
+        //Vec z(bt);
+        Vec z(V->m, 0);
         pred_z(i, z.data());
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
@@ -970,13 +971,15 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<I
 #ifdef EBUG
     cout << i << ":";
 #endif
+    ImpDouble min_z_val = *min_element(z,z+n);
     for (ImpInt state = 0; state < nr_k; state++) {
         while(valid_count < top_k[state]) {
             ImpLong argmax = distance(z, max_element(z, z+n));
 #ifdef EBUG
             cout << argmax << " ";
 #endif
-            z[argmax] = MIN_Z;
+            //z[argmax] = MIN_Z;
+            z[argmax] = min_z_val;
             for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {
                 if (argmax == nd->idx) {
                     hit_count[state]++;
