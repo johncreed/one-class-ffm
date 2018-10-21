@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "ffm.h"
+#include <fenv.h>
 
 struct Option {
     shared_ptr<Parameter> param;
@@ -158,7 +159,8 @@ Option parse_option(int argc, char **argv)
 }
 
 int main(int argc, char *argv[])
-{
+{   
+    feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT & ~FE_UNDERFLOW);
     try
     {
         Option option = parse_option(argc, argv);
