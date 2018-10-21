@@ -39,7 +39,7 @@ void mm(const ImpDouble *a, const ImpDouble *b, ImpDouble *c,
 }
 
 void mm(const ImpDouble *a, const ImpDouble *b, ImpDouble *c,
-        const ImpLong k, const ImpInt l) {
+        const ImpLong k, const ImpLong l) {
     cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
             k, k, l, 1, a, k, b, k, 0, c, k);
 }
@@ -59,8 +59,8 @@ ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)
     return cblas_ddot(k, p, 1, q, 1);
 }
 
-void row_wise_inner(const Vec &V1, const Vec &V2, const ImpInt &row,
-        const ImpInt &col,const ImpDouble &alpha, Vec &vv){
+void row_wise_inner(const Vec &V1, const Vec &V2, const ImpLong &row,
+        const ImpLong &col,const ImpDouble &alpha, Vec &vv){
     const ImpDouble *v1p = V1.data(), *v2p = V2.data();
 
     #pragma omp parallel for schedule(guided)
