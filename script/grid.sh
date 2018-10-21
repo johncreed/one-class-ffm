@@ -75,9 +75,9 @@ set_up_solve_type(){
       tr_ext=ffm
       i_ext=ffm
       # Data
-      name=kdd12
-      tr=user.tr.${tr_ext}
-      te=user.va.${tr_ext}
+      name=kdd12.shuf
+      tr=user.shuf.tr.${tr_ext}
+      te=user.shuf.va.${tr_ext}
       item=ad.${i_ext}
       # Var
       set_ns
@@ -89,9 +89,9 @@ set_up_solve_type(){
       tr_ext=fm
       i_ext=fm
       # Data
-      name=kdd12
-      tr=user.tr.${tr_ext}
-      te=user.va.${tr_ext}
+      name=kdd12.shuf
+      tr=user.shuf.tr.${tr_ext}
+      te=user.shuf.va.${tr_ext}
       item=ad.${i_ext}
       # Var
       set_ns
@@ -103,9 +103,9 @@ set_up_solve_type(){
       tr_ext=mf
       i_ext=mf
       # Data
-      name=kdd12
-      tr=user.tr.${tr_ext}
-      te=user.va.${tr_ext}
+      name=kdd12.shuf
+      tr=user.shuf.tr.${tr_ext}
+      te=user.shuf.va.${tr_ext}
       item=ad.${i_ext}
       # Var
       ns='--ns'
