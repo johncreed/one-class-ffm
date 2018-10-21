@@ -1,3 +1,7 @@
+# ctag
+tag
+tags
+
 # Prerequisites
 *.d
 
@@ -30,6 +34,37 @@
 *.exe
 *.out
 *.app
+train
 
 # Vim swp
 *.swp
+
+# Data
+ad.ffm
+ad.fm
+ad.mf
+item.ffm
+item.fm
+item.mf
+ob.te.ffm
+ob.tr.ffm
+ob.va.ffm
+ob.te.fm
+ob.tr.fm
+ob.va.fm
+ob.te.mf
+ob.tr.mf
+ob.va.mf
+ob.va.sub.ffm
+ob.va.sub.fm
+ob.va.sub.mf
+user.te.ffm
+user.te.fm
+user.te.mf
+user.tr.ffm
+user.tr.fm
+user.tr.mf
+user.va.ffm
+user.va.fm
+user.va.mf
+

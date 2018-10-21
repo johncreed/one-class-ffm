@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-PATH = 'item.filter.csv'
+PATH = 'ad_filter.csv'
 import csv
 
 # Field 1, 2

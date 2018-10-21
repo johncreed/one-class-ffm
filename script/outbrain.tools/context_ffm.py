@@ -4,7 +4,7 @@ import csv
 
 # Field 1, 2
 keys1 = ['platform', 'geo_location']
-keys2 = ['source_id', 'publisher_id', 'document_id']
+keys2 = ['source_id', 'publisher_id', 'document_id_x']
 
 feat_dict = {}
 incr_num1 = -1
@@ -74,6 +74,7 @@ def convert2ffm( o_f, i_f ):
         print(output,file=svm_f)
 
 if __name__ == '__main__':
-    convert2ffm('ob.tr.ffm', 'ob.map.tr.csv')
-    convert2ffm('ob.te.ffm', 'ob.map.te.csv')
+    convert2ffm('ob.tr.ffm', 'ob.tr.csv')
+    convert2ffm('ob.te.ffm', 'ob.te.csv')
+    convert2ffm('ob.va.ffm', 'ob.va.csv')
 
