@@ -53,6 +53,7 @@ class ImpData {
 public:
     string file_name;
     ImpLong m, n, f, nnz_x, nnz_y;
+    vector<ImpLong> nnx, nny;
     vector<Node> M, N;
     vector<Node*> X, Y;
 
@@ -61,6 +62,7 @@ public:
     vector<vector<Node*>> Xs;
     vector<ImpLong> Ds;
     vector<vector<ImpLong>> freq;
+    vector<ImpDouble> popular;
 
     ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
     void read(bool has_label, const ImpLong* ds=nullptr);

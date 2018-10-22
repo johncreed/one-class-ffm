@@ -119,9 +119,14 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
     if (has_label) {
         nnz_y = y_nnz;
         M.resize(y_nnz);
+        popular.resize(n);
+        fill(popular.begin(), popular.end(), 0);
     }
 
-    vector<ImpInt> nnx(m, 0), nny(m, 0);
+    nnx.resize(m);
+    nny.resize(m);
+    fill(nnx.begin(), nnx.end(), 0);
+    fill(nny.begin(), nny.end(), 0);
 
     ImpLong nnz_i=0, nnz_j=0, i=0;
 
@@ -135,6 +140,7 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
                 nnz_j++;
                 ImpLong idx = stoi(label_str);
                 M[nnz_j-1].idx = idx;
+                popular[idx] += 1;
             }
             nny[i] = nnz_j;
         }
@@ -161,6 +167,17 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         for (ImpLong i = 0; i < m; i++) {
             Y[i+1] = M.data() + nny[i];
         }
+    }
+
+    ImpDouble sum = 0;
+    for (auto &n : popular)
+        sum += n;
+    for (auto &n : popular)
+        n /= sum;
+
+    for (ImpLong i = m-1; i > 0; i--) {
+        nnx[i] -= nnx[i-1];
+        nny[i] -= nny[i-1];
     }
     fs.close();
 }
@@ -874,14 +891,14 @@ void ImpProblem::init_va(ImpInt size) {
 
     va_loss.resize(size);
     top_k.resize(size);
-    ImpInt start = 5;
+    ImpInt start = 1;
 
     cout << "iter";
     for (ImpInt i = 0; i < size; i++) {
         top_k[i] = start;
         cout.width(12);
         cout << "va_p@" << start;
-        start *= 2;
+        start += 1;
     }
     cout.width(12);
     cout << "ploss";
@@ -936,10 +953,22 @@ void ImpProblem::validate() {
     }
 
     ImpDouble ploss = 0;
+#ifdef EBUG
+    for (ImpLong i = 0; i < n; i++) {
+        cout << U->popular[i] << " ";
+    }
+    cout << endl;
+#endif
 #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
-        Vec z(bt);
-        pred_z(i, z.data());
+        Vec z;
+        if(Uva->nnx[i] == 0) {
+            z.assign(U->popular.begin(), U->popular.end());
+        }
+        else {
+            z.assign(bt.begin(), bt.end());
+            pred_z(i, z.data());
+        }
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
             ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
@@ -968,13 +997,13 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<I
     ImpInt num_th = omp_get_thread_num();
 
 #ifdef EBUG
-    cout << i << ":";
+    //cout << i << ":";
 #endif
     for (ImpInt state = 0; state < nr_k; state++) {
         while(valid_count < top_k[state]) {
             ImpLong argmax = distance(z, max_element(z, z+n));
 #ifdef EBUG
-            cout << argmax << " ";
+    //        cout << argmax << " ";
 #endif
             z[argmax] = MIN_Z;
             for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {
@@ -988,7 +1017,7 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<I
     }
 
 #ifdef EBUG
-    cout << endl;
+    //cout << endl;
 #endif
     for (ImpInt i = 1; i < nr_k; i++) {
         hit_count[i] += hit_count[i-1];
