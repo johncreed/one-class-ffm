@@ -891,14 +891,14 @@ void ImpProblem::init_va(ImpInt size) {
 
     va_loss.resize(size);
     top_k.resize(size);
-    ImpInt start = 1;
+    ImpInt start = 5;
 
     cout << "iter";
     for (ImpInt i = 0; i < size; i++) {
         top_k[i] = start;
         cout.width(12);
         cout << "va_p@" << start;
-        start += 1;
+        start *= 2;
     }
     cout.width(12);
     cout << "ploss";
