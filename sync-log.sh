@@ -1,1 +1,1 @@
-script/sync-log.sh
+script/logs.tools/sync-log.sh
