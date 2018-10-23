@@ -154,7 +154,7 @@ task(){
   do
       for l in 4
       do
-        echo "./train -k $k -l $l -t ${t} -r -1 -w $w $ns -c 12 -p ${te} ${item} ${tr} > $logs_pth/${tr}.$l.$w.${ext}"
+        echo "./train -k $k -l $l -t ${t} -r -1 -w $w $ns -c ${c} -p ${te} ${item} ${tr} > $logs_pth/${tr}.$l.$w.${ext}"
       done
   done
 }
@@ -189,6 +189,12 @@ do
   choose_w_list
   echo "++++++++++++++++++++++++++"
   
+  # Set -c option
+  clear
+  echo "===Set num core -c option==="
+  echo -n "-c = "
+  read c
+  
   # logs_pth
   
   # Check the right command
@@ -215,16 +221,16 @@ do
   fi
 done
 
-# Number of parameter set do in once.
-echo -n "Number of param run at once: "
-read num_core
-echo "++++++++++++++++++++++++++"
-
 # Check all command
 clear
 echo "===All run settings==="
 cat .task_file.tmp
 echo "====================="
+
+# Number of parameter set do in once.
+echo -n "Number of param run at once: "
+read num_core
+echo "++++++++++++++++++++++++++"
 
 echo -n "Start ? [y/n] "
 read std
