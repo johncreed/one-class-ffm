@@ -2,5 +2,5 @@
 
 git add logs/
 git commit -m "Update log"
-git pull origin master
-git push origin master
+git pull origin track_logs
+git push origin track_logs
