@@ -3,7 +3,7 @@ from __future__ import print_function
 import csv
 
 # Field mf
-keys1 = ['document_id']
+keys1 = ['uuid']
 
 feat_dict = {}
 incr_num1 = -1
