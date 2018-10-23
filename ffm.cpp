@@ -999,9 +999,10 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<I
 #ifdef EBUG
     //cout << i << ":";
 #endif
+    ImpLong max_z_idx = U->popular.size();
     for (ImpInt state = 0; state < nr_k; state++) {
         while(valid_count < top_k[state]) {
-            ImpLong argmax = distance(z, max_element(z, z+n));
+            ImpLong argmax = distance(z, max_element(z, z + max_z_idx));
 #ifdef EBUG
     //        cout << argmax << " ";
 #endif
