@@ -39,7 +39,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       set_ns
-      t=70
+      t=110
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     1)
@@ -53,7 +53,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       set_ns
-      t=70
+      t=110
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     2)
@@ -67,7 +67,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       ns='--ns'
-      t=70
+      t=110
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     3)
@@ -81,7 +81,7 @@ set_up_solve_type(){
       item=ad.${i_ext}
       # Var
       set_ns
-      t=200
+      t=300
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     4)
@@ -95,7 +95,7 @@ set_up_solve_type(){
       item=ad.${i_ext}
       # Var
       set_ns
-      t=200
+      t=300
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     5)
@@ -109,7 +109,7 @@ set_up_solve_type(){
       item=ad.${i_ext}
       # Var
       ns='--ns'
-      t=200
+      t=300
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     *)
