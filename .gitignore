@@ -2,6 +2,9 @@
 tag
 tags
 
+# task file
+.task_file.tmp
+
 # Prerequisites
 *.d
 
