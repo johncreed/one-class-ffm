@@ -2,12 +2,18 @@
 
 list_solve_type(){
 echo "=== Choose solve type ===
-0: ob, ffm-ffm
-1: ob, fm-fm
-2: ob, mf-mf-ns
-3: kdd, ffm-ffm
-4: kdd, fm-fm
-5: kdd, mf-mf--ns"
+0: ob, ffm-ffm      |
+1: ob, fm-fm        |
+2: ob, mf-mf-ns     |
+--------------------|
+3: kdd, ffm-ffm     |
+4: kdd, fm-fm       |
+5: kdd, mf-mf--ns   |
+--------------------|
+6: kkbox, ffm-ffm   |
+7: kkbox, fm-fm     |
+8: kkbox, mf-mf--ns |
+------------------"
 echo -n "sovle (0~5): "
 read solve_type
 }
@@ -107,6 +113,48 @@ set_up_solve_type(){
       tr=user.shuf.tr.${tr_ext}
       te=user.shuf.va.${tr_ext}
       item=ad.${i_ext}
+      # Var
+      ns='--ns'
+      t=300
+      ext=${tr_ext}-${i_ext}${ns}
+      ;;
+    6)
+      # Ext & logs_pth
+      tr_ext=ffm
+      i_ext=ffm
+      # Data
+      name=kkbox
+      tr=listener.tr.${tr_ext}
+      te=listener.va.${tr_ext}
+      item=top_song.${i_ext}
+      # Var
+      set_ns
+      t=300
+      ext=${tr_ext}-${i_ext}${ns}
+      ;;
+    7)
+      # Ext & logs_pth
+      tr_ext=fm
+      i_ext=fm
+      # Data
+      name=kkbox
+      tr=listener.tr.${tr_ext}
+      te=listener.va.${tr_ext}
+      item=top_song.${i_ext}
+      # Var
+      set_ns
+      t=300
+      ext=${tr_ext}-${i_ext}${ns}
+      ;;
+    8)
+      # Ext & logs_pth
+      tr_ext=mf
+      i_ext=mf
+      # Data
+      name=kkbox
+      tr=listener.tr.${tr_ext}
+      te=listener.va.${tr_ext}
+      item=top_song.${i_ext}
       # Var
       ns='--ns'
       t=300
