@@ -123,9 +123,9 @@ set_up_solve_type(){
       tr_ext=ffm
       i_ext=ffm
       # Data
-      name=kkbox-nohis
-      tr=listener.nohis.tr.${tr_ext}
-      te=listener.nohis.va.${tr_ext}
+      name=kkbox
+      tr=listener.tr.${tr_ext}
+      te=listener.va.${tr_ext}
       item=top_song.${i_ext}
       # Var
       set_ns
@@ -137,9 +137,9 @@ set_up_solve_type(){
       tr_ext=fm
       i_ext=fm
       # Data
-      name=kkbox-nohis
-      tr=listener.nohis.tr.${tr_ext}
-      te=listener.nohis.va.${tr_ext}
+      name=kkbox
+      tr=listener.tr.${tr_ext}
+      te=listener.va.${tr_ext}
       item=top_song.${i_ext}
       # Var
       set_ns
@@ -151,9 +151,9 @@ set_up_solve_type(){
       tr_ext=mf
       i_ext=mf
       # Data
-      name=kkbox-nohis
-      tr=listener.nohis.tr.${tr_ext}
-      te=listener.nohis.va.${tr_ext}
+      name=kkbox
+      tr=listener.tr.${tr_ext}
+      te=listener.va.${tr_ext}
       item=top_song.${i_ext}
       # Var
       ns='--ns'
