@@ -87,7 +87,7 @@ set_up_solve_type(){
       item=ad.${i_ext}
       # Var
       set_ns
-      t=300
+      t=101
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     4)
@@ -101,7 +101,7 @@ set_up_solve_type(){
       item=ad.${i_ext}
       # Var
       set_ns
-      t=300
+      t=101
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     5)
@@ -115,7 +115,7 @@ set_up_solve_type(){
       item=ad.${i_ext}
       # Var
       ns='--ns'
-      t=300
+      t=101
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     6)
