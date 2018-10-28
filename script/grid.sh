@@ -129,7 +129,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       set_ns
-      t=300
+      t=150
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     7)
@@ -143,7 +143,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       set_ns
-      t=300
+      t=150
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     8)
@@ -157,7 +157,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       ns='--ns'
-      t=300
+      t=150
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     *)
