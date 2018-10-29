@@ -129,7 +129,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       set_ns
-      t=150
+      t=41
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     7)
