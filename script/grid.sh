@@ -45,7 +45,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       set_ns
-      t=110
+      t=101
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     1)
@@ -59,7 +59,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       set_ns
-      t=110
+      t=101
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     2)
@@ -73,7 +73,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       ns='--ns'
-      t=110
+      t=101
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     3)
@@ -143,7 +143,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       set_ns
-      t=150
+      t=101
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     8)
@@ -157,7 +157,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       ns='--ns'
-      t=150
+      t=101
       ext=${tr_ext}-${i_ext}${ns}
       ;;
     *)
