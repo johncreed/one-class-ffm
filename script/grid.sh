@@ -180,38 +180,57 @@ set_up_solve_type(){
 
 
 choose_w_list(){
-# 2^0 ~ 2^-11
-w_all=(1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 0.0009765625 0.00048828125)
-w_train=()
+  # 2^0 ~ 2^-11
+  w_all=(1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 0.0009765625 0.00048828125)
+  w_train=()
 
-# Print w_all
-for i in ${!w_all[@]};
-do
-  printf "%s: %s(2^-%s)\n" "$i" "${w_all[$i]}" "$i"
-done
+  # Print w_all
+  for i in ${!w_all[@]};
+  do
+    printf "%s: %s(2^-%s)\n" "$i" "${w_all[$i]}" "$i"
+  done
 
-# Create w_train
-while true;
-do
-  echo -n "select idx: "
-  read idx
-  if [ $idx -eq -1 ]
-  then
-    break
-  fi
-  w_train+=(${w_all[${idx}]})
-done
-
-echo -n "w list = [ "
-echo ${w_train[@]}]
+  # Create w_train
+  while true;
+  do
+    echo -n "select idx: "
+    read idx
+    if [ $idx -eq -1 ]
+    then
+      break
+    fi
+    w_train+=(${w_all[${idx}]})
+  done
 }
 
+choose_l_list(){
+  # 2^1 ~ 2^4
+  l_all=(1 4 16)
+  l_train=()
 
-# l in 0.25 1 4 16
+  # Print l_all
+  for i in ${!l_all[@]};
+  do
+    printf "%s: %s\n" "$i" "${l_all[$i]}" 
+  done
+
+  # Create l_train
+  while true;
+  do
+    echo -n "select idx: "
+    read idx
+    if [ $idx -eq -1 ]
+    then
+      break
+    fi
+    l_train+=(${l_all[${idx}]})
+  done
+}
+
 task(){
   for w in ${w_train[@]} 
   do
-      for l in 4
+      for l in ${l_train[@]}
       do
         echo "./train -k $k -l $l -t ${t} -r -1 -w $w $ns -c ${c} -p ${te} ${item} ${tr} > $logs_pth/${tr}.$l.$w.${ext}"
       done
@@ -227,7 +246,8 @@ item: $item
 k: $k
 t: $t
 ns: $ns
-w list: ${w_train[@]}
+w list: [ ${w_train[@]} ]
+l list: [ ${l_train[@]} ]
 log_path: ${logs_pth}"
 }
 
@@ -248,6 +268,12 @@ do
   choose_w_list
   echo "++++++++++++++++++++++++++"
   
+  # Set l range
+  clear
+  echo "===Set w range, -1 to exit==="
+  choose_l_list
+  echo "++++++++++++++++++++++++++"
+
   # Set -c option
   clear
   echo "===Set num core -c option==="
