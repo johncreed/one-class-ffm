@@ -60,7 +60,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       set_ns
-      t=101
+      t=100
       ;;
     1)
       # Ext & logs_pth
@@ -73,7 +73,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       set_ns
-      t=101
+      t=100
       ;;
     2)
       # Ext & logs_pth
@@ -86,7 +86,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       ns='--ns'
-      t=101
+      t=100
       ;;
     3)
       # Ext & logs_pth
@@ -99,7 +99,7 @@ set_up_solve_type(){
       item=ad.${i_ext}
       # Var
       set_ns
-      t=101
+      t=100
       ;;
     4)
       # Ext & logs_pth
@@ -112,7 +112,7 @@ set_up_solve_type(){
       item=ad.${i_ext}
       # Var
       set_ns
-      t=101
+      t=100
       ;;
     5)
       # Ext & logs_pth
@@ -125,7 +125,7 @@ set_up_solve_type(){
       item=ad.${i_ext}
       # Var
       ns='--ns'
-      t=101
+      t=100
       ;;
     6)
       # Ext & logs_pth
@@ -138,7 +138,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       set_ns
-      t=101
+      t=100
       ;;
     7)
       # Ext & logs_pth
@@ -151,7 +151,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       set_ns
-      t=101
+      t=100
       ;;
     8)
       # Ext & logs_pth
@@ -164,7 +164,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       ns='--ns'
-      t=101
+      t=100
       ;;
     *)
       echo "No match"
