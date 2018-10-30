@@ -29,9 +29,22 @@ else
 fi
 }
 
+te_or_va(){
+echo -n "va or te ? [0/1]: "
+read ns_bool
+if [[ $ns_bool =~ 0 ]]
+then
+  teva='va'
+else
+  teva='te'
+fi
+}
+
 set_up_solve_type(){
   echo -n "latent vector size(k): "
   read k
+  
+  te_or_va
 
   case $solve_type in
     0)
@@ -41,12 +54,11 @@ set_up_solve_type(){
       # Data
       name=ob
       tr=ob.tr.${tr_ext}
-      te=ob.va.sub.${tr_ext}
+      te=ob.${teva}.sub.${tr_ext}
       item=item.${i_ext}
       # Var
       set_ns
       t=101
-      ext=${tr_ext}-${i_ext}${ns}
       ;;
     1)
       # Ext & logs_pth
@@ -55,12 +67,11 @@ set_up_solve_type(){
       # Data
       name=ob
       tr=ob.tr.${tr_ext}
-      te=ob.va.sub.${tr_ext}
+      te=ob.${teva}.sub.${tr_ext}
       item=item.${i_ext}
       # Var
       set_ns
       t=101
-      ext=${tr_ext}-${i_ext}${ns}
       ;;
     2)
       # Ext & logs_pth
@@ -69,12 +80,11 @@ set_up_solve_type(){
       # Data
       name=ob
       tr=ob.tr.${tr_ext}
-      te=ob.va.sub.${tr_ext}
+      te=ob.${teva}.sub.${tr_ext}
       item=item.${i_ext}
       # Var
       ns='--ns'
       t=101
-      ext=${tr_ext}-${i_ext}${ns}
       ;;
     3)
       # Ext & logs_pth
@@ -83,12 +93,11 @@ set_up_solve_type(){
       # Data
       name=kdd12.shuf
       tr=user.shuf.tr.${tr_ext}
-      te=user.shuf.va.${tr_ext}
+      te=user.shuf.${teva}.${tr_ext}
       item=ad.${i_ext}
       # Var
       set_ns
       t=101
-      ext=${tr_ext}-${i_ext}${ns}
       ;;
     4)
       # Ext & logs_pth
@@ -97,12 +106,11 @@ set_up_solve_type(){
       # Data
       name=kdd12.shuf
       tr=user.shuf.tr.${tr_ext}
-      te=user.shuf.va.${tr_ext}
+      te=user.shuf.${teva}.${tr_ext}
       item=ad.${i_ext}
       # Var
       set_ns
       t=101
-      ext=${tr_ext}-${i_ext}${ns}
       ;;
     5)
       # Ext & logs_pth
@@ -111,12 +119,11 @@ set_up_solve_type(){
       # Data
       name=kdd12.shuf
       tr=user.shuf.tr.${tr_ext}
-      te=user.shuf.va.${tr_ext}
+      te=user.shuf.${teva}.${tr_ext}
       item=ad.${i_ext}
       # Var
       ns='--ns'
       t=101
-      ext=${tr_ext}-${i_ext}${ns}
       ;;
     6)
       # Ext & logs_pth
@@ -125,12 +132,11 @@ set_up_solve_type(){
       # Data
       name=kkbox
       tr=listener.tr.${tr_ext}
-      te=listener.va.${tr_ext}
+      te=listener.${teva}.${tr_ext}
       item=top_song.${i_ext}
       # Var
       set_ns
       t=41
-      ext=${tr_ext}-${i_ext}${ns}
       ;;
     7)
       # Ext & logs_pth
@@ -139,12 +145,11 @@ set_up_solve_type(){
       # Data
       name=kkbox
       tr=listener.tr.${tr_ext}
-      te=listener.va.${tr_ext}
+      te=listener.${teva}.${tr_ext}
       item=top_song.${i_ext}
       # Var
       set_ns
       t=101
-      ext=${tr_ext}-${i_ext}${ns}
       ;;
     8)
       # Ext & logs_pth
@@ -153,18 +158,24 @@ set_up_solve_type(){
       # Data
       name=kkbox
       tr=listener.tr.${tr_ext}
-      te=listener.va.${tr_ext}
+      te=listener.${teva}.${tr_ext}
       item=top_song.${i_ext}
       # Var
       ns='--ns'
       t=101
-      ext=${tr_ext}-${i_ext}${ns}
       ;;
     *)
       echo "No match"
       exit
   esac
-  logs_pth=logs/${name}.${k}/${ext}
+  ext=${tr_ext}-${i_ext}${ns}
+
+  if [[ ${teva} =~ va ]]
+  then
+    logs_pth=logs/${name}.${k}/${ext}
+  else
+    logs_pth=logs/${name}.${k}.${teva}/${ext}
+  fi
 }
 
 
