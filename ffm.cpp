@@ -971,7 +971,8 @@ void ImpProblem::validate() {
         }
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-            ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
+            if (j < z.size())
+                ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
         prec_k(z.data(), i, top_k, hit_counts);
         valid_samples++;
@@ -1047,7 +1048,7 @@ void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-        if (!Uva->file_name.empty() && iter % 10 == 0) {
+        if (!Uva->file_name.empty() && iter % 10 == 9) {
             validate();
             print_epoch_info(iter);
         }
