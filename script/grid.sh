@@ -34,9 +34,11 @@ echo -n "va or te ? [0/1]: "
 read ns_bool
 if [[ $ns_bool =~ 0 ]]
 then
-  teva='va'
+  tr_data='tr'
+  te_data='va'
 else
-  teva='te'
+  tr_data='trva'
+  te_data='te'
 fi
 }
 
@@ -53,8 +55,8 @@ set_up_solve_type(){
       i_ext=ffm
       # Data
       name=ob
-      tr=ob.tr.${tr_ext}
-      te=ob.${teva}.sub.${tr_ext}
+      tr=ob.${tr_data}.${tr_ext}
+      te=ob.${te_data}.sub.${tr_ext}
       item=item.${i_ext}
       # Var
       set_ns
@@ -66,8 +68,8 @@ set_up_solve_type(){
       i_ext=fm
       # Data
       name=ob
-      tr=ob.tr.${tr_ext}
-      te=ob.${teva}.sub.${tr_ext}
+      tr=ob.${tr_data}.${tr_ext}
+      te=ob.${te_data}.sub.${tr_ext}
       item=item.${i_ext}
       # Var
       set_ns
@@ -79,8 +81,8 @@ set_up_solve_type(){
       i_ext=mf
       # Data
       name=ob
-      tr=ob.tr.${tr_ext}
-      te=ob.${teva}.sub.${tr_ext}
+      tr=ob.${tr_data}.${tr_ext}
+      te=ob.${te_data}.sub.${tr_ext}
       item=item.${i_ext}
       # Var
       ns='--ns'
@@ -92,8 +94,8 @@ set_up_solve_type(){
       i_ext=ffm
       # Data
       name=kdd12.shuf
-      tr=user.shuf.tr.${tr_ext}
-      te=user.shuf.${teva}.${tr_ext}
+      tr=user.shuf.${tr_data}.${tr_ext}
+      te=user.shuf.${te_data}.${tr_ext}
       item=ad.${i_ext}
       # Var
       set_ns
@@ -105,8 +107,8 @@ set_up_solve_type(){
       i_ext=fm
       # Data
       name=kdd12.shuf
-      tr=user.shuf.tr.${tr_ext}
-      te=user.shuf.${teva}.${tr_ext}
+      tr=user.shuf.${tr_data}.${tr_ext}
+      te=user.shuf.${te_data}.${tr_ext}
       item=ad.${i_ext}
       # Var
       set_ns
@@ -118,8 +120,8 @@ set_up_solve_type(){
       i_ext=mf
       # Data
       name=kdd12.shuf
-      tr=user.shuf.tr.${tr_ext}
-      te=user.shuf.${teva}.${tr_ext}
+      tr=user.shuf.${tr_data}.${tr_ext}
+      te=user.shuf.${te_data}.${tr_ext}
       item=ad.${i_ext}
       # Var
       ns='--ns'
@@ -131,8 +133,8 @@ set_up_solve_type(){
       i_ext=ffm
       # Data
       name=kkbox
-      tr=listener.tr.${tr_ext}
-      te=listener.${teva}.${tr_ext}
+      tr=listener.${tr_data}.${tr_ext}
+      te=listener.${te_data}.${tr_ext}
       item=top_song.${i_ext}
       # Var
       set_ns
@@ -144,8 +146,8 @@ set_up_solve_type(){
       i_ext=fm
       # Data
       name=kkbox
-      tr=listener.tr.${tr_ext}
-      te=listener.${teva}.${tr_ext}
+      tr=listener.${tr_data}.${tr_ext}
+      te=listener.${te_data}.${tr_ext}
       item=top_song.${i_ext}
       # Var
       set_ns
@@ -157,8 +159,8 @@ set_up_solve_type(){
       i_ext=mf
       # Data
       name=kkbox
-      tr=listener.tr.${tr_ext}
-      te=listener.${teva}.${tr_ext}
+      tr=listener.${tr_data}.${tr_ext}
+      te=listener.${te_data}.${tr_ext}
       item=top_song.${i_ext}
       # Var
       ns='--ns'
@@ -170,11 +172,11 @@ set_up_solve_type(){
   esac
   ext=${tr_ext}-${i_ext}${ns}
 
-  if [[ ${teva} =~ va ]]
+  if [[ ${te_data} =~ va ]]
   then
     logs_pth=logs/${name}.${k}/${ext}
   else
-    logs_pth=logs/${name}.${k}.${teva}/${ext}
+    logs_pth=logs/${name}.${k}.${te_data}/${ext}
   fi
 }
 
