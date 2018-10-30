@@ -136,7 +136,7 @@ set_up_solve_type(){
       item=top_song.${i_ext}
       # Var
       set_ns
-      t=41
+      t=101
       ;;
     7)
       # Ext & logs_pth
