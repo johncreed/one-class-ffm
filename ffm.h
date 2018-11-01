@@ -93,7 +93,7 @@ private:
     ImpLong mt;
 
     vector<Vec> W, H, P, Q, Pva, Qva;
-    Vec a, b, va_loss, sa, sb;
+    Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb;
 
     vector<ImpInt> top_k;
 
@@ -131,7 +131,8 @@ private:
 
     void pred_z(const ImpLong i, ImpDouble *z);
     void pred_items();
-    void prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts);
+    void prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts);
+    void ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &hit_counts);
     void validate();
     void print_epoch_info(ImpInt t);
 

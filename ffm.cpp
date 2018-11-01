@@ -889,15 +889,18 @@ void ImpProblem::init_va(ImpInt size) {
         }
     }
 
-    va_loss.resize(size);
+    va_loss_prec.resize(size);
+    va_loss_ndcg.resize(size);
     top_k.resize(size);
     ImpInt start = 5;
 
     cout << "iter";
     for (ImpInt i = 0; i < size; i++) {
         top_k[i] = start;
-        cout.width(12);
-        cout << "va_p@" << start;
+        cout.width(9);
+        cout << "( p@ " << start << ", ";
+        cout.width(6);
+        cout << "nDCG@" << start << " )";
         start *= 2;
     }
     cout.width(12);
@@ -920,6 +923,7 @@ void ImpProblem::validate() {
     ImpLong valid_samples = 0;
 
     vector<ImpLong> hit_counts(nr_th*nr_k, 0);
+    vector<ImpDouble> ndcg_scores(nr_th*nr_k, 0);
 
     for (ImpInt f1 = 0; f1 < f; f1++) {
         const shared_ptr<ImpData> d1 = ((f1<fu)? Uva: V);
@@ -961,7 +965,7 @@ void ImpProblem::validate() {
 #endif
 #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
-        Vec z;
+        Vec z, z_copy;
         if(Uva->nnx[i] == 0) {
             z.assign(U->popular.begin(), U->popular.end());
         }
@@ -973,23 +977,38 @@ void ImpProblem::validate() {
             const ImpLong j = y->idx;
             ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
-        prec_k(z.data(), i, top_k, hit_counts);
+        
+#ifdef EBUG_nDCG
+        z.resize(n);
+        z_copy.resize(n);
+        for(ImpInt i = 0; i < n ; i++)
+          z[i] = z_copy[i] = 10 - i;
+#endif
+        z_copy.assign(z.begin(), z.end());
+        // Precision @
+        prec_k(z.data(), i, hit_counts);
+        // nDCG
+        ndcg(z_copy.data(), i, ndcg_scores);
         valid_samples++;
     }
 
     loss = sqrt(ploss/Uva->m);
 
-    fill(va_loss.begin(), va_loss.end(), 0);
+    fill(va_loss_prec.begin(), va_loss_prec.end(), 0);
+    fill(va_loss_ndcg.begin(), va_loss_ndcg.end(), 0);
     for (ImpInt i = 0; i < nr_k; i++) {
 
-        for (ImpLong num_th = 0; num_th < nr_th; num_th++)
-            va_loss[i] += hit_counts[i+num_th*nr_k];
+        for (ImpLong num_th = 0; num_th < nr_th; num_th++){
+            va_loss_prec[i] += hit_counts[i+num_th*nr_k];
+            va_loss_ndcg[i] += ndcg_scores[i+num_th*nr_k];
+        }
 
-        va_loss[i] /= ImpDouble(valid_samples*top_k[i]);
+        va_loss_prec[i] /= ImpDouble(valid_samples*top_k[i]);
+        va_loss_ndcg[i] /= ImpDouble(valid_samples);
     }
 }
 
-void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts) {
+void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts) {
     ImpInt valid_count = 0;
     const ImpInt nr_k = top_k.size();
     vector<ImpLong> hit_count(nr_k, 0);
@@ -1028,14 +1047,85 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<I
     }
 }
 
+void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
+    ImpInt valid_count = 0;
+    const ImpInt nr_k = top_k.size();
+    vector<ImpDouble> dcg_score(nr_k, 0);
+    vector<ImpDouble> idcg_score(nr_k, 0);
+
+    ImpInt num_th = omp_get_thread_num();
+
+#ifdef EBUG_nDCG
+#ifndef SHOW_SCORE_ONLY
+    bool show_label = true;
+    cout << i << ":";
+#endif
+#endif
+    ImpLong max_z_idx = U->popular.size();
+    for (ImpInt state = 0; state < nr_k; state++) {
+        while(valid_count < top_k[state]) {
+            ImpLong argmax = distance(z, max_element(z, z + max_z_idx));
+#ifdef EBUG_nDCG
+#ifndef SHOW_SCORE_ONLY
+            if( 10 < top_k[state] )
+              break;
+            cout << argmax << " ";
+#endif
+#endif
+            z[argmax] = MIN_Z;
+#ifdef EBUG_nDCG
+#ifndef SHOW_SCORE_ONLY
+            if(show_label) {
+              cout << "(";
+              for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) 
+                  cout << nd->idx << ",";
+              cout << ")" << endl;
+              show_label = false;
+            }
+#endif
+#endif
+            for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {
+                if (argmax == nd->idx) {
+                    dcg_score[state] += 1.0 / log2(valid_count + 2);
+                    break;
+                }
+            }
+            
+            if( ImpInt(Uva->Y[i+1] - Uva->Y[i]) > valid_count )
+                idcg_score[state] += 1.0 / log2(valid_count + 2);
+            valid_count++;
+        }
+    }
+
+#ifdef EBUG_nDCG
+#ifndef SHOW_SCORE_ONLY
+    cout << endl;
+    cout << dcg_score[0] << ", " << idcg_score[0] << endl;
+#endif
+#endif
+    for (ImpInt i = 1; i < nr_k; i++) {
+        dcg_score[i] += dcg_score[i-1];
+        idcg_score[i] += idcg_score[i-1];
+    }
+    
+    for (ImpInt i = 0; i < nr_k; i++) {
+        ndcg_scores[i+num_th*nr_k] += dcg_score[i] / idcg_score[i];
+    }
+#ifdef EBUG_nDCG
+    cout << setprecision(4) << dcg_score[1] / idcg_score[1] << endl;
+#endif
+}
+
 void ImpProblem::print_epoch_info(ImpInt t) {
     ImpInt nr_k = top_k.size();
     cout.width(2);
     cout << t+1;
     if (!Uva->file_name.empty()) {
         for (ImpInt i = 0; i < nr_k; i++ ) {
-            cout.width(13);
-            cout << setprecision(3) << va_loss[i]*100;
+            cout.width(9);
+            cout << "( " <<setprecision(3) << va_loss_prec[i]*100 << " ,";
+            cout.width(6);
+            cout << setprecision(3) << va_loss_ndcg[i]*100 << " )";
         }
         cout.width(13);
         cout << setprecision(3) << loss;
@@ -1046,11 +1136,16 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
-        one_epoch();
-        if (!Uva->file_name.empty() && iter % 10 == 0) {
+#ifdef EBUG_nDCG
+            cout << "DEBUG nDCG" << endl;
             validate();
-            print_epoch_info(iter);
-        }
+#else
+            one_epoch();
+            if (!Uva->file_name.empty() && iter % 10 == 0) {
+                validate();
+                print_epoch_info(iter);
+            }
+#endif
     }
 }
 
