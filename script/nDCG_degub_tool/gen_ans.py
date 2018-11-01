@@ -28,7 +28,7 @@ def ndcg( label, rank, k ):
 rf = open('case1.mf', 'r')
 of = open('ans.txt', 'w')
 rank = [0,1,2,3,4,5,6,7,8,9]
-k = 5
+k = 10
 
 def go():
     rf.seek(0)

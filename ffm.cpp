@@ -983,7 +983,7 @@ void ImpProblem::validate() {
         z.resize(n);
         z_copy.resize(n);
         for(ImpInt i = 0; i < n ; i++)
-          z[i] = z_copy[i] = 10 - i;
+          z[i] = z_copy[i] = n - i;
 #endif
         z_copy.assign(z.begin(), z.end());
         // Precision @
