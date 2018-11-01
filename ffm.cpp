@@ -71,7 +71,7 @@ void row_wise_inner(const Vec &V1, const Vec &V2, const ImpLong &row,
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
     default_random_engine ENGINE(rand());
     vec.resize(nr_rows*nr_cols, 0.1);
-    uniform_real_distribution<ImpDouble> dist(0, 0.1*qrsqrt(nr_cols));
+    uniform_real_distribution<ImpDouble> dist(-0.1*qrsqrt(nr_cols), 0.1*qrsqrt(nr_cols));
 
     auto gen = std::bind(dist, ENGINE);
     generate(vec.begin(), vec.end(), gen);
@@ -757,7 +757,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     Vec Hv_(nr_threads*Df1k);
 
     ImpInt nr_cg = 0, max_cg = 20;
-    ImpDouble g2 = 0, r2, cg_eps = 1e-4, alpha = 0, beta = 0, gamma = 0, vHv;
+    ImpDouble g2 = 0, r2, cg_eps = 9e-2, alpha = 0, beta = 0, gamma = 0, vHv;
 
     Vec V(Df1k, 0), R(Df1k, 0), Hv(Df1k, 0);
     Vec QTQ, VQTQ;
@@ -975,7 +975,8 @@ void ImpProblem::validate() {
         }
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-            ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
+            if (j < z.size())
+                ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
         
 #ifdef EBUG_nDCG

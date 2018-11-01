@@ -70,4 +70,8 @@ user.shuf.tr.mf
 user.shuf.va.ffm
 user.shuf.va.fm
 user.shuf.va.mf
+listener.*.ffm
+listener.*.fm
+listener.*.mf
+top_song*
 
