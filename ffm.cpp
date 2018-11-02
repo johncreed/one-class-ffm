@@ -1146,7 +1146,7 @@ void ImpProblem::solve() {
             validate();
 #else
             one_epoch();
-            if (!Uva->file_name.empty() && iter % 10 == 0) {
+            if (!Uva->file_name.empty() && iter % 10 == 9) {
                 validate();
                 print_epoch_info(iter);
             }
