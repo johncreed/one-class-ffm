@@ -68,6 +68,19 @@ void row_wise_inner(const Vec &V1, const Vec &V2, const ImpLong &row,
         vv[i] += alpha*inner(v1p+i*col, v2p+i*col, col);
 }
 
+void rand_vec(Vec &vec, int seed){
+    srand(seed);
+    default_random_engine ENGINE(rand());
+    uniform_real_distribution<ImpDouble> dist(0.0, 100.0);
+    auto gen = std::bind(dist, ENGINE);
+    generate(vec.begin(), vec.end(), gen);
+#ifdef DEBUG_RAND
+    for( int i = 0; i < 5; i ++)
+        cout << vec[i] << " ";
+    cout << endl;
+#endif 
+}
+
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
     default_random_engine ENGINE(rand());
     vec.resize(nr_rows*nr_cols, 0.1);
@@ -120,7 +133,7 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         nnz_y = y_nnz;
         M.resize(y_nnz);
         popular.resize(n);
-        fill(popular.begin(), popular.end(), 0);
+        //fill(popular.begin(), popular.end(), 0);
     }
 
     nnx.resize(m);
@@ -140,7 +153,7 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
                 nnz_j++;
                 ImpLong idx = stoi(label_str);
                 M[nnz_j-1].idx = idx;
-                popular[idx] += 1;
+                //popular[idx] += 1;
             }
             nny[i] = nnz_j;
         }
@@ -169,12 +182,13 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         }
     }
 
+    /*
     ImpDouble sum = 0;
     for (auto &n : popular)
         sum += n;
     for (auto &n : popular)
         n /= sum;
-
+    */
     for (ImpLong i = m-1; i > 0; i--) {
         nnx[i] -= nnx[i-1];
         nny[i] -= nny[i-1];
@@ -963,10 +977,24 @@ void ImpProblem::validate() {
     }
     cout << endl;
 #endif
+    vector<ImpInt> myseed(Uva->m, 0);
+#ifdef DEBUG_RAND
+    for(auto &it: myseed)
+        cout << it << " ";
+    cout << endl;
+#endif
+    for(auto &it: myseed)
+        it = rand();
+#ifdef DEBUG_RAND
+    for(auto &it: myseed)
+        cout << it << " ";
+    cout << endl;
+#endif
 #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z, z_copy;
         if(Uva->nnx[i] == 0) {
+            rand_vec(U->popular, myseed[i]);
             z.assign(U->popular.begin(), U->popular.end());
         }
         else {
