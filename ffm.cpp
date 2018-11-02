@@ -1022,6 +1022,8 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts) {
     ImpLong max_z_idx = U->popular.size();
     for (ImpInt state = 0; state < nr_k; state++) {
         while(valid_count < top_k[state]) {
+            if ( valid_count >= max_z_idx )
+               break;
             ImpLong argmax = distance(z, max_element(z, z + max_z_idx));
 #ifdef EBUG
     //        cout << argmax << " ";
@@ -1065,6 +1067,8 @@ void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
     ImpLong max_z_idx = U->popular.size();
     for (ImpInt state = 0; state < nr_k; state++) {
         while(valid_count < top_k[state]) {
+            if ( valid_count >= max_z_idx )
+               break;
             ImpLong argmax = distance(z, max_element(z, z + max_z_idx));
 #ifdef EBUG_nDCG
 #ifndef SHOW_SCORE_ONLY
