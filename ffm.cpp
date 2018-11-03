@@ -1001,7 +1001,7 @@ void ImpProblem::validate() {
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z, z_copy;
         if(Uva->nnx[i] == 0) {
-            z.resize( V->m, 0);
+            z.assign(bt.begin(), bt.end());
             pred_z(i, z.data(), true, myseed[i]);
         }
         else {
