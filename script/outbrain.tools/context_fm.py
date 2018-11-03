@@ -68,6 +68,6 @@ def convert2ffm( o_f, i_f ):
 
 if __name__ == '__main__':
     convert2ffm('ob.tr.fm', 'ob.tr.csv')
-    convert2ffm('ob.te.fm', 'ob.te.csv')
     convert2ffm('ob.va.fm', 'ob.va.csv')
+    convert2ffm('ob.te.fm', 'ob.te.csv')
 
