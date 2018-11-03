@@ -68,7 +68,7 @@ void row_wise_inner(const Vec &V1, const Vec &V2, const ImpLong &row,
         vv[i] += alpha*inner(v1p+i*col, v2p+i*col, col);
 }
 
-void rand_vec(Vec &vec, int seed){
+void assign_rand_vec(Vec &vec, int seed){
     srand(seed);
     default_random_engine ENGINE(rand());
     uniform_real_distribution<ImpDouble> dist(0.0, 100.0);
@@ -922,12 +922,24 @@ void ImpProblem::init_va(ImpInt size) {
     cout << endl;
 }
 
-void ImpProblem::pred_z(const ImpLong i, ImpDouble *z) {
+void ImpProblem::pred_z(const ImpLong i, ImpDouble *z, const bool do_rand, ImpInt rand_seed ) {
     for(ImpInt f1 = 0; f1 < fu; f1++) {
         for(ImpInt f2 = fu; f2 < f; f2++) {
             ImpInt f12 = index_vec(f1, f2, f);
-            ImpDouble *p1 = Pva[f12].data()+i*k, *q1 = Qva[f12].data();
-            mv(q1, p1, z, n, k, 1, false);
+            if (do_rand){
+#ifdef DEBUG_RAND
+              cout << "Do rnad in pred_z" << endl;
+              cout << flush;
+#endif
+              Vec rand_vec(k, 0);
+              assign_rand_vec(rand_vec, rand_seed);
+              ImpDouble *p1 = rand_vec.data(), *q1 = Qva[f12].data();
+              mv(q1, p1, z, n, k, 1, false);
+            }
+            else{
+              ImpDouble *p1 = Pva[f12].data()+i*k, *q1 = Qva[f12].data();
+              mv(q1, p1, z, n, k, 1, false);
+            }
         }
     }
 }
@@ -978,11 +990,6 @@ void ImpProblem::validate() {
     cout << endl;
 #endif
     vector<ImpInt> myseed(Uva->m, 0);
-#ifdef DEBUG_RAND
-    for(auto &it: myseed)
-        cout << it << " ";
-    cout << endl;
-#endif
     for(auto &it: myseed)
         it = rand();
 #ifdef DEBUG_RAND
@@ -994,8 +1001,8 @@ void ImpProblem::validate() {
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z, z_copy;
         if(Uva->nnx[i] == 0) {
-            rand_vec(U->popular, myseed[i]);
-            z.assign(U->popular.begin(), U->popular.end());
+            z.resize( V->m, 0);
+            pred_z(i, z.data(), true, myseed[i]);
         }
         else {
             z.assign(bt.begin(), bt.end());
