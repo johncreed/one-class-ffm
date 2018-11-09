@@ -513,6 +513,8 @@ void ImpProblem::init() {
             const shared_ptr<ImpData> d2 = ((f2<fu)? U: V);
             const ImpInt fj = ((f2>=fu)? f2-fu: f2);
             const ImpInt f12 = index_vec(f1, f2, f);
+            if(!param->self_side && (f1>=fu || f2<fu))
+                continue;
             init_pair(f12, fi, fj, d1, d2);
         }
     }
@@ -960,6 +962,8 @@ void ImpProblem::validate() {
             const ImpInt fj = ((f2>=fu)? f2-fu: f2);
 
             const ImpInt f12 = index_vec(f1, f2, f);
+            if(!param->self_side && (f1>=fu || f2<fu))
+                continue;
             UTX(d1->Xs[fi], d1->m, W[f12], Pva[f12]);
             UTX(d2->Xs[fj], d2->m, H[f12], Qva[f12]);
         }
@@ -1013,7 +1017,7 @@ void ImpProblem::validate() {
             if (j < z.size())
                 ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
-        
+
 #ifdef EBUG_nDCG
         z.resize(n);
         z_copy.resize(n);
