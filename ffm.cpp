@@ -900,6 +900,8 @@ void ImpProblem::init_va(ImpInt size) {
         for (ImpInt f2 = f1; f2 < f; f2++) {
             const shared_ptr<ImpData> d2 = ((f2<fu)? Uva: V);
             const ImpInt f12 = index_vec(f1, f2, f);
+            if(!param->self_side && (f1>=fu || f2<fu))
+                continue;
             Pva[f12].resize(d1->m*k);
             Qva[f12].resize(d2->m*k);
         }
