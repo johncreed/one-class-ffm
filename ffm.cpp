@@ -1160,6 +1160,127 @@ void ImpProblem::solve() {
     }
 }
 
+ImpInt ImpProblem::num_of_all_fields() const{
+    return f;
+}
+ImpInt ImpProblem::num_of_user_fields() const{
+    return fu;
+}
+ImpInt ImpProblem::num_of_item_fields() const{
+    return fv;
+}
+ImpInt ImpProblem::latent_vector_size() const{
+    return k;
+}
+const vector<Vec>& ImpProblem::get_variable_W() const{
+    return W;
+}
+const vector<Vec>& ImpProblem::get_variable_H() const{
+    return H;
+}
+const vector<ImpLong>& ImpProblem::get_user_field_dimensions() const{
+    return U->Ds;
+}
+const vector<ImpLong>& ImpProblem::get_item_field_dimensions() const{
+    return V->Ds;
+}
+
+const shared_ptr<Parameter> ImpProblem::get_param() const {
+    return param;
+}
+
+void write_header(const ImpProblem &prob, ofstream &f_out){
+    const ImpInt number_of_all_fields = prob.num_of_all_fields();
+    const ImpInt number_of_user_fields = prob.num_of_user_fields();
+    const ImpInt number_of_item_fields = prob.num_of_item_fields();
+    const ImpInt latent_vector_size = prob.latent_vector_size();
+    
+    f_out << number_of_all_fields << endl;
+    f_out << number_of_user_fields << endl;
+    f_out << number_of_item_fields << endl;
+    f_out << latent_vector_size << endl;
+    
+    const vector<ImpLong>& user_field_dimension = prob.get_user_field_dimensions();
+    for(ImpInt fi = 0; fi < number_of_user_fields ; fi++)
+        f_out << user_field_dimension[fi] << endl;
+    
+    const vector<ImpLong>& item_field_dimension = prob.get_item_field_dimensions();
+    for(ImpInt fi = 0; fi < number_of_item_fields ; fi++)
+        f_out << item_field_dimension[fi] << endl;
+}
+
+void write_block(const Vec& block, const ImpLong& num_of_rows, const ImpInt& num_of_columns, char block_type, const ImpInt fi, const ImpInt fj, ofstream &f_out){
+#ifdef DEBUG_SAVE
+    if ( block.size() != num_of_columns * num_of_rows ){
+        cout << block.size() << " " << num_of_columns << " " << num_of_rows << endl;
+        assert(false);
+    }
+#endif
+    ostringstream stringStream;
+    stringStream << block_type << ',' << fi << ',' << fj;
+    string line_info =  stringStream.str();
+
+    for( ImpLong row_i = 0; row_i < num_of_rows; row_i++ ){
+        f_out << line_info << ',' << row_i;
+        ImpLong offset = row_i * num_of_columns;
+        for(ImpInt col_i = 0; col_i < num_of_columns ; col_i++ ){
+            f_out << " " <<block[offset + col_i];
+        }
+        f_out << endl;
+    }
+}
+
+void write_W_and_H(const ImpProblem &prob, ofstream &f_out){
+    const ImpInt number_of_all_fields = prob.num_of_all_fields();
+    const ImpInt number_of_user_fields = prob.num_of_user_fields();
+    const ImpInt latent_vector_size = prob.latent_vector_size();
+    const vector<Vec>& W = prob.get_variable_W();
+    const vector<Vec>& H = prob.get_variable_H();
+    shared_ptr<Parameter> param = prob.get_param();
+
+    const vector<ImpLong>& user_field_dimension = prob.get_user_field_dimensions();
+    const vector<ImpLong>& item_field_dimension = prob.get_item_field_dimensions();
+    for(ImpInt fi = 0; fi < number_of_all_fields ; fi++){
+        for(ImpInt fj = fi; fj < number_of_all_fields; fj++){
+            ImpInt fij = index_vec(fi, fj, number_of_all_fields);
+            ImpInt fi_base = (fi >= number_of_user_fields )? fi - number_of_user_fields : fi;
+            ImpInt fj_base = (fj >= number_of_user_fields )? fj - number_of_user_fields : fj;
+            if ( fi < number_of_user_fields && fj < number_of_user_fields ){
+                if( !param->self_side )
+                    continue;
+                write_block(W[fij], user_field_dimension[fi_base], latent_vector_size, 'W', fi, fj, f_out);
+                write_block(H[fij], user_field_dimension[fj_base], latent_vector_size, 'H', fi, fj, f_out);
+            }
+            else if (fi < number_of_user_fields && fj >= number_of_user_fields){
+                write_block(W[fij], user_field_dimension[fi_base], latent_vector_size, 'W', fi, fj, f_out);
+                write_block(H[fij], item_field_dimension[fj_base], latent_vector_size, 'H', fi, fj, f_out);
+            }
+            else if( fi >= number_of_user_fields && fj >= number_of_user_fields){
+                if( !param->self_side )
+                    continue;
+                write_block(W[fij], item_field_dimension[fi_base], latent_vector_size, 'W', fi, fj, f_out);
+                write_block(H[fij], item_field_dimension[fj_base], latent_vector_size, 'H', fi, fj, f_out);
+            }
+        }
+    }
+
+}
+
+void save_model(const ImpProblem& prob, string & model_path ){
+#ifdef DEBUG_SAVE
+    cout << "Start a save\n" << flush;
+#endif
+    ofstream f_out(model_path, ios::out | ios::trunc );
+#ifdef DEBUG_SAVE
+    cout << "Success open file.\n" << flush;
+#endif
+    write_header( prob, f_out );
+#ifdef DEBUG_SAVE
+    cout << "Success write header.\n" << flush;
+#endif
+    write_W_and_H( prob, f_out );  
+}
+
 ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
     ImpInt f12 = index_vec(f1, f2, f);
     ImpInt Pi = (f1 < fu)? i : j;

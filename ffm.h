@@ -82,6 +82,15 @@ public:
     void solve();
     ImpDouble func();
 
+    ImpInt num_of_all_fields() const;
+    ImpInt num_of_user_fields() const;
+    ImpInt num_of_item_fields() const;
+    ImpInt latent_vector_size() const;
+    const vector<Vec>& get_variable_W() const;
+    const vector<Vec>& get_variable_H() const;
+    const vector<ImpLong>& get_user_field_dimensions() const;
+    const vector<ImpLong>& get_item_field_dimensions() const;
+    const shared_ptr<Parameter> get_param() const;
 private:
     ImpDouble loss, lambda, w, r;
 
@@ -137,3 +146,6 @@ private:
     void print_epoch_info(ImpInt t);
 
 };
+
+
+void save_model(const ImpProblem & prob, string & model_path );
