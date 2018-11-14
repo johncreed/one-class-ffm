@@ -82,15 +82,8 @@ public:
     void solve();
     ImpDouble func();
 
-    ImpInt num_of_all_fields() const;
-    ImpInt num_of_user_fields() const;
-    ImpInt num_of_item_fields() const;
-    ImpInt latent_vector_size() const;
-    const vector<Vec>& get_variable_W() const;
-    const vector<Vec>& get_variable_H() const;
-    const vector<ImpLong>& get_user_field_dimensions() const;
-    const vector<ImpLong>& get_item_field_dimensions() const;
-    const shared_ptr<Parameter> get_param() const;
+    void write_header(ofstream& o_f) const;
+    void write_W_and_H(ofstream& o_f) const;
 private:
     ImpDouble loss, lambda, w, r;
 
