@@ -129,7 +129,7 @@ private:
     void one_epoch();
     void init_va(ImpInt size);
 
-    void pred_z(const ImpLong i, ImpDouble *z, const bool do_rand = false, const ImpInt rand_seed = 0);
+    void pred_z(const ImpLong i, ImpDouble *z);
     void pred_items();
     void prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts);
     void ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &hit_counts);

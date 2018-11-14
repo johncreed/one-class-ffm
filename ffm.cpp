@@ -68,19 +68,6 @@ void row_wise_inner(const Vec &V1, const Vec &V2, const ImpLong &row,
         vv[i] += alpha*inner(v1p+i*col, v2p+i*col, col);
 }
 
-void assign_rand_vec(Vec &vec, int seed){
-    srand(seed);
-    default_random_engine ENGINE(rand());
-    uniform_real_distribution<ImpDouble> dist(0.0, 100.0);
-    auto gen = std::bind(dist, ENGINE);
-    generate(vec.begin(), vec.end(), gen);
-#ifdef DEBUG_RAND
-    for( int i = 0; i < 5; i ++)
-        cout << vec[i] << " ";
-    cout << endl;
-#endif 
-}
-
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
     default_random_engine ENGINE(rand());
     vec.resize(nr_rows*nr_cols, 0.1);
@@ -133,7 +120,7 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         nnz_y = y_nnz;
         M.resize(y_nnz);
         popular.resize(n);
-        //fill(popular.begin(), popular.end(), 0);
+        fill(popular.begin(), popular.end(), 0);
     }
 
     nnx.resize(m);
@@ -153,7 +140,7 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
                 nnz_j++;
                 ImpLong idx = stoi(label_str);
                 M[nnz_j-1].idx = idx;
-                //popular[idx] += 1;
+                popular[idx] += 1;
             }
             nny[i] = nnz_j;
         }
@@ -182,13 +169,12 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         }
     }
 
-    /*
     ImpDouble sum = 0;
     for (auto &n : popular)
         sum += n;
     for (auto &n : popular)
         n /= sum;
-    */
+
     for (ImpLong i = m-1; i > 0; i--) {
         nnx[i] -= nnx[i-1];
         nny[i] -= nny[i-1];
@@ -418,7 +404,7 @@ void ImpProblem::init_y_tilde() {
 
 void ImpProblem::update_side(const bool &sub_type, const Vec &S
         , const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
-    
+
     const ImpLong m1 = (sub_type)? m : n;
     // Update W1
     axpy( S.data(), W1.data(), S.size(), 1);
@@ -926,24 +912,12 @@ void ImpProblem::init_va(ImpInt size) {
     cout << endl;
 }
 
-void ImpProblem::pred_z(const ImpLong i, ImpDouble *z, const bool do_rand, ImpInt rand_seed ) {
+void ImpProblem::pred_z(const ImpLong i, ImpDouble *z) {
     for(ImpInt f1 = 0; f1 < fu; f1++) {
         for(ImpInt f2 = fu; f2 < f; f2++) {
             ImpInt f12 = index_vec(f1, f2, f);
-            if (do_rand){
-#ifdef DEBUG_RAND
-              cout << "Do rnad in pred_z" << endl;
-              cout << flush;
-#endif
-              Vec rand_vec(k, 0);
-              assign_rand_vec(rand_vec, rand_seed);
-              ImpDouble *p1 = rand_vec.data(), *q1 = Qva[f12].data();
-              mv(q1, p1, z, n, k, 1, false);
-            }
-            else{
-              ImpDouble *p1 = Pva[f12].data()+i*k, *q1 = Qva[f12].data();
-              mv(q1, p1, z, n, k, 1, false);
-            }
+            ImpDouble *p1 = Pva[f12].data()+i*k, *q1 = Qva[f12].data();
+            mv(q1, p1, z, n, k, 1, false);
         }
     }
 }
@@ -995,20 +969,11 @@ void ImpProblem::validate() {
     }
     cout << endl;
 #endif
-    vector<ImpInt> myseed(Uva->m, 0);
-    for(auto &it: myseed)
-        it = rand();
-#ifdef DEBUG_RAND
-    for(auto &it: myseed)
-        cout << it << " ";
-    cout << endl;
-#endif
 #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z, z_copy;
         if(Uva->nnx[i] == 0) {
-            z.resize( V->m, 0);
-            pred_z(i, z.data(), true, myseed[i]);
+            z.assign(U->popular.begin(), U->popular.end());
         }
         else {
             z.assign(bt.begin(), bt.end());
@@ -1123,7 +1088,7 @@ void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
 #ifndef SHOW_SCORE_ONLY
             if(show_label) {
               cout << "(";
-              for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) 
+              for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++)
                   cout << nd->idx << ",";
               cout << ")" << endl;
               show_label = false;
@@ -1136,7 +1101,7 @@ void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
                     break;
                 }
             }
-            
+
             if( ImpInt(Uva->Y[i+1] - Uva->Y[i]) > valid_count )
                 idcg_score[state] += 1.0 / log2(valid_count + 2);
             valid_count++;
@@ -1153,7 +1118,7 @@ void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
         dcg_score[i] += dcg_score[i-1];
         idcg_score[i] += idcg_score[i-1];
     }
-    
+
     for (ImpInt i = 0; i < nr_k; i++) {
         ndcg_scores[i+num_th*nr_k] += dcg_score[i] / idcg_score[i];
     }
