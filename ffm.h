@@ -82,6 +82,8 @@ public:
     void solve();
     ImpDouble func();
 
+    void write_header(ofstream& o_f) const;
+    void write_W_and_H(ofstream& o_f) const;
 private:
     ImpDouble loss, lambda, w, r;
 
@@ -137,3 +139,6 @@ private:
     void print_epoch_info(ImpInt t);
 
 };
+
+
+void save_model(const ImpProblem & prob, string & model_path );

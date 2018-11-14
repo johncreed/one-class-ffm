@@ -6,7 +6,7 @@
 
 struct Option {
     shared_ptr<Parameter> param;
-    string xc_path, xt_path, tr_path, te_path;
+    string xc_path, xt_path, tr_path, te_path, model_path;
 };
 
 string basename(string path) {
@@ -40,6 +40,7 @@ string train_help()
     "-l <lambda_2>: set regularization coefficient on r regularizer (default 0.1)\n"
     "-t <iter>: set number of iterations (default 20)\n"
     "-p <path>: set path to test set\n"
+    "-o <path>: set path to save model file\n"
     "-w <omega>: set cost weight for the negatives\n"
     "-r <rating>: set rating for the negatives\n"
     "-c <threads>: set number of cores\n"
@@ -135,6 +136,14 @@ Option parse_option(int argc, char **argv)
 
             option.te_path = string(args[i]);
         }
+        else if(args[i].compare("-o") == 0)
+        {
+            if(i == argc-1)
+                throw invalid_argument("need to specify path after -o");
+            i++;
+
+            option.model_path = string(args[i]);
+        }
         else if(args[i].compare("--ns") == 0)
         {
             option.param->self_side = false;
@@ -186,6 +195,8 @@ int main(int argc, char *argv[])
         ImpProblem prob(U, Ut, V, option.param);
         prob.init();
         prob.solve();
+        if( !option.model_path.empty() )
+          save_model( prob , option.model_path );
     }
     catch (invalid_argument &e)
     {
