@@ -193,6 +193,9 @@ int main(int argc, char *argv[])
         }
 
         ImpProblem prob(U, Ut, V, option.param);
+#ifdef DEBUG_PQ_SIDE
+    cout << "Start init\n" << flush;
+#endif
         prob.init();
         prob.solve();
         if( !option.model_path.empty() )

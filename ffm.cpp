@@ -361,13 +361,17 @@ void ImpProblem::calc_side() {
     for (ImpInt f1 = 0; f1 < fu; f1++) {
         for (ImpInt f2 = f1; f2 < fu; f2++) {
             const ImpInt f12 = index_vec(f1, f2, f);
-            add_side(P[f12], Q[f12], m, a);
+            cache_P(f12, f1);
+            cache_Q(f12, f2);
+            add_side(P_cache, Q_cache, m, a);
         }
     }
     for (ImpInt f1 = fu; f1 < f; f1++) {
         for (ImpInt f2 = f1; f2 < f; f2++) {
             const ImpInt f12 = index_vec(f1, f2, f);
-            add_side(P[f12], Q[f12], n, b);
+            cache_P(f12, f1);
+            cache_Q(f12, f2);
+            add_side(P_cache, Q_cache, n, b);
         }
     }
 }
@@ -403,7 +407,7 @@ void ImpProblem::init_y_tilde() {
 }
 
 void ImpProblem::update_side(const bool &sub_type, const Vec &S
-        , const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
+        , const Vec &Q1, Vec &W1, const vector<Node*> &X12) {
 
     const ImpLong m1 = (sub_type)? m : n;
     // Update W1
@@ -415,9 +419,8 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     shared_ptr<ImpData> V1 = (sub_type)? V:U;
 
     Vec gaps(m1, 0);
-    Vec XS(P1.size(), 0);
+    Vec XS(m1 * k , 0);
     UTX(X12, m1, S, XS);
-    axpy( XS.data(), P1.data(), XS.size(), 1);
     row_wise_inner(XS, Q1, m1, k, 1, gaps);
 
     #pragma omp parallel for schedule(guided)
@@ -501,7 +504,13 @@ void ImpProblem::init() {
             const ImpInt f12 = index_vec(f1, f2, f);
             if(!param->self_side && (f1>=fu || f2<fu))
                 continue;
-            init_pair(f12, fi, fj, d1, d2);
+            if ( f1>=fu || f2<fu ){
+                init_mat(W[f12], Dfi(f1), k);
+                init_mat(H[f12], Dfi(f2), k);
+            }
+            else{
+                init_pair(f12, fi, fj, d1, d2);
+            }
         }
     }
 
@@ -536,12 +545,10 @@ void ImpProblem::cache_sasb() {
 
 void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
 
-    const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
+    const shared_ptr<ImpData> U1 = tilde_U(f1);
     const vector<Node*> &Y = U1->Y;
 
-    const ImpInt base = (f1 < fu)? 0: fu;
-    const ImpInt fi = f1-base;
-    const vector<Node*> &X = U1->Xs[fi];
+    const vector<Node*> &X1 = Xfi(f1);
 
     const ImpLong m1 = (f1 < fu)? m:n;
     const ImpLong n1 = (f1 < fu)? n:m;
@@ -559,6 +566,8 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     const ImpDouble *qp = Q1.data();
 
     if(param->freq){
+        const ImpInt base = (f1 < fu)? 0: fu;
+        const ImpInt fi = f1-base;
         const vector<ImpLong> &freq = U1->freq[fi];
         const ImpLong df1 = U1->Ds[fi];
         assert( df1 == freq.size());
@@ -578,7 +587,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
             const ImpDouble y_tilde = y->val;
             z_i += (1-w)*y_tilde-w*(1-r);
         }
-        for (Node* x = X[i]; x < X[i+1]; x++) {
+        for (Node* x = X1[i]; x < X1[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
             for (ImpInt d = 0; d < k; d++) {
@@ -742,19 +751,19 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
 }
 
 void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
-        const Vec &Q1, const Vec &G, Vec &P1) {
+        const Vec &Q1, const Vec &G) {
 
     const ImpInt base = (f1 < fu)? 0: fu;
     const ImpInt fi = f1-base;
 
-    const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
+    const shared_ptr<ImpData> U1 = tilde_U(f1);
     const vector<Node*> &Y = U1->Y;
     const vector<Node*> &X = U1->Xs[fi];
 
     const ImpLong m1 = (f1 < fu)? m:n;
     const ImpLong n1 = (f1 < fu)? n:m;
 
-    const ImpLong Df1 = U1->Ds[fi], Df1k = Df1*k;
+    const ImpLong Df1 = Dfi(f1), Df1k = Df1*k;
     const ImpInt nr_threads = param->nr_threads;
     Vec Hv_(nr_threads*Df1k);
 
@@ -815,21 +824,22 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
 void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
     const ImpInt f12 = index_vec(f1, f2, f);
     const bool sub_type = (f1 < fu)? 1 : 0;
-    const shared_ptr<ImpData> X12 = (sub_type)? U : V;
-    const ImpInt base = (sub_type)? 0 : fu;
-    const vector<Node*> &U1 = X12->Xs[f1-base], &U2 = X12->Xs[f2-base];
-    Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
+    Vec &W1 = W[f12], &H1 = H[f12];
 
     Vec G1(W1.size(), 0), G2(H1.size(), 0);
     Vec S1(W1.size(), 0), S2(H1.size(), 0);
 
-    gd_side(f1, W1, Q1, G1);
-    cg(f1, f2, S1, Q1, G1, P1);
-    update_side(sub_type, S1, Q1, W1, U1, P1);
+    cache_P(f12, f1);
+    cache_Q(f12, f2);
+    gd_side(f1, W1, Q_cache, G1);
+    cg(f1, f2, S1, Q_cache, G1);
+    update_side(sub_type, S1, Q_cache, W1, Xfi(f1));
 
-    gd_side(f2, H1, P1, G2);
-    cg(f2, f1, S2, P1, G2, Q1);
-    update_side(sub_type, S2, P1, H1, U2, Q1);
+    cache_P(f12, f1);
+    cache_Q(f12, f2);
+    gd_side(f2, H1, P_cache, G2);
+    cg(f2, f1, S2, P_cache, G2);
+    update_side(sub_type, S2, P_cache, H1, Xfi(f2));
 }
 
 void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
@@ -841,16 +851,15 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
     Vec SW(W1.size()), SH(H1.size());
 
     gd_cross(f1, f12, Q1, W1, GW);
-    cg(f1, f2, SW, Q1, GW, P1);
+    cg(f1, f2, SW, Q1, GW);
     update_cross(true, SW, Q1, W1, U1, P1);
 
     gd_cross(f2, f12, P1, H1, GH);
-    cg(f2, f1, SH, P1, GH, Q1);
+    cg(f2, f1, SH, P1, GH);
     update_cross(false, SH, P1, H1, V1, Q1);
 }
 
 void ImpProblem::one_epoch() {
-
     if (param->self_side) {
         for (ImpInt f1 = 0; f1 < fu; f1++)
             for (ImpInt f2 = f1; f2 < fu; f2++)
@@ -1147,16 +1156,11 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
-#ifdef EBUG_nDCG
-            cout << "DEBUG nDCG" << endl;
-            validate();
-#else
             one_epoch();
             if (!Uva->file_name.empty() && iter % 10 == 9) {
                 validate();
                 print_epoch_info(iter);
             }
-#endif
     }
 }
 
@@ -1287,3 +1291,30 @@ ImpDouble ImpProblem::func() {
 }
 
 
+void ImpProblem::cache_P(const ImpInt &f12, const ImpInt &f){
+    P_cache.resize(tilde_m(f) * k);
+    UTX(Xfi(f), tilde_m(f), W[f12], P_cache);
+}
+
+void ImpProblem::cache_Q(const ImpInt &f12, const ImpInt &f){
+    Q_cache.resize(tilde_m(f) * k);
+    UTX(Xfi(f), tilde_m(f), H[f12], Q_cache);
+}
+
+const vector<Node*> ImpProblem::Xfi(const ImpInt &f){
+    const ImpInt f_base  = (f < fu)? f : f - fu;
+    return tilde_U(f)->Xs[f_base];
+}
+
+ImpLong ImpProblem::Dfi(const ImpInt &f){
+    const ImpInt f_base  = (f < fu)? f : f - fu;
+    return tilde_U(f)->Ds[f_base];
+}
+
+ImpLong ImpProblem::tilde_m(const ImpInt &f){
+    return (f < fu)? m : n;
+}
+
+const shared_ptr<ImpData> ImpProblem::tilde_U(const ImpInt &f){
+    return (f < fu)? U:V;
+} 

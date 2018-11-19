@@ -95,7 +95,15 @@ private:
     ImpLong mt;
 
     vector<Vec> W, H, P, Q, Pva, Qva;
+    Vec Q_cache, P_cache;
     Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb;
+
+    void cache_P(const ImpInt &f12, const ImpInt &f);
+    void cache_Q(const ImpInt &f12, const ImpInt &f);
+    const vector<Node*> Xfi(const ImpInt &f);
+    ImpLong Dfi(const ImpInt &f);
+    ImpLong tilde_m(const ImpInt &f);
+    const shared_ptr<ImpData> tilde_U(const ImpInt &f);
 
     vector<ImpInt> top_k;
 
@@ -107,7 +115,7 @@ private:
     void init_y_tilde();
     ImpDouble calc_cross(const ImpLong &i, const ImpLong &j);
 
-    void update_side(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
+    void update_side(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12);
     void update_cross(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
 
     void UTx(const Node *x0, const Node* x1, const Vec &A, ImpDouble *c);
@@ -124,7 +132,7 @@ private:
     void gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1, Vec &G);
     void hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
 
-    void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G, Vec &P1);
+    void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G);
     void cache_sasb();
 
 
