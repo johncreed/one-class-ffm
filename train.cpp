@@ -6,7 +6,7 @@
 
 struct Option {
     shared_ptr<Parameter> param;
-    string xc_path, xt_path, tr_path, te_path, model_path;
+    string xc_path, xt_path, tr_path, te_path, model_path, ffm_model_path;
 };
 
 string basename(string path) {
@@ -41,6 +41,7 @@ string train_help()
     "-t <iter>: set number of iterations (default 20)\n"
     "-p <path>: set path to test set\n"
     "-o <path>: set path to save model file\n"
+    "-m <path>: set path to libffm model file\n"
     "-w <omega>: set cost weight for the negatives\n"
     "-r <rating>: set rating for the negatives\n"
     "-c <threads>: set number of cores\n"
@@ -144,6 +145,14 @@ Option parse_option(int argc, char **argv)
 
             option.model_path = string(args[i]);
         }
+        else if(args[i].compare("-m") == 0)
+        {
+            if(i == argc-1)
+                throw invalid_argument("need to specify path after -o");
+            i++;
+
+            option.ffm_model_path = string(args[i]);
+        }
         else if(args[i].compare("--ns") == 0)
         {
             option.param->self_side = false;
@@ -194,9 +203,10 @@ int main(int argc, char *argv[])
 
         ImpProblem prob(U, Ut, V, option.param);
         prob.init();
+        prob.ffm_load_model(option.ffm_model_path);
         prob.solve();
         if( !option.model_path.empty() )
-          save_model( prob , option.model_path );
+            save_model( prob , option.model_path );
     }
     catch (invalid_argument &e)
     {

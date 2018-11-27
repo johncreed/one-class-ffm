@@ -84,6 +84,8 @@ public:
 
     void write_header(ofstream& o_f) const;
     void write_W_and_H(ofstream& o_f) const;
+    void ffm_load_model(string & model_path);
+
 private:
     ImpDouble loss, lambda, w, r;
 
@@ -102,7 +104,7 @@ private:
     void init_pair(const ImpInt &f12, const ImpInt &fi, const ImpInt &fj,
             const shared_ptr<ImpData> &d1, const shared_ptr<ImpData> &d2);
 
-    void add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1);
+    void add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1, bool diag);
     void calc_side();
     void init_y_tilde();
     ImpDouble calc_cross(const ImpLong &i, const ImpLong &j);

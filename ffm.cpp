@@ -349,11 +349,14 @@ void ImpProblem::init_pair(const ImpInt &f12,
     UTX(X2, d2->m, H[f12], Q[f12]);
 }
 
-void ImpProblem::add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1) {
+void ImpProblem::add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1, bool diag = false) {
     const ImpDouble *pp = p.data(), *qp = q.data();
     for (ImpLong i = 0; i < m1; i++) {
         const ImpDouble *pi = pp+i*k, *qi = qp+i*k;
-        a1[i] += inner(pi, qi, k);
+        if(diag)
+            a1[i] += inner(pi, qi, k)/2;
+        else
+            a1[i] += inner(pi, qi, k);
     }
 }
 
@@ -957,7 +960,22 @@ void ImpProblem::validate() {
         for (ImpInt f1 = fu; f1 < f; f1++) {
             for (ImpInt f2 = f1; f2 < f; f2++) {
                 const ImpInt f12 = index_vec(f1, f2, f);
-                add_side(Pva[f12], Qva[f12], V->m, bt);
+                add_side(Pva[f12], Qva[f12], V->m, bt, f1==f2);
+            }
+        }
+        for (ImpInt f1 = fu; f1 < f; f1++) {
+            const ImpInt f12 = index_vec(f1, f1, f);
+            const vector<Node*> &X1 = V->Xs[f1-fu];
+            const Vec& W1 = W[f12];
+            for (ImpLong i=0; i < V->m; i++) {
+                for (const Node* x = X1[i]; x < X1[i+1]; x++) {
+                    const ImpLong idx = x->idx;
+                    const ImpDouble val = x->val;
+                    for(ImpInt d = 0; d < k; d++) {
+                        ImpLong jd = idx*k+d;
+                        bt[i] -= val*val*W1[jd]*W1[jd]/2;
+                    }
+                }
             }
         }
     }
@@ -1146,17 +1164,21 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 
 void ImpProblem::solve() {
     init_va(5);
-    for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
-#ifdef EBUG_nDCG
-            cout << "DEBUG nDCG" << endl;
-            validate();
-#else
-            one_epoch();
-            if (!Uva->file_name.empty() && iter % 10 == 9) {
-                validate();
-                print_epoch_info(iter);
-            }
-#endif
+//    for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
+//#ifdef EBUG_nDCG
+//            cout << "DEBUG nDCG" << endl;
+//            validate();
+//#else
+//            one_epoch();
+//            if (!Uva->file_name.empty() && iter % 10 == 9) {
+//                validate();
+//                print_epoch_info(iter);
+//            }
+//#endif
+//    }
+    if (!Uva->file_name.empty()) {
+        validate();
+        print_epoch_info(0);
     }
 }
 
@@ -1234,6 +1256,53 @@ void save_model(const ImpProblem& prob, string & model_path ){
     cout << "Success write header.\n" << flush;
 #endif
     prob.write_W_and_H( f_out );  
+}
+
+void ImpProblem::ffm_load_model(string & model_path ) {
+    ifstream f_in(model_path);
+
+    string dummy;
+    ImpLong n_feature, n_field; //n: # features, m: # fields
+    ImpInt _k;
+    bool normalization;
+
+    f_in >> dummy >> n_feature;
+    f_in >> dummy >> n_field;
+    f_in >> dummy >> _k;
+    f_in >> dummy >> normalization;
+    assert( n_field == f );
+    assert( _k == k );
+
+    ImpLong offset = 0;
+    for(ImpInt f1 = 0; f1 < f; f1++) {
+        ImpLong df1 = (f1<fu)? U->Ds[f1] : V->Ds[f1-fu];
+        for(ImpLong j = 0; j < df1; j++) {
+            for(ImpInt f2 = 0; f2 < f; f2++) {
+                f_in >> dummy;
+                ImpInt f12 = (f1<=f2)? index_vec(f1,f2,f) : index_vec(f2,f1,f);
+                Vec &W1 = (f1<=f2)? W[f12] : H[f12];
+                for(ImpInt d = 0; d < k; d++) {
+                    f_in >> W1[j*k+d];
+                }
+#ifdef EBUG
+                istringstream iss(dummy);
+                ImpInt _j, _f;
+                char dum;
+                iss >> dum >> dum >> _j >> dum >> _f;
+                cout << "j: " << _j << " f: " << _f << endl;
+                assert( _j == j + offset );
+                assert( _f == f2 );
+#endif
+            }
+        }
+        offset += df1;
+    }
+    assert(offset == n_feature);
+    for(ImpInt f1 = 0; f1 < f; f1++) {
+        ImpInt f12 = index_vec(f1,f1,f);
+        assert( W[f12].size() == H[f12].size() );
+        H[f12].assign(W[f12].begin(), W[f12].end());
+    }
 }
 
 ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
