@@ -39,6 +39,7 @@ struct ffm_parameter {
 void ffm_read_problem_to_disk(string txt_path, string bin_path);
 
 void ffm_save_model(ffm_model &model, string path);
+void ffm_save_model_plain_text(ffm_model &model, string path);
 
 ffm_model ffm_load_model(string path);
 

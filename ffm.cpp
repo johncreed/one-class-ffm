@@ -954,7 +954,7 @@ void ImpProblem::validate() {
         for (ImpInt f1 = 0; f1 < fu; f1++) {
             for (ImpInt f2 = f1; f2 < fu; f2++) {
                 const ImpInt f12 = index_vec(f1, f2, f);
-                add_side(Pva[f12], Qva[f12], Uva->m, at);
+                add_side(Pva[f12], Qva[f12], Uva->m, at, f1==f2);
             }
         }
         for (ImpInt f1 = fu; f1 < f; f1++) {
@@ -963,17 +963,20 @@ void ImpProblem::validate() {
                 add_side(Pva[f12], Qva[f12], V->m, bt, f1==f2);
             }
         }
-        for (ImpInt f1 = fu; f1 < f; f1++) {
+        for (ImpInt f1 = 0; f1 < f; f1++) {
             const ImpInt f12 = index_vec(f1, f1, f);
-            const vector<Node*> &X1 = V->Xs[f1-fu];
-            const Vec& W1 = W[f12];
-            for (ImpLong i=0; i < V->m; i++) {
+            const vector<Node*> &X1 = (f1<fu)? U->Xs[f1] : V->Xs[f1-fu];
+            const ImpLong m1 = (f1<fu)? U->m : V->m;
+            const Vec &W1 = W[f12];
+            Vec &at1 = (f1 <fu)? at : bt;
+
+            for (ImpLong i=0; i < m1; i++) {
                 for (const Node* x = X1[i]; x < X1[i+1]; x++) {
                     const ImpLong idx = x->idx;
                     const ImpDouble val = x->val;
                     for(ImpInt d = 0; d < k; d++) {
                         ImpLong jd = idx*k+d;
-                        bt[i] -= val*val*W1[jd]*W1[jd]/2;
+                        at1[i] -= val*val*W1[jd]*W1[jd]/2;
                     }
                 }
             }
