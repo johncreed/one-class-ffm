@@ -660,6 +660,7 @@ void ffm_save_model(ffm_model &model, string path) {
 
 void ffm_save_model_plain_text(ffm_model &model, string path) {
     ofstream f_out(path);
+    f_out << std::fixed << std::setprecision(15);
     f_out << "n " << model.n << "\n";
     f_out << "m " << model.m << "\n";
     f_out << "k " << model.k << "\n";
