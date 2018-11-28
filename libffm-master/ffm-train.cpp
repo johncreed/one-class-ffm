@@ -141,7 +141,7 @@ int train_on_disk(Option opt) {
 
     ffm_model model = ffm_train_on_disk(tr_bin_path.c_str(), va_bin_path.c_str(), opt.param);
 
-    ffm_save_model(model, opt.model_path);
+    ffm_save_model_plain_text(model, opt.model_path);
 
     return 0;
 }
