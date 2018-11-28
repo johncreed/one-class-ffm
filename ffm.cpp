@@ -338,15 +338,15 @@ void ImpProblem::init_pair(const ImpInt &f12,
     const ImpLong Df1 = d1->Ds[fi];
     const ImpLong Df2 = d2->Ds[fj];
 
-    const vector<Node*> &X1 = d1->Xs[fi];
-    const vector<Node*> &X2 = d2->Xs[fj];
+    //const vector<Node*> &X1 = d1->Xs[fi];
+    //const vector<Node*> &X2 = d2->Xs[fj];
 
     init_mat(W[f12], Df1, k);
     init_mat(H[f12], Df2, k);
-    P[f12].resize(d1->m*k, 0);
-    Q[f12].resize(d2->m*k, 0);
-    UTX(X1, d1->m, W[f12], P[f12]);
-    UTX(X2, d2->m, H[f12], Q[f12]);
+    //P[f12].resize(d1->m*k, 0);
+    //Q[f12].resize(d2->m*k, 0);
+    //UTX(X1, d1->m, W[f12], P[f12]);
+    //UTX(X2, d2->m, H[f12], Q[f12]);
 }
 
 void ImpProblem::add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1, bool diag = false) {
@@ -492,8 +492,8 @@ void ImpProblem::init() {
     W.resize(nr_blocks);
     H.resize(nr_blocks);
 
-    P.resize(nr_blocks);
-    Q.resize(nr_blocks);
+    //P.resize(nr_blocks);
+    //Q.resize(nr_blocks);
 
     for (ImpInt f1 = 0; f1 < f; f1++) {
         const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
@@ -508,10 +508,10 @@ void ImpProblem::init() {
         }
     }
 
-    cache_sasb();
-    if (param->self_side)
-        calc_side();
-    init_y_tilde();
+    //cache_sasb();
+    //if (param->self_side)
+    //    calc_side();
+    //init_y_tilde();
 }
 
 void ImpProblem::cache_sasb() {
@@ -965,8 +965,8 @@ void ImpProblem::validate() {
         }
         for (ImpInt f1 = 0; f1 < f; f1++) {
             const ImpInt f12 = index_vec(f1, f1, f);
-            const vector<Node*> &X1 = (f1<fu)? U->Xs[f1] : V->Xs[f1-fu];
-            const ImpLong m1 = (f1<fu)? U->m : V->m;
+            const vector<Node*> &X1 = (f1<fu)? Uva->Xs[f1] : V->Xs[f1-fu];
+            const ImpLong m1 = (f1<fu)? Uva->m : V->m;
             const Vec &W1 = W[f12];
             Vec &at1 = (f1 <fu)? at : bt;
 
@@ -984,12 +984,6 @@ void ImpProblem::validate() {
     }
 
     ImpDouble ploss = 0;
-#ifdef EBUG
-    for (ImpLong i = 0; i < n; i++) {
-        cout << U->popular[i] << " ";
-    }
-    cout << endl;
-#endif
 #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z, z_copy;
@@ -1002,6 +996,9 @@ void ImpProblem::validate() {
         }
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
+#ifdef EBUG
+            cout << "(" << i << "," << j << "): "<< setprecision(10) << z[j]+at[i] << endl;
+#endif
             if (j < z.size())
                 ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
@@ -1043,18 +1040,12 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts) {
 
     ImpInt num_th = omp_get_thread_num();
 
-#ifdef EBUG
-    //cout << i << ":";
-#endif
     ImpLong max_z_idx = U->popular.size();
     for (ImpInt state = 0; state < nr_k; state++) {
         while(valid_count < top_k[state]) {
             if ( valid_count >= max_z_idx )
                break;
             ImpLong argmax = distance(z, max_element(z, z + max_z_idx));
-#ifdef EBUG
-    //        cout << argmax << " ";
-#endif
             z[argmax] = MIN_Z;
             for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {
                 if (argmax == nd->idx) {
@@ -1066,9 +1057,6 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts) {
         }
     }
 
-#ifdef EBUG
-    //cout << endl;
-#endif
     for (ImpInt i = 1; i < nr_k; i++) {
         hit_count[i] += hit_count[i-1];
     }
@@ -1292,7 +1280,6 @@ void ImpProblem::ffm_load_model(string & model_path ) {
                 ImpInt _j, _f;
                 char dum;
                 iss >> dum >> dum >> _j >> dum >> _f;
-                cout << "j: " << _j << " f: " << _f << endl;
                 assert( _j == j + offset );
                 assert( _f == f2 );
 #endif
