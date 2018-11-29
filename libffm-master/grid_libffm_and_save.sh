@@ -1,10 +1,9 @@
 #!/bin/bash
 
-num_core=10
+num_core=20
 
 r_train=(0.003125 0.0125 0.05)
-l_train=(1e-6 1e-5)
-#l_train=(1e-4 1e-3)
+l_train=(1e-6 1e-5 1e-4 1e-3)
 k=64
 t=20
 libffm_tr="ob.trva.ffm"
