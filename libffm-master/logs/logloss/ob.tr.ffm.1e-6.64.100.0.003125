@@ -1,0 +1,11 @@
+First check if the text file has already been converted to binary format (7.5 seconds)
+Binary file found. Skip converting text to binary
+First check if the text file has already been converted to binary format (0.8 seconds)
+Binary file found. Skip converting text to binary
+iter   tr_logloss   va_logloss      tr_time
+   1      0.47213      0.48635        555.8
+   2      0.46648      0.48289       1114.8
+   3      0.46444      0.48193       1653.8
+   4      0.46305      0.47871       2209.9
+   5      0.46201      0.47963
+Auto-stop. Use model at 4th iteration.
