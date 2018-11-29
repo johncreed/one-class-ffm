@@ -444,6 +444,8 @@ void txt2bin(string txt_path, string bin_path) {
             char *value_char = strtok(nullptr," \t");
             if(field_char == nullptr || *field_char == '\n')
                 break;
+            if(*field_char == ' ')
+                break;
 
             ffm_node N;
             N.f = atoi(field_char);
@@ -529,7 +531,7 @@ void ffm_read_problem_to_disk(string txt_path, string bin_path) {
     }
 }
 
-ffm_model ffm_train_on_disk(string tr_path, string va_path, ffm_parameter param) {
+ffm_model ffm_train_on_disk(string tr_path, string va_path, ffm_parameter param, string model_path) {
 
     problem_on_disk tr(tr_path);
     problem_on_disk va(va_path);
@@ -634,6 +636,11 @@ ffm_model ffm_train_on_disk(string tr_path, string va_path, ffm_parameter param)
         }
         cout.width(13);
         cout << fixed << setprecision(1) << timer.get() << endl;
+
+        if( iter % 2 == 0 ){
+            string save_model = model_path + "." + to_string(iter);
+            ffm_save_model_plain_text(model, save_model); 
+        }
     }
 
     return model;

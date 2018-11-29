@@ -139,10 +139,10 @@ int train_on_disk(Option opt) {
     if(!opt.va_path.empty())
         ffm_read_problem_to_disk(opt.va_path, va_bin_path);
 
-    ffm_model model = ffm_train_on_disk(tr_bin_path.c_str(), va_bin_path.c_str(), opt.param);
+    ffm_model model = ffm_train_on_disk(tr_bin_path.c_str(), va_bin_path.c_str(), opt.param, opt.model_path);
 
     //ffm_save_model(model, opt.model_path);
-    ffm_save_model_plain_text(model, opt.model_path);
+    //ffm_save_model_plain_text(model, opt.model_path);
 
     return 0;
 }

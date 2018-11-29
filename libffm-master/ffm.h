@@ -43,7 +43,7 @@ void ffm_save_model_plain_text(ffm_model &model, string path);
 
 ffm_model ffm_load_model(string path);
 
-ffm_model ffm_train_on_disk(string Tr_path, string Va_path, ffm_parameter param);
+ffm_model ffm_train_on_disk(string Tr_path, string Va_path, ffm_parameter param, string model_path);
 
 ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model &model);
 
