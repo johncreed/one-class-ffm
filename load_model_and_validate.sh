@@ -20,7 +20,7 @@ task(){
   do
     base_name=`echo $model | rev | cut -d '.' -f2- | rev`
     log_path=$logs_dir/$base_name/$model
-    echo "./train -k $k -c $c -m models/$model -p ${te} ${item} ${trva} > $log_path"
+    ./train -k $k -c $c -m models/$model -p ${te} ${item} ${trva} > $log_path
   done
 }
 
