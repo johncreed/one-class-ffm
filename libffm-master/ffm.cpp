@@ -278,7 +278,7 @@ ffm_model init_model(ffm_int n, ffm_int m, ffm_parameter param)
     ffm_float *w = model.W;
 
     default_random_engine generator;
-    uniform_real_distribution<ffm_float> distribution(0.0, 1.0);
+    uniform_real_distribution<ffm_float> distribution(-0.1, 0.1);
 
     for(ffm_int j = 0; j < model.n; j++) {
         for(ffm_int f = 0; f < model.m; f++) {

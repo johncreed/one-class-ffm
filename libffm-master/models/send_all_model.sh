@@ -5,7 +5,7 @@ send(){
     server=$2
     for file in $1/*
     do
-        rsync -ai $file $server:/tmp2/b02701216/libffm_vs_ocffm/models  
+        rsync -ai $file $server:/tmp2/b02701216/libffm_vs_ocffm/models& 
     done
 }
 
