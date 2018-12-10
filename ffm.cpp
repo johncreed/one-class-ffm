@@ -79,10 +79,10 @@ void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
 
 void ImpData::read(bool has_label, const ImpLong *ds) {
     ifstream fs(file_name);
-    string line, label_block, label_str;
+    string line, label_block, label_str, pos_str, neg_str;
     char dummy;
 
-    ImpLong fid, idx, y_nnz=0, x_nnz=0;
+    ImpLong fid, idx, y_pos_nnz=0, y_neg_nnz=0, x_nnz=0;
     ImpDouble val;
 
     while (getline(fs, line)) {
@@ -92,10 +92,19 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         if (has_label) {
             iss >> label_block;
             istringstream labelst(label_block);
-            while (getline(labelst, label_str, ',')) {
+            getline(labelst, pos_str, '|');
+            istringstream posst(pos_str);
+            while (getline(posst, label_str, ',')) {
                 idx = stoi(label_str);
                 n = max(n, idx+1);
-                y_nnz++;
+                y_pos_nnz++;
+            }
+            getline(labelst, neg_str, '|');
+            istringstream negst(neg_str);
+            while( getline(negst, label_str, ',')){
+                idx = stoi(label_str);
+                n = max(n, idx+1);
+                y_neg_nnz++;
             }
         }
 
@@ -114,21 +123,26 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
     N.resize(x_nnz);
 
     X.resize(m+1);
-    Y.resize(m+1);
+    Ypos.resize(m+1);
+    Yneg.resize(m+1);
 
     if (has_label) {
-        nnz_y = y_nnz;
-        M.resize(y_nnz);
+        nnz_y_pos = y_pos_nnz;
+        nnz_y_neg = y_neg_nnz;
+        Mpos.resize(y_pos_nnz);
+        Mneg.resize(y_neg_nnz);
         popular.resize(n);
         fill(popular.begin(), popular.end(), 0);
     }
 
     nnx.resize(m);
-    nny.resize(m);
+    nny_pos.resize(m);
+    nny_neg.resize(m);
     fill(nnx.begin(), nnx.end(), 0);
-    fill(nny.begin(), nny.end(), 0);
+    fill(nny_pos.begin(), nny_pos.end(), 0);
+    fill(nny_neg.begin(), nny_neg.end(), 0);
 
-    ImpLong nnz_i=0, nnz_j=0, i=0;
+    ImpLong nnz_i=0, nnz_j_pos=0, nnz_j_neg=0, i=0;
 
     while (getline(fs, line)) {
         istringstream iss(line);
@@ -136,13 +150,24 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         if (has_label) {
             iss >> label_block;
             istringstream labelst(label_block);
-            while (getline(labelst, label_str, ',')) {
-                nnz_j++;
+            getline(labelst, pos_str, '|');
+            istringstream posst(pos_str);
+            while (getline(posst, label_str, ',')) {
+                nnz_j_pos++;
                 ImpLong idx = stoi(label_str);
-                M[nnz_j-1].idx = idx;
+                Mpos[nnz_j_pos-1].idx = idx;
                 popular[idx] += 1;
             }
-            nny[i] = nnz_j;
+            nny_pos[i] = nnz_j_pos;
+            getline(labelst, neg_str, '|');
+            istringstream negst(neg_str);
+            while (getline(negst, label_str, ',')) {
+                nnz_j_neg++;
+                ImpLong idx = stoi(label_str);
+                Mneg[nnz_j_neg-1].idx = idx;
+                popular[idx] += 1;
+            }
+            nny_neg[i] = nnz_j_neg;
         }
 
         while (iss >> fid >> dummy >> idx >> dummy >> val) {
@@ -163,9 +188,13 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
     }
 
     if (has_label) {
-        Y[0] = M.data();
+        Ypos[0] = Mpos.data();
         for (ImpLong i = 0; i < m; i++) {
-            Y[i+1] = M.data() + nny[i];
+            Ypos[i+1] = Mpos.data() + nny_pos[i];
+        }
+        Yneg[0] = Mneg.data();
+        for (ImpLong i = 0; i < m ; i++){
+            Yneg[i+1] = Mneg.data() + nny_neg[i];
         }
     }
 
@@ -175,10 +204,8 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
     for (auto &n : popular)
         n /= sum;
 
-    for (ImpLong i = m-1; i > 0; i--) {
+    for (ImpLong i = m-1; i > 0; i--)
         nnx[i] -= nnx[i-1];
-        nny[i] -= nny[i-1];
-    }
     fs.close();
 }
 
@@ -256,40 +283,65 @@ void ImpData::split_fields() {
     N.shrink_to_fit();
 }
 
-void ImpData::transY(const vector<Node*> &YT) {
-    n = YT.size() - 1;
-    vector<pair<ImpLong, Node*>> perm;
-    ImpLong nnz = 0;
-    vector<ImpLong> nnzs(m, 0);
+void ImpData::transY(const vector<Node*> &YT_pos, const vector<Node*> &YT_neg) {
+    n = max(YT_pos.size() - 1, YT_neg.size() - 1 );
+    vector<pair<ImpLong, Node*>> perm_pos;
+    vector<pair<ImpLong, Node*>> perm_neg;
+    ImpLong nnz_pos = 0;
+    ImpLong nnz_neg = 0;
+    vector<ImpLong> nnzs_pos(m, 0);
+    vector<ImpLong> nnzs_neg(m, 0);
 
-    for (ImpLong i = 0; i < n; i++)
-        for (Node* y = YT[i]; y < YT[i+1]; y++) {
+    for (ImpLong i = 0; i < n; i++){
+        for (Node* y = YT_pos[i]; y < YT_pos[i+1]; y++) {
             if (y->idx >= m )
               continue;
-            nnzs[y->idx]++;
-            perm.emplace_back(i, y);
-            nnz++;
+            nnzs_pos[y->idx]++;
+            perm_pos.emplace_back(i, y);
+            nnz_pos++;
         }
+        
+        for (Node* y = YT_neg[i]; y < YT_neg[i+1]; y++) {
+            if (y->idx >= m )
+              continue;
+            nnzs_neg[y->idx]++;
+            perm_neg.emplace_back(i, y);
+            nnz_pos++;
+        }
+    }
 
     auto sort_by_column = [&] (const pair<ImpLong, Node*> &lhs,
             const pair<ImpLong, Node*> &rhs) {
         return tie(lhs.second->idx, lhs.first) < tie(rhs.second->idx, rhs.first);
     };
 
-    sort(perm.begin(), perm.end(), sort_by_column);
+    sort(perm_pos.begin(), perm_pos.end(), sort_by_column);
+    sort(perm_neg.begin(), perm_neg.end(), sort_by_column);
 
-    M.resize(nnz);
-    nnz_y = nnz;
-    for (ImpLong nnz_i = 0; nnz_i < nnz; nnz_i++) {
-        M[nnz_i].idx = perm[nnz_i].first;
-        M[nnz_i].val = perm[nnz_i].second->val;
+    Mpos.resize(nnz_pos);
+    nnz_y_pos = nnz_pos;
+    nnz_y_neg = nnz_neg;
+    for (ImpLong nnz_i = 0; nnz_i < nnz_pos; nnz_i++) {
+        Mpos[nnz_i].idx = perm_pos[nnz_i].first;
+        Mpos[nnz_i].val = perm_pos[nnz_i].second->val;
+    }
+    for (ImpLong nnz_i = 0; nnz_i < nnz_neg; nnz_i++) {
+        Mneg[nnz_i].idx = perm_neg[nnz_i].first;
+        Mneg[nnz_i].val = perm_neg[nnz_i].second->val;
     }
 
-    Y[0] = M.data();
+    Ypos[0] = Mpos.data();
     ImpLong start_idx = 0;
     for (ImpLong i = 0; i < m; i++) {
-        start_idx += nnzs[i];
-        Y[i+1] = M.data()+start_idx;
+        start_idx += nnzs_pos[i];
+        Ypos[i+1] = Mpos.data()+start_idx;
+    }
+
+    Yneg[0] = Mneg.data();
+    start_idx = 0;
+    for (ImpLong i = 0; i < m; i++) {
+        start_idx += nnzs_neg[i];
+        Yneg[i+1] = Mneg.data()+start_idx;
     }
 }
 
@@ -388,16 +440,24 @@ ImpDouble ImpProblem::calc_cross(const ImpLong &i, const ImpLong &j) {
 void ImpProblem::init_y_tilde() {
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m; i++) {
-        for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
+        for (Node* y = U->Ypos[i]; y < U->Ypos[i+1]; y++) {
             ImpLong j = y->idx;
-            y->val = a[i]+b[j]+calc_cross(i, j) - 1;
+            y->val = a[i]+b[j]+calc_cross(i, j);
+        }
+        for (Node* y = U->Yneg[i]; y < U->Yneg[i+1]; y++) {
+            ImpLong j = y->idx;
+            y->val = a[i]+b[j]+calc_cross(i, j);
         }
     }
     #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < n; j++) {
-        for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
+        for (Node* y = V->Ypos[j]; y < V->Ypos[j+1]; y++) {
             ImpLong i = y->idx;
-            y->val = a[i]+b[j]+calc_cross(i, j) - 1;
+            y->val = a[i]+b[j]+calc_cross(i, j);
+        }
+        for (Node* y = V->Yneg[j]; y < V->Yneg[j+1]; y++) {
+            ImpLong i = y->idx;
+            y->val = a[i]+b[j]+calc_cross(i, j);
         }
     }
 }
@@ -423,13 +483,13 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < U1->m; i++) {
         a1[i] += gaps[i];
-        for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
+        for (Node* y = U1->Ypos[i]; y < U1->Ypos[i+1]; y++) {
             y->val += gaps[i];
         }
     }
     #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < V1->m; j++) {
-        for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
+        for (Node* y = V1->Ypos[j]; y < V1->Ypos[j+1]; y++) {
             const ImpLong i = y->idx;
             y->val += gaps[i];
         }
@@ -450,14 +510,14 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
 
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < U1->m; i++) {
-        for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
+        for (Node* y = U1->Yneg[i]; y < U1->Yneg[i+1]; y++) {
             const ImpLong j = y->idx;
             y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
         }
     }
     #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < V1->m; j++) {
-        for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
+        for (Node* y = V1->Yneg[j]; y < V1->Yneg[j+1]; y++) {
             const ImpLong i = y->idx;
             y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
         }
@@ -537,7 +597,7 @@ void ImpProblem::cache_sasb() {
 void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
 
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
-    const vector<Node*> &Y = U1->Y;
+    const vector<Node*> &Ypos = U1->Ypos;
 
     const ImpInt base = (f1 < fu)? 0: fu;
     const ImpInt fi = f1-base;
@@ -574,7 +634,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
         const ImpInt id = omp_get_thread_num();
         const ImpDouble *q1 = qp+i*k;
         ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+sa1[i]);
-        for (Node* y = Y[i]; y < Y[i+1]; y++) {
+        for (Node* y = Ypos[i]; y < Ypos[i+1]; y++) {
             const ImpDouble y_tilde = y->val;
             z_i += (1-w)*y_tilde-w*(1-r);
         }
@@ -593,7 +653,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
         const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX,
-        const vector<Node*> &Y, Vec &Hv_) {
+        const vector<Node*> &Ypos, Vec &Hv_) {
 
     const ImpDouble *qp = Q1.data();
     const ImpInt nr_threads = param->nr_threads;
@@ -604,7 +664,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
         for (ImpLong i = 0; i < m1; i++) {
             ImpInt id = omp_get_thread_num();
             const ImpDouble* q1 = qp+i*k;
-            ImpDouble d_1 = (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
+            ImpDouble d_1 = (1-w)*ImpInt(Ypos[i+1] - Ypos[i]) + w*n1;
             ImpDouble z_1 = 0;
             for (Node* x = UX[i]; x < UX[i+1]; x++) {
                 const ImpLong idx = x->idx;
@@ -642,7 +702,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
     const ImpInt fi = (f1 < fu)? f1 : f1 - fu;
     const vector<Node*> &X = U1->Xs[fi];
-    const vector<Node*> &Y = U1->Y;
+    const vector<Node*> &Ypos = U1->Ypos;
 
     if(param->freq){
         vector<ImpLong> &freq = U1->freq[fi];
@@ -680,7 +740,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
         Vec pk(k, 0);
         const ImpInt id = omp_get_thread_num();
         const ImpDouble *t1 = tp+i*k;
-        for (Node* y = Y[i]; y < Y[i+1]; y++) {
+        for (Node* y = Ypos[i]; y < Ypos[i+1]; y++) {
             const ImpDouble scale = (1-w)*y->val-w*(1-r);
             const ImpLong j = y->idx;
             const ImpDouble *q1 = qp+j*k;
@@ -705,7 +765,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
 
 void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
         const Vec &VQTQ, Vec &Hv, const Vec &Q1,
-        const vector<Node*> &X, const vector<Node*> &Y, Vec &Hv_) {
+        const vector<Node*> &X, const vector<Node*> &Ypos, Vec &Hv_) {
 
     const ImpDouble *qp = Q1.data();
 
@@ -719,7 +779,7 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
             UTx(X[i], X[i+1], V, phi.data());
             UTx(X[i], X[i+1], VQTQ, tau.data());
 
-            for (Node* y = Y[i]; y < Y[i+1]; y++) {
+            for (Node* y = Ypos[i]; y < Ypos[i+1]; y++) {
                 const ImpLong idx = y->idx;
                 const ImpDouble *dp = qp + idx*k;
                 const ImpDouble val = inner(phi.data(), dp, k);
@@ -748,7 +808,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpInt fi = f1-base;
 
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
-    const vector<Node*> &Y = U1->Y;
+    const vector<Node*> &Ypos = U1->Ypos;
     const vector<Node*> &X = U1->Xs[fi];
 
     const ImpLong m1 = (f1 < fu)? m:n;
@@ -794,10 +854,10 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         }
 
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
-            hs_side(m1, n1, V, Hv, Q1, X, Y, Hv_);
+            hs_side(m1, n1, V, Hv, Q1, X, Ypos, Hv_);
         else {
             mm(V.data(), QTQ.data(), VQTQ.data(), Df1, k, k);
-            hs_cross(m1, n1, V, VQTQ, Hv, Q1, X, Y, Hv_);
+            hs_cross(m1, n1, V, VQTQ, Hv, Q1, X, Ypos, Hv_);
         }
 
         vHv = inner(V.data(), Hv.data(), Df1k);
@@ -979,7 +1039,7 @@ void ImpProblem::validate() {
             z.assign(bt.begin(), bt.end());
             pred_z(i, z.data());
         }
-        for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
+        for(Node* y = Uva->Ypos[i]; y < Uva->Ypos[i+1]; y++){
             const ImpLong j = y->idx;
             if (j < z.size())
                 ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
@@ -1035,7 +1095,7 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts) {
     //        cout << argmax << " ";
 #endif
             z[argmax] = MIN_Z;
-            for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {
+            for (Node* nd = Uva->Ypos[i]; nd < Uva->Ypos[i+1]; nd++) {
                 if (argmax == nd->idx) {
                     hit_count[state]++;
                     break;
@@ -1088,21 +1148,21 @@ void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
 #ifndef SHOW_SCORE_ONLY
             if(show_label) {
               cout << "(";
-              for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++)
+              for (Node* nd = Uva->Ypos[i]; nd < Uva->Ypos[i+1]; nd++)
                   cout << nd->idx << ",";
               cout << ")" << endl;
               show_label = false;
             }
 #endif
 #endif
-            for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {
+            for (Node* nd = Uva->Ypos[i]; nd < Uva->Ypos[i+1]; nd++) {
                 if (argmax == nd->idx) {
                     dcg_score[state] += 1.0 / log2(valid_count + 2);
                     break;
                 }
             }
 
-            if( ImpInt(Uva->Y[i+1] - Uva->Y[i]) > valid_count )
+            if( ImpInt(Uva->Ypos[i+1] - Uva->Ypos[i]) > valid_count )
                 idcg_score[state] += 1.0 / log2(valid_count + 2);
             valid_count++;
         }
@@ -1147,16 +1207,11 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
-#ifdef EBUG_nDCG
-            cout << "DEBUG nDCG" << endl;
-            validate();
-#else
             one_epoch();
             if (!Uva->file_name.empty() && iter % 10 == 9) {
                 validate();
                 print_epoch_info(iter);
             }
-#endif
     }
 }
 
@@ -1265,7 +1320,7 @@ ImpDouble ImpProblem::func() {
                 }
             }
             bool pos_term = false;
-            for(Node* y = U->Y[i]; y < U->Y[i+1]; y++){
+            for(Node* y = U->Ypos[i]; y < U->Ypos[i+1]; y++){
                 if ( y->idx == j ) {
                     pos_term = true;
                     break;

@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
         U->split_fields();
 
         V->read(false);
-        V->transY(U->Y);
+        V->transY(U->Ypos, U->Yneg);
         V->split_fields();
 
         if (!Ut->file_name.empty()) {

@@ -52,10 +52,10 @@ public:
 class ImpData {
 public:
     string file_name;
-    ImpLong m, n, f, nnz_x, nnz_y;
-    vector<ImpLong> nnx, nny;
-    vector<Node> M, N;
-    vector<Node*> X, Y;
+    ImpLong m, n, f, nnz_x, nnz_y_pos, nnz_y_neg;
+    vector<ImpLong> nnx, nny_pos, nny_neg;
+    vector<Node> Mpos, Mneg, N;
+    vector<Node*> X, Ypos, Yneg;
 
 
     vector<vector<Node>> Ns;
@@ -68,7 +68,7 @@ public:
     void read(bool has_label, const ImpLong* ds=nullptr);
     void print_data_info();
     void split_fields();
-    void transY(const vector<Node*> &YT);
+    void transY(const vector<Node*> &YT_pos, const vector<Node*> &YT_neg);
 };
 
 
