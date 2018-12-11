@@ -462,6 +462,47 @@ void ImpProblem::init_y_tilde() {
     }
 }
 
+ImpDouble lr_loss(ImpDouble y_hat, ImpDouble y){
+    ImpDouble z = y_hat * y;
+    ImpDouble loss = 0;
+    if( -z > 0)
+        loss = -z + log( 1 + exp(z));
+    else
+        loss = log(1 + exp(-z));
+    return loss;
+}
+
+void ImpProblem::line_search_side(const bool &sub_type, Vec &S, 
+         const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1, const Vec &G) {
+    const ImpLong m1 = (sub_type)? m : n;
+    shared_ptr<ImpData> U1 = (sub_type)? U:V;
+    shared_ptr<ImpData> V1 = (sub_type)? V:U;
+
+    Vec gaps(m1, 0);
+    Vec XS(P1.size(), 0);
+    UTX(X12, m1, S, XS);
+    row_wise_inner(XS, Q1, m1, k, 1, gaps);
+    ImpDouble gTs = inner(G.data(), S.data(), S.size());
+    ImpDouble sTs = inner(S.data(), S.data(), S.size());
+    ImpDouble wTs = inner(W1.data(), S.data(), S.size());
+    ImpDouble theta = 1, beta = 0.1, mu = 0.5;
+    while(true){
+        ImpDouble func_diff =  lambda / 2 * (2 * theta * wTs + theta * theta * sTs);
+        for(ImpLong i = 0; i < U1->m; i++){
+            for(Node* y = U1->Ypos[i]; y != U1->Ypos[i+1]; y++)
+                func_diff += lr_loss(y->val + gaps[i], 1.0) - lr_loss(y->val, 1.0);
+            for(Node* y = U1->Yneg[i]; y != U1->Yneg[i+1]; y++)
+                func_diff += lr_loss(y->val + gaps[i], -1.0) - lr_loss(y->val, -1.0);
+        }
+        
+        if(func_diff <= theta * mu * gTs)
+            break;
+        theta *= beta;
+    }
+    
+    scal( S.data(), S.size(), theta);
+}
+
 void ImpProblem::update_side(const bool &sub_type, const Vec &S
         , const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
 
@@ -912,6 +953,7 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
 
     gd_side(f1, W1, Q1, G1);
     cg(f1, f2, S1, Q1, G1, P1);
+    line_search_side(sub_type, S1, Q1, W1, U1, P1, G1);
     update_side(sub_type, S1, Q1, W1, U1, P1);
 
     gd_side(f2, H1, P1, G2);

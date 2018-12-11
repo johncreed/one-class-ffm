@@ -107,6 +107,7 @@ private:
     void init_y_tilde();
     ImpDouble calc_cross(const ImpLong &i, const ImpLong &j);
 
+    void line_search_side(const bool &sub_type, Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1, const Vec &G);
     void update_side(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
     void update_cross(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
 
