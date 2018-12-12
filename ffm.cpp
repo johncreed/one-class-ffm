@@ -503,6 +503,7 @@ void ImpProblem::line_search_side(const bool &sub_type, Vec &S,
     scal( S.data(), S.size(), theta);
 }
 
+
 void ImpProblem::update_side(const bool &sub_type, const Vec &S
         , const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1) {
 
@@ -540,6 +541,56 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
             y->val += gaps[i];
         }
     }
+}
+
+void ImpProblem::line_search_cross(const bool &sub_type, Vec &S, 
+         const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1, const Vec &G) {
+    const ImpLong m1 = (sub_type)? m : n;
+    shared_ptr<ImpData> U1 = (sub_type)? U:V;
+    
+    Vec XS(P1.size(), 0);
+    UTX(X12, m1, S, XS);
+
+    Vec delta_pos;
+    Vec delta_neg;
+    for(ImpLong i = 0; i < U1->m; i++){
+        ImpDouble *XSp =  XS.data() + i * k;
+        for(Node* y=U1->Ypos[i]; y != U1->Ypos[i+1]; y++){
+            ImpLong idx = y->idx;
+            ImpDouble *P1p = P1.data() + idx * k;
+            delta_pos.emplace_back(inner(XSp, P1p, k));
+        }
+        for(Node* y=U1->Yneg[i]; y != U1->Yneg[i+1]; y++){
+            ImpLong idx = y->idx;
+            ImpDouble *P1p = P1.data() + idx * k;
+            delta_neg.emplace_back(inner(XSp, P1p, k));
+        }
+    }
+    
+    ImpDouble gTs = inner(G.data(), S.data(), S.size());
+    ImpDouble sTs = inner(S.data(), S.data(), S.size());
+    ImpDouble wTs = inner(W1.data(), S.data(), S.size());
+    ImpDouble theta = 1, beta = 0.1, mu = 0.5;
+    while(true){
+        ImpDouble func_diff =  lambda / 2 * (2 * theta * wTs + theta * theta * sTs);
+        ImpLong pos_idx=0, neg_idx=0;
+        for(ImpLong i = 0; i < U1->m; i++){
+            for(Node* y = U1->Ypos[i]; y != U1->Ypos[i+1]; y++){
+                func_diff += lr_loss(y->val + theta * delta_pos[pos_idx], 1.0) - lr_loss(y->val, 1.0);
+                pos_idx++;
+            }
+            for(Node* y = U1->Yneg[i]; y != U1->Yneg[i+1]; y++){
+                func_diff += lr_loss(y->val + theta * delta_neg[i], -1.0) - lr_loss(y->val, -1.0);
+                neg_idx++;
+            }
+        }
+        
+        if(func_diff <= theta * mu * gTs)
+            break;
+        theta *= beta;
+    }
+    
+    scal( S.data(), S.size(), theta);
 }
 
 void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
@@ -958,6 +1009,7 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
 
     gd_side(f2, H1, P1, G2);
     cg(f2, f1, S2, P1, G2, Q1);
+    line_search_side(sub_type, S2, P1, H1, U2, Q1, G2);
     update_side(sub_type, S2, P1, H1, U2, Q1);
 }
 
@@ -971,10 +1023,12 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 
     gd_cross(f1, f12, Q1, W1, GW);
     cg(f1, f2, SW, Q1, GW, P1);
+    line_search_cross(true, SW, Q1, W1, U1, P1, GW);
     update_cross(true, SW, Q1, W1, U1, P1);
 
     gd_cross(f2, f12, P1, H1, GH);
     cg(f2, f1, SH, P1, GH, Q1);
+    line_search_cross(false, SH, P1, H1, V1, Q1, GH);
     update_cross(false, SH, P1, H1, V1, Q1);
 }
 

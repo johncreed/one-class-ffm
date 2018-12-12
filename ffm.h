@@ -109,6 +109,7 @@ private:
 
     void line_search_side(const bool &sub_type, Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1, const Vec &G);
     void update_side(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
+    void line_search_cross(const bool &sub_type, Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1, const Vec &G);
     void update_cross(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
 
     void UTx(const Node *x0, const Node* x1, const Vec &A, ImpDouble *c);
