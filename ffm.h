@@ -52,7 +52,8 @@ public:
 class ImpData {
 public:
     string file_name;
-    ImpLong m, n, f, nnz_x, nnz_y;
+    ImpLong m, n, nnz_x, nnz_y;
+    ImpInt f;
     vector<Node> M, N;
     vector<Node*> X, Y;
 

@@ -82,7 +82,8 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
     string line, label_block, label_str;
     char dummy;
 
-    ImpLong fid, idx, y_nnz=0, x_nnz=0;
+    ImpLong idx, y_nnz=0, x_nnz=0;
+    ImpInt fid, label;
     ImpDouble val;
 
     while (getline(fs, line)) {
@@ -93,7 +94,8 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
             iss >> label_block;
             istringstream labelst(label_block);
             while (getline(labelst, label_str, ',')) {
-                idx = stoi(label_str);
+                istringstream labels(label_str);
+                labels >> idx >> dummy >> label;
                 n = max(n, idx+1);
                 y_nnz++;
             }
@@ -133,7 +135,9 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
             istringstream labelst(label_block);
             while (getline(labelst, label_str, ',')) {
                 nnz_j++;
-                ImpLong idx = stoi(label_str);
+                istringstream labels(label_str);
+                labels >> idx >> dummy >> label;
+                M[nnz_j-1].fid = label;
                 M[nnz_j-1].idx = idx;
             }
             nny[i] = nnz_j;
@@ -265,6 +269,7 @@ void ImpData::transY(const vector<Node*> &YT) {
     nnz_y = nnz;
     for (ImpLong nnz_i = 0; nnz_i < nnz; nnz_i++) {
         M[nnz_i].idx = perm[nnz_i].first;
+        M[nnz_i].fid = perm[nnz_i].second->fid;
         M[nnz_i].val = perm[nnz_i].second->val;
     }
 
@@ -372,6 +377,8 @@ void ImpProblem::init_y_tilde() {
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m; i++) {
         for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
+            if (!y->fid)
+                continue;
             ImpLong j = y->idx;
             y->val = a[i]+b[j]+calc_cross(i, j) - 1;
         }
@@ -379,6 +386,8 @@ void ImpProblem::init_y_tilde() {
     #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < n; j++) {
         for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
+            if (!y->fid)
+                continue;
             ImpLong i = y->idx;
             y->val = a[i]+b[j]+calc_cross(i, j) - 1;
         }
@@ -407,12 +416,16 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     for (ImpLong i = 0; i < U1->m; i++) {
         a1[i] += gaps[i];
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
+            if (!y->fid)
+                continue;
             y->val += gaps[i];
         }
     }
     #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
+            if (!y->fid)
+                continue;
             const ImpLong i = y->idx;
             y->val += gaps[i];
         }
@@ -434,6 +447,8 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < U1->m; i++) {
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
+            if (!y->fid)
+                continue;
             const ImpLong j = y->idx;
             y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
         }
@@ -441,6 +456,8 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
     #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
+            if (!y->fid)
+                continue;
             const ImpLong i = y->idx;
             y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
         }
@@ -556,6 +573,8 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
         const ImpDouble *q1 = qp+i*k;
         ImpDouble z_i = w*(n1*(a1[i]-r)+b_sum+sa1[i]);
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
+            if (!y->fid)
+                continue;
             const ImpDouble y_tilde = y->val;
             z_i += (1-w)*y_tilde-w*(1-r);
         }
@@ -585,7 +604,12 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
         for (ImpLong i = 0; i < m1; i++) {
             ImpInt id = omp_get_thread_num();
             const ImpDouble* q1 = qp+i*k;
-            ImpDouble d_1 = (1-w)*ImpInt(Y[i+1] - Y[i]) + w*n1;
+            ImpDouble d_1 = w*n1;
+            for (Node* y = Y[i]; y < Y[i+1]; y++) {
+                if (!y->fid)
+                    continue;
+                d_1 += (1-w);
+            }
             ImpDouble z_1 = 0;
             for (Node* x = UX[i]; x < UX[i+1]; x++) {
                 const ImpLong idx = x->idx;
@@ -662,6 +686,8 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
         const ImpInt id = omp_get_thread_num();
         const ImpDouble *t1 = tp+i*k;
         for (Node* y = Y[i]; y < Y[i+1]; y++) {
+            if (!y->fid)
+                continue;
             const ImpDouble scale = (1-w)*y->val-w*(1-r);
             const ImpLong j = y->idx;
             const ImpDouble *q1 = qp+j*k;
@@ -701,6 +727,8 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
             UTx(X[i], X[i+1], VQTQ, tau.data());
 
             for (Node* y = Y[i]; y < Y[i+1]; y++) {
+                if (!y->fid)
+                    continue;
                 const ImpLong idx = y->idx;
                 const ImpDouble *dp = qp + idx*k;
                 const ImpDouble val = inner(phi.data(), dp, k);
@@ -936,12 +964,13 @@ void ImpProblem::validate() {
     }
 
     ImpDouble ploss = 0;
-#pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
+//#pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z(bt);
         pred_z(i, z.data());
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
+            cout << y->fid << " 1:" << z[j]+at[i]+bt[j] << endl;
             ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
         prec_k(z.data(), i, top_k, hit_counts);
@@ -978,6 +1007,8 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<I
 #endif
             z[argmax] = MIN_Z;
             for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {
+                if (!nd->fid)
+                    continue;
                 if (argmax == nd->idx) {
                     hit_count[state]++;
                     break;
@@ -1019,7 +1050,7 @@ void ImpProblem::solve() {
         one_epoch();
         if (!Uva->file_name.empty() && iter % 5 == 0) {
             validate();
-            print_epoch_info(iter);
+            //print_epoch_info(iter);
         }
     }
 }
