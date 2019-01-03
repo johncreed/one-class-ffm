@@ -964,6 +964,7 @@ void ImpProblem::validate() {
     }
 
     ImpDouble ploss = 0;
+    ImpDouble aucAll = 0;
 //#pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z(bt);
@@ -973,10 +974,12 @@ void ImpProblem::validate() {
             cout << y->fid << " 1:" << z[j]+at[i]+bt[j] << endl;
             ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
+        aucAll += auc(z, i);
         prec_k(z.data(), i, top_k, hit_counts);
         valid_samples++;
     }
 
+    aucAll /= Uva->m;
     loss = sqrt(ploss/Uva->m);
 
     fill(va_loss.begin(), va_loss.end(), 0);
@@ -988,6 +991,56 @@ void ImpProblem::validate() {
         va_loss[i] /= ImpDouble(valid_samples*top_k[i]);
     }
 }
+
+class Comp{
+    const ImpDouble *dec_val;
+    public:
+    Comp(const ImpDouble *ptr): dec_val(ptr){}
+    bool operator()(int i, int j) const{
+        return dec_val[i] > dec_val[j];
+    }
+};
+
+double ImpProblem::auc(Vec &z, ImpLong i){
+    ImpDouble roc  = 0;
+    ImpLong size = z.size();
+    vector<ImpLong> indices(size);
+
+    for(ImpLong j = 0; j < size; ++j) indices[j] = j;
+
+    sort(indices.begin(), indices.end(), Comp(z.data()));
+
+    ImpLong tp = 0,fp = 0;
+    for(ImpLong j = 0; j < size; j++) {
+        bool is_pos = false;
+        ImpLong idx = indices[j];
+        for(Node *y = Uva->Y[i]; y != Uva->Y[i], nd++){
+            if(y->idx == idx && y->fid == 1){
+               is_pos = true; 
+               break;
+            }
+        }
+
+        if(is_pos) tp++;
+        else{
+            roc += tp;
+            fp++;
+        }
+    }
+
+    if(tp == 0 || fp == 0)
+    {
+        fprintf(stderr, "warning: Too few postive true labels or negative true labels\n");
+        roc = 0;
+    }
+    else
+        roc = roc / tp / fp;
+
+    printf("AUC = %g\n", roc);
+
+    return roc;
+}
+
 
 void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts) {
     ImpInt valid_count = 0;
