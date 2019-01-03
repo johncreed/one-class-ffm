@@ -1001,7 +1001,7 @@ class Comp{
     }
 };
 
-double ImpProblem::auc(Vec &z, ImpLong i){
+ImpDouble ImpProblem::auc(Vec &z, ImpLong i){
     ImpDouble roc  = 0;
     ImpLong size = z.size();
     vector<ImpLong> indices(size);
