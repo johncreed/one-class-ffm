@@ -1014,7 +1014,7 @@ double ImpProblem::auc(Vec &z, ImpLong i){
     for(ImpLong j = 0; j < size; j++) {
         bool is_pos = false;
         ImpLong idx = indices[j];
-        for(Node *y = Uva->Y[i]; y != Uva->Y[i], nd++){
+        for(Node *y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             if(y->idx == idx && y->fid == 1){
                is_pos = true; 
                break;
@@ -1027,6 +1027,7 @@ double ImpProblem::auc(Vec &z, ImpLong i){
             fp++;
         }
     }
+    printf("%ld, %ld\n", tp, fp);
 
     if(tp == 0 || fp == 0)
     {

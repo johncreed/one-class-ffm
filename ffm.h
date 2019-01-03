@@ -130,6 +130,7 @@ private:
 
     void pred_z(const ImpLong i, ImpDouble *z);
     void pred_items();
+    double auc(Vec &z, ImpLong i);
     void prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts);
     void validate();
     void print_epoch_info(ImpInt t);
