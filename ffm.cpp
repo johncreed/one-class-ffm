@@ -964,7 +964,8 @@ void ImpProblem::validate() {
     }
 
     ImpDouble ploss = 0;
-    ImpDouble aucAll = 0;
+    ImpDouble gauc_all = 0;
+    ImpDouble gauc = 0;
 //#pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z(bt);
@@ -974,12 +975,14 @@ void ImpProblem::validate() {
             cout << y->fid << " 1:" << z[j]+at[i]+bt[j] << endl;
             ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
-        aucAll += auc(z, i);
+        gauc_all += auc(z, i, true);
+        gauc += auc(z, i, false);
         prec_k(z.data(), i, top_k, hit_counts);
         valid_samples++;
     }
 
-    aucAll /= Uva->m;
+    gauc_all /= Uva->m;
+    gauc /= Uva->m;
     loss = sqrt(ploss/Uva->m);
 
     fill(va_loss.begin(), va_loss.end(), 0);
@@ -990,6 +993,8 @@ void ImpProblem::validate() {
 
         va_loss[i] /= ImpDouble(valid_samples*top_k[i]);
     }
+
+    cout << "gauc: " << gauc << "gauc_all: " << gauc_all << endl;
 }
 
 class Comp{
@@ -1001,25 +1006,31 @@ class Comp{
     }
 };
 
-ImpDouble ImpProblem::auc(Vec &z, ImpLong i){
+ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool all){
     ImpDouble roc  = 0;
     ImpLong size = z.size();
     vector<ImpLong> indices(size);
 
-    for(ImpLong j = 0; j < size; ++j) indices[j] = j;
+    for(ImpLong j = 0; j < size; j++) indices[j] = j;
 
     sort(indices.begin(), indices.end(), Comp(z.data()));
 
     ImpLong tp = 0,fp = 0;
     for(ImpLong j = 0; j < size; j++) {
         bool is_pos = false;
+        bool is_obs = false;
         ImpLong idx = indices[j];
         for(Node *y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
+            if(y->idx == idx)
+                is_obs = true;
             if(y->idx == idx && y->fid == 1){
-               is_pos = true; 
-               break;
+                is_pos = true; 
+                break;
             }
         }
+
+        if( !all  && !is_obs)
+            continue;
 
         if(is_pos) tp++;
         else{
