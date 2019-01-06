@@ -1011,7 +1011,7 @@ class Comp{
     public:
     Comp(const ImpDouble *ptr): dec_val(ptr){}
     bool operator()(int i, int j) const{
-        return dec_val[i] > dec_val[j];
+        return dec_val[i] < dec_val[j];
     }
 };
 
@@ -1050,6 +1050,8 @@ ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool do_sum_all){
         else{
             fp++;
         }
+
+        rank += 1;
     }
 
     if(tp == 0 || fp == 0)
