@@ -93,6 +93,7 @@ private:
 
     vector<Vec> W, H, P, Q, Pva, Qva;
     Vec a, b, va_loss, sa, sb;
+    ImpDouble gauc, gauc_all;
 
     vector<ImpInt> top_k;
 
