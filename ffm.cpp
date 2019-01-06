@@ -964,11 +964,9 @@ void ImpProblem::validate() {
     }
 
     ImpDouble ploss = 0;
-    gauc = gauc_all = 0;
-    ImpDouble gauc_i = -1;
-    ImpDouble gauc_all_wieght_sum = 0;
-    ImpDouble gauc_weight_sum = 0;
-//#pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
+    ImpDouble gauc_sum = 0, gauc_all_sum = 0;
+    ImpDouble gauc_all_weight_sum = 0, gauc_weight_sum = 0;
+    #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss, gauc_all_sum, gauc_sum, gauc_all_weight_sum, gauc_weight_sum)
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z(bt);
         pred_z(i, z.data());
@@ -978,22 +976,23 @@ void ImpProblem::validate() {
             ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
         
-        gauc_i = auc(z, i, true);
+        ImpDouble gauc_i = auc(z, i, true);
         if( gauc_i > 0 ){
-            gauc_all += auc(z, i, true);
-            gauc_all_wieght_sum += 1;
+            gauc_all_sum += auc(z, i, true);
+            gauc_all_weight_sum += 1;
         }
         gauc_i = auc(z, i, false);
         if( gauc_i > 0){
-            gauc += auc(z, i, false) * (ImpDouble)(Uva->Y[i+1] - Uva->Y[i]);
+            gauc_sum += auc(z, i, false) * (ImpDouble)(Uva->Y[i+1] - Uva->Y[i]);
             gauc_weight_sum += (Uva->Y[i+1] - Uva->Y[i]);
         }
+
         prec_k(z.data(), i, top_k, hit_counts);
         valid_samples++;
     }
 
-    gauc_all /= gauc_all_wieght_sum;
-    gauc /= gauc_weight_sum;
+    gauc_all = gauc_all_sum / gauc_all_weight_sum;
+    gauc = gauc_sum / gauc_weight_sum;
     loss = sqrt(ploss/Uva->m);
 
     fill(va_loss.begin(), va_loss.end(), 0);
