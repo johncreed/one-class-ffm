@@ -1006,8 +1006,9 @@ class Comp{
     }
 };
 
-ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool all){
-    ImpDouble roc  = 0;
+ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool do_sum_all){
+    ImpDouble rank_sum  = 0;
+    ImpDouble auc  = 0;
     ImpLong size = z.size();
     vector<ImpLong> indices(size);
 
@@ -1016,6 +1017,7 @@ ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool all){
     sort(indices.begin(), indices.end(), Comp(z.data()));
 
     ImpLong tp = 0,fp = 0;
+    ImpLong rank = 0;
     for(ImpLong j = 0; j < size; j++) {
         bool is_pos = false;
         bool is_obs = false;
@@ -1029,28 +1031,26 @@ ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool all){
             }
         }
 
-        if( !all  && !is_obs)
+        if( !do_sum_all  && !is_obs)
             continue;
 
-        if(is_pos) tp++;
+        if(is_pos){ 
+            tp++;
+            rank_sum += (rank + 1);
+        }
         else{
-            roc += tp;
             fp++;
         }
     }
-    printf("%ld, %ld\n", tp, fp);
 
     if(tp == 0 || fp == 0)
     {
-        fprintf(stderr, "warning: Too few postive true labels or negative true labels\n");
-        roc = 0;
+        auc = 0;
     }
     else
-        roc = roc / tp / fp;
+        auc = (rank_sum - (tp + 1.0) * tp / 2.0)/ tp / fp;
 
-    printf("AUC = %g\n", roc);
-
-    return roc;
+    return auc;
 }
 
 
