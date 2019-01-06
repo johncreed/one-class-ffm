@@ -1118,7 +1118,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
         cout << setprecision(3) << loss;
     }
     cout << endl;
-    cout << "gauc: " << gauc << "gauc_all: " << gauc_all << endl;
+    cout << "gauc: " << gauc << " gauc_all: " << gauc_all << endl;
 }
 
 void ImpProblem::solve() {
