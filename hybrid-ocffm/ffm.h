@@ -46,6 +46,7 @@ public:
     ImpInt fid;
     ImpLong idx;
     ImpDouble val;
+    ImpDouble expyy;
     Node(): fid(0), idx(0), val(0) {};
 };
 
@@ -103,6 +104,7 @@ private:
     void add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1);
     void calc_side();
     void init_y_tilde();
+    void init_expyy();
     ImpDouble calc_cross(const ImpLong &i, const ImpLong &j);
 
     void update_side(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
@@ -113,6 +115,9 @@ private:
     void QTQ(const Vec &C, const ImpLong &l);
     ImpDouble pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
     ImpDouble norm_block(const ImpInt &f1,const ImpInt &f2);
+
+    ImpDouble l_pos_grad(const Node* y);
+    ImpDouble l_pos_hessian(const Node* y);
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
     void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);

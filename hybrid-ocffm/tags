@@ -1,0 +1,348 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+CXX	Makefile	/^	CXX = g++$/;"	m
+CXX	Makefile	/^CXX = g++$/;"	m
+CXXFLAGS	Makefile	/^CXXFLAGS = -Wall -O3 -std=c++0x -march=native$/;"	m
+Ds	ffm.h	/^    vector<ImpLong> Ds;$/;"	m	class:ImpData
+H	ffm.h	/^    vector<Vec> W, H, P, Q, Pva, Qva;$/;"	m	class:ImpProblem
+ImpData	ffm.h	/^    ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};$/;"	f	class:ImpData
+ImpData	ffm.h	/^class ImpData {$/;"	c
+ImpDouble	ffm.h	/^typedef double ImpDouble;$/;"	t
+ImpFloat	ffm.h	/^typedef double ImpFloat;$/;"	t
+ImpInt	ffm.h	/^typedef unsigned int ImpInt;$/;"	t
+ImpLong	ffm.h	/^typedef unsigned long int ImpLong;$/;"	t
+ImpProblem	ffm.h	/^    ImpProblem(shared_ptr<ImpData> &U, shared_ptr<ImpData> &Uva,$/;"	f	class:ImpProblem
+ImpProblem	ffm.h	/^class ImpProblem {$/;"	c
+M	ffm.h	/^    vector<Node> M, N;$/;"	m	class:ImpData
+MIN_Z	ffm.h	/^const int MIN_Z = -1000;$/;"	v
+MKLFLAGS	Makefile	/^MKLFLAGS = -m64 -I${MKLROOT}\/include -Wl,--no-as-needed -L${MKLROOT}\/lib\/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm -ldl$/;"	m
+N	ffm.h	/^    vector<Node> M, N;$/;"	m	class:ImpData
+Node	ffm.h	/^    Node(): fid(0), idx(0), val(0) {};$/;"	f	class:Node
+Node	ffm.h	/^class Node {$/;"	c
+Ns	ffm.h	/^    vector<vector<Node>> Ns;$/;"	m	class:ImpData
+Option	train.cpp	/^struct Option {$/;"	s	file:
+P	ffm.h	/^    vector<Vec> W, H, P, Q, Pva, Qva;$/;"	m	class:ImpProblem
+PATH	script/outbrain.tools/item_ffm.py	/^PATH = 'ad_filter.csv'$/;"	v
+PATH	script/outbrain.tools/item_fm.py	/^PATH = 'ad_filter.csv'$/;"	v
+PATH	script/outbrain.tools/item_mf.py	/^PATH = 'ad_filter.csv'$/;"	v
+Parameter	ffm.h	/^    Parameter():omega(0.1), lambda(1e-5), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true) {};$/;"	f	class:Parameter
+Parameter	ffm.h	/^class Parameter {$/;"	c
+Pva	ffm.h	/^    vector<Vec> W, H, P, Q, Pva, Qva;$/;"	m	class:ImpProblem
+Q	ffm.h	/^    vector<Vec> W, H, P, Q, Pva, Qva;$/;"	m	class:ImpProblem
+Qva	ffm.h	/^    vector<Vec> W, H, P, Q, Pva, Qva;$/;"	m	class:ImpProblem
+U	ffm.h	/^    shared_ptr<ImpData> U, Uva, V;$/;"	m	class:ImpProblem
+UNAME_S	Makefile	/^UNAME_S := $(shell uname -s)$/;"	m
+UTX	ffm.cpp	/^void ImpProblem::UTX(const vector<Node*> &X, const ImpLong m1, const Vec &A, Vec &C) {$/;"	f	class:ImpProblem
+UTx	ffm.cpp	/^void ImpProblem::UTx(const Node* x0, const Node* x1, const Vec &A, ImpDouble *c) {$/;"	f	class:ImpProblem
+Uva	ffm.h	/^    shared_ptr<ImpData> U, Uva, V;$/;"	m	class:ImpProblem
+V	ffm.h	/^    shared_ptr<ImpData> U, Uva, V;$/;"	m	class:ImpProblem
+Vec	ffm.h	/^typedef vector<ImpDouble> Vec;$/;"	t
+W	ffm.h	/^    vector<Vec> W, H, P, Q, Pva, Qva;$/;"	m	class:ImpProblem
+X	ffm.h	/^    vector<Node*> X, Y;$/;"	m	class:ImpData
+Xs	ffm.h	/^    vector<vector<Node*>> Xs;$/;"	m	class:ImpData
+Y	ffm.h	/^    vector<Node*> X, Y;$/;"	m	class:ImpData
+a	ffm.h	/^    Vec a, b, va_loss, sa, sb;$/;"	m	class:ImpProblem
+ad_filter	script/kdd12.tools/filter.py	/^ad_filter=ad_list.iloc[0:num]$/;"	v
+ad_filter	script/outbrain.tools/filter.py	/^ad_filter = ad_rank_list[0:num]$/;"	v
+ad_list	script/kdd12.tools/filter.py	/^ad_list=ad_list.sort_values(ascending=False)$/;"	v
+ad_list	script/kdd12.tools/filter.py	/^ad_list=df_pos_nozero.AdID.value_counts()$/;"	v
+ad_rank_list	script/outbrain.tools/filter.py	/^ad_rank_list = ad_rank_list.sort_values(ascending=False)$/;"	v
+ad_rank_list	script/outbrain.tools/filter.py	/^ad_rank_list = df_click_pos.ad_id.value_counts()$/;"	v
+add_feat	script/kdd12.tools/ad_ffm.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/kdd12.tools/ad_fm.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/kdd12.tools/ad_mf.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/kdd12.tools/user_ffm.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/kdd12.tools/user_fm.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/kdd12.tools/user_mf.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/outbrain.tools/context_ffm.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/outbrain.tools/context_fm.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/outbrain.tools/context_mf.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/outbrain.tools/item_ffm.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/outbrain.tools/item_fm.py	/^def add_feat(key, value, field):$/;"	f
+add_feat	script/outbrain.tools/item_mf.py	/^def add_feat(key, value, field):$/;"	f
+add_side	ffm.cpp	/^void ImpProblem::add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1) {$/;"	f	class:ImpProblem
+adid_map	script/kdd12.tools/user.py	/^def adid_map( ad_list ):$/;"	f
+all_fields	script/kdd12.tools/ad_ffm.py	/^all_fields = [field0, field1, field2, field3]$/;"	v
+all_fields	script/kdd12.tools/ad_fm.py	/^all_fields = [s_field]$/;"	v
+all_fields	script/kdd12.tools/ad_mf.py	/^all_fields = [s_field]$/;"	v
+all_fields	script/kdd12.tools/user_ffm.py	/^all_fields = [field0, field1]$/;"	v
+all_fields	script/kdd12.tools/user_fm.py	/^all_fields = [s_field]$/;"	v
+all_fields	script/kdd12.tools/user_mf.py	/^all_fields = [s_field]$/;"	v
+all_idx	script/kdd12.tools/ad_ffm.py	/^all_idx = [-1, -1, -1, -1]$/;"	v
+all_idx	script/kdd12.tools/ad_fm.py	/^all_idx = [-1]$/;"	v
+all_idx	script/kdd12.tools/ad_mf.py	/^all_idx = [-1]$/;"	v
+all_idx	script/kdd12.tools/user_ffm.py	/^all_idx = [-1, -1]$/;"	v
+all_idx	script/kdd12.tools/user_fm.py	/^all_idx = [-1]$/;"	v
+all_idx	script/kdd12.tools/user_mf.py	/^all_idx = [-1]$/;"	v
+attr_list	script/kdd12.tools/ad.py	/^                attr_list = ad_df.loc[:,feat].unique()$/;"	v
+attr_list	script/kdd12.tools/user.py	/^        attr_list = ad_df.loc[:,'AdID'].unique()$/;"	v
+attr_str	script/kdd12.tools/ad.py	/^                attr_str = "|".join(map(str, attr_list))$/;"	v
+attr_str	script/kdd12.tools/user.py	/^        attr_str = "|".join( adid_map(attr_list) )$/;"	v
+axpy	ffm.cpp	/^void axpy(const ImpDouble *x, ImpDouble *y, const ImpLong &l, const ImpDouble &lambda) {$/;"	f
+b	ffm.h	/^    Vec a, b, va_loss, sa, sb;$/;"	m	class:ImpProblem
+basename	train.cpp	/^string basename(string path) {$/;"	f
+built_map_dict	script/kdd12.tools/user.py	/^def built_map_dict():$/;"	f
+cache_sasb	ffm.cpp	/^void ImpProblem::cache_sasb() {$/;"	f	class:ImpProblem
+calc_cross	ffm.cpp	/^ImpDouble ImpProblem::calc_cross(const ImpLong &i, const ImpLong &j) {$/;"	f	class:ImpProblem
+calc_side	ffm.cpp	/^void ImpProblem::calc_side() {$/;"	f	class:ImpProblem
+cg	ffm.cpp	/^void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,$/;"	f	class:ImpProblem
+cnt	script/kdd12.tools/ad.py	/^    cnt = 0$/;"	v
+convert2ffm	script/outbrain.tools/context_ffm.py	/^def convert2ffm( o_f, i_f ):$/;"	f
+convert2ffm	script/outbrain.tools/context_fm.py	/^def convert2ffm( o_f, i_f ):$/;"	f
+convert2ffm	script/outbrain.tools/context_mf.py	/^def convert2ffm( o_f, i_f ):$/;"	f
+df	script/kdd12.tools/ad.py	/^    df = pd.read_csv("ad.filter.csv")$/;"	v
+df	script/kdd12.tools/filter.py	/^df = pandas.read_csv("training.csv")$/;"	v
+df	script/kdd12.tools/user.py	/^    df = pd.read_csv("user.filter.csv")$/;"	v
+df_ad	script/kdd12.tools/filter.py	/^df_ad=df_filter[['AdID','DisplayURL','AdvertiserID', 'KeywordID', 'TitleID', 'DescriptionID' ]]$/;"	v
+df_ad	script/outbrain.tools/filter.py	/^df_ad = pd.read_csv("promoted_content.csv")$/;"	v
+df_ad_filter	script/outbrain.tools/filter.py	/^df_ad_filter = df_ad.loc[df_ad['ad_id'].isin(ad_filter.index)]$/;"	v
+df_click	script/outbrain.tools/filter.py	/^df_click = pd.read_csv("clicks_train.csv")$/;"	v
+df_click_filter	script/outbrain.tools/filter.py	/^df_click_filter = df_click_pos.loc[df_click_pos['ad_id'].isin(ad_filter.index)]$/;"	v
+df_click_pos	script/outbrain.tools/filter.py	/^df_click_pos = df_click.loc[df_click['clicked'] > 0]$/;"	v
+df_events	script/outbrain.tools/filter.py	/^df_events = pd.read_csv("cv_events.csv")$/;"	v
+df_events_filter	script/outbrain.tools/filter.py	/^df_events_filter = df_events.loc[df_events['display_id'].isin(dis_unique_id)]$/;"	v
+df_filter	script/kdd12.tools/filter.py	/^df_filter=df_pos_nozero.loc[df_pos_nozero['AdID'].isin(ad_filter.index)]$/;"	v
+df_pos	script/kdd12.tools/filter.py	/^df_pos=df.loc[df['Click'] > 0, :]$/;"	v
+df_user	script/kdd12.tools/filter.py	/^df_user=df_filter[['AdID','UserID', 'QueryID', 'Depth']]$/;"	v
+dfa	script/outbrain.tools/add_label.py	/^dfa = dfe.merge(dfa, left_on='document_id', right_on='document_id', how='left')$/;"	v
+dfa	script/outbrain.tools/add_label.py	/^dfa = pd.read_csv("ad_filter.csv")$/;"	v
+dfc	script/outbrain.tools/add_label.py	/^dfc = pd.read_csv("click_filter.csv")$/;"	v
+dfe	script/outbrain.tools/add_label.py	/^dfe = dfe.merge(dfa, left_on='ad_id', right_on='ad_id', how='left')$/;"	v
+dfe	script/outbrain.tools/add_label.py	/^dfe = dfe.merge(dfc, left_on='display_id', right_on='display_id', how='left')$/;"	v
+dfe	script/outbrain.tools/add_label.py	/^dfe = dfe.merge(dfm, left_on='document_id_x', right_on='document_id', how='left')$/;"	v
+dfe	script/outbrain.tools/add_label.py	/^dfe = pd.read_csv("events_filter.csv")$/;"	v
+dfm	script/outbrain.tools/add_label.py	/^dfm = pd.read_csv("documents_meta.csv")$/;"	v
+dis_unique_id	script/outbrain.tools/filter.py	/^dis_unique_id = df_click_filter.display_id.unique()$/;"	v
+f	ffm.h	/^    ImpInt f;$/;"	m	class:ImpData
+f	ffm.h	/^    ImpInt k, fu, fv, f;$/;"	m	class:ImpProblem
+f	script/kdd12.tools/split.py	/^        f = open(sys.argv[1], "r")$/;"	v
+f	script/outbrain.tools/sample.py	/^        f = open(sys.argv[1], "r")$/;"	v
+feat_dict	script/kdd12.tools/ad_ffm.py	/^feat_dict = {}$/;"	v
+feat_dict	script/kdd12.tools/ad_fm.py	/^feat_dict = {}$/;"	v
+feat_dict	script/kdd12.tools/ad_mf.py	/^feat_dict = {}$/;"	v
+feat_dict	script/kdd12.tools/user_ffm.py	/^feat_dict = {}$/;"	v
+feat_dict	script/kdd12.tools/user_fm.py	/^feat_dict = {}$/;"	v
+feat_dict	script/kdd12.tools/user_mf.py	/^feat_dict = {}$/;"	v
+feat_dict	script/outbrain.tools/context_ffm.py	/^feat_dict = {}$/;"	v
+feat_dict	script/outbrain.tools/context_fm.py	/^feat_dict = {}$/;"	v
+feat_dict	script/outbrain.tools/context_mf.py	/^feat_dict = {}$/;"	v
+feat_dict	script/outbrain.tools/item_ffm.py	/^feat_dict = {}$/;"	v
+feat_dict	script/outbrain.tools/item_fm.py	/^feat_dict = {}$/;"	v
+feat_dict	script/outbrain.tools/item_mf.py	/^feat_dict = {}$/;"	v
+feat_idx_list	script/kdd12.tools/ad_ffm.py	/^        feat_idx_list = []$/;"	v
+feat_idx_list	script/kdd12.tools/ad_fm.py	/^        feat_idx_list = []$/;"	v
+feat_idx_list	script/kdd12.tools/ad_mf.py	/^        feat_idx_list = []$/;"	v
+feat_idx_list	script/kdd12.tools/user_ffm.py	/^        feat_idx_list = []$/;"	v
+feat_idx_list	script/kdd12.tools/user_fm.py	/^        feat_idx_list = []$/;"	v
+feat_idx_list	script/kdd12.tools/user_mf.py	/^        feat_idx_list = []$/;"	v
+feat_idx_list	script/outbrain.tools/item_ffm.py	/^    feat_idx_list = []$/;"	v
+feat_idx_list	script/outbrain.tools/item_fm.py	/^    feat_idx_list = []$/;"	v
+feat_idx_list	script/outbrain.tools/item_mf.py	/^        feat_idx_list = []$/;"	v
+feat_list	script/kdd12.tools/ad.py	/^feat_list = ['AdID', 'DisplayURL', 'AdvertiserID', 'KeywordID', 'TitleID', 'DescriptionID']$/;"	v
+feat_list	script/kdd12.tools/user.py	/^feat_list = ['AdID', 'UserID', 'QueryID', 'Depth']$/;"	v
+fid	ffm.h	/^    ImpInt fid;$/;"	m	class:Node
+field0	script/kdd12.tools/ad_ffm.py	/^field0 = ['TitleID']$/;"	v
+field0	script/kdd12.tools/ad_fm.py	/^field0 = ['TitleID']$/;"	v
+field0	script/kdd12.tools/ad_mf.py	/^field0 = []$/;"	v
+field0	script/kdd12.tools/user_ffm.py	/^field0 = ['UserID']$/;"	v
+field0	script/kdd12.tools/user_fm.py	/^field0 = ['UserID']$/;"	v
+field0	script/kdd12.tools/user_mf.py	/^field0 = ['UserID']$/;"	v
+field1	script/kdd12.tools/ad_ffm.py	/^field1 = ['DescriptionID']$/;"	v
+field1	script/kdd12.tools/ad_fm.py	/^field1 = ['DescriptionID']$/;"	v
+field1	script/kdd12.tools/ad_mf.py	/^field1 = []$/;"	v
+field1	script/kdd12.tools/user_ffm.py	/^field1 = ['QueryID', 'Depth']$/;"	v
+field1	script/kdd12.tools/user_fm.py	/^field1 = ['QueryID', 'Depth']$/;"	v
+field1	script/kdd12.tools/user_mf.py	/^field1 = []$/;"	v
+field2	script/kdd12.tools/ad_ffm.py	/^field2 = ['KeywordID']$/;"	v
+field2	script/kdd12.tools/ad_fm.py	/^field2 = ['KeywordID']$/;"	v
+field2	script/kdd12.tools/ad_mf.py	/^field2 = []$/;"	v
+field3	script/kdd12.tools/ad_ffm.py	/^field3 = ['AdID','DisplayURL','AdvertiserID']$/;"	v
+field3	script/kdd12.tools/ad_fm.py	/^field3 = ['AdID','DisplayURL','AdvertiserID']$/;"	v
+field3	script/kdd12.tools/ad_mf.py	/^field3 = ['AdID']$/;"	v
+file_name	ffm.h	/^    string file_name;$/;"	m	class:ImpData
+freq	ffm.h	/^    bool self_side, freq = false;$/;"	m	class:Parameter
+freq	ffm.h	/^    vector<vector<ImpLong>> freq;$/;"	m	class:ImpData
+fu	ffm.h	/^    ImpInt k, fu, fv, f;$/;"	m	class:ImpProblem
+func	ffm.cpp	/^ImpDouble ImpProblem::func() {$/;"	f	class:ImpProblem
+fv	ffm.h	/^    ImpInt k, fu, fv, f;$/;"	m	class:ImpProblem
+gd_cross	ffm.cpp	/^void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1,Vec &G) {$/;"	f	class:ImpProblem
+gd_side	ffm.cpp	/^void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {$/;"	f	class:ImpProblem
+group	script/kdd12.tools/ad.py	/^    group = df.groupby(by='AdID')$/;"	v
+group	script/kdd12.tools/user.py	/^    group = df.groupby(feat_list[1:])$/;"	v
+handle_geo	script/outbrain.tools/context_ffm.py	/^def handle_geo(geo_str):$/;"	f
+handle_geo	script/outbrain.tools/context_fm.py	/^def handle_geo(geo_str):$/;"	f
+hs_cross	ffm.cpp	/^void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,$/;"	f	class:ImpProblem
+hs_side	ffm.cpp	/^void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,$/;"	f	class:ImpProblem
+idx	ffm.h	/^    ImpLong idx;$/;"	m	class:Node
+incr_num	script/outbrain.tools/context_fm.py	/^incr_num = -1$/;"	v
+incr_num	script/outbrain.tools/item_fm.py	/^incr_num = -1$/;"	v
+incr_num1	script/outbrain.tools/context_ffm.py	/^incr_num1 = -1$/;"	v
+incr_num1	script/outbrain.tools/context_mf.py	/^incr_num1 = -1$/;"	v
+incr_num1	script/outbrain.tools/item_ffm.py	/^incr_num1 = -1$/;"	v
+incr_num1	script/outbrain.tools/item_mf.py	/^incr_num1 = -1$/;"	v
+incr_num2	script/outbrain.tools/context_ffm.py	/^incr_num2 = -1$/;"	v
+incr_num2	script/outbrain.tools/item_ffm.py	/^incr_num2 = -1$/;"	v
+index_dic	script/kdd12.tools/ad.py	/^index_dic = {}$/;"	v
+index_dic	script/kdd12.tools/user.py	/^index_dic = {}$/;"	v
+index_vec	ffm.cpp	/^const ImpInt index_vec(const ImpInt f1, const ImpInt f2, const ImpInt f) {$/;"	f
+init	ffm.cpp	/^void ImpProblem::init() {$/;"	f	class:ImpProblem
+init_mat	ffm.cpp	/^void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {$/;"	f
+init_pair	ffm.cpp	/^void ImpProblem::init_pair(const ImpInt &f12,$/;"	f	class:ImpProblem
+init_va	ffm.cpp	/^void ImpProblem::init_va(ImpInt size) {$/;"	f	class:ImpProblem
+init_y_tilde	ffm.cpp	/^void ImpProblem::init_y_tilde() {$/;"	f	class:ImpProblem
+inner	ffm.cpp	/^ImpDouble inner(const ImpDouble *p, const ImpDouble *q, const ImpInt k)$/;"	f
+is_numerical	train.cpp	/^bool is_numerical(char *str)$/;"	f
+item_svm	script/outbrain.tools/item_ffm.py	/^item_svm = open('item.ffm', 'w')$/;"	v
+item_svm	script/outbrain.tools/item_fm.py	/^item_svm = open('item.fm', 'w')$/;"	v
+item_svm	script/outbrain.tools/item_mf.py	/^    item_svm = open('item.mf', 'w')$/;"	v
+k	ffm.h	/^    ImpInt k, fu, fv, f;$/;"	m	class:ImpProblem
+k	ffm.h	/^    ImpInt nr_pass, k, nr_threads;$/;"	m	class:Parameter
+keys1	script/outbrain.tools/context_ffm.py	/^keys1 = ['platform', 'geo_location']$/;"	v
+keys1	script/outbrain.tools/context_fm.py	/^keys1 = ['platform', 'geo_location']$/;"	v
+keys1	script/outbrain.tools/context_mf.py	/^keys1 = ['document_id']$/;"	v
+keys1	script/outbrain.tools/item_ffm.py	/^keys1 = ['source_id', 'publisher_id', 'document_id']$/;"	v
+keys1	script/outbrain.tools/item_fm.py	/^keys1 = ['source_id', 'publisher_id', 'document_id']$/;"	v
+keys1	script/outbrain.tools/item_mf.py	/^keys1 = ['ad_id']$/;"	v
+keys2	script/outbrain.tools/context_ffm.py	/^keys2 = ['source_id', 'publisher_id', 'document_id_x']$/;"	v
+keys2	script/outbrain.tools/context_fm.py	/^keys2 = ['source_id', 'publisher_id', 'document_id_x']$/;"	v
+keys2	script/outbrain.tools/item_ffm.py	/^keys2 = ['campaign_id', 'advertiser_id']$/;"	v
+keys2	script/outbrain.tools/item_fm.py	/^keys2 = ['campaign_id', 'advertiser_id']$/;"	v
+lambda	ffm.h	/^    ImpDouble loss, lambda, w, r;$/;"	m	class:ImpProblem
+lambda	ffm.h	/^    ImpFloat omega, lambda, r;$/;"	m	class:Parameter
+loss	ffm.h	/^    ImpDouble loss, lambda, w, r;$/;"	m	class:ImpProblem
+m	ffm.h	/^    ImpLong m, n, nnz_x, nnz_y;$/;"	m	class:ImpData
+m	ffm.h	/^    ImpLong m, n;$/;"	m	class:ImpProblem
+main	train.cpp	/^int main(int argc, char *argv[])$/;"	f
+make_tuple	script/kdd12.tools/ad_ffm.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/kdd12.tools/ad_fm.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/kdd12.tools/ad_mf.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/kdd12.tools/user_ffm.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/kdd12.tools/user_fm.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/kdd12.tools/user_mf.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/outbrain.tools/context_ffm.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/outbrain.tools/context_fm.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/outbrain.tools/context_mf.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/outbrain.tools/item_ffm.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/outbrain.tools/item_fm.py	/^def make_tuple(feat_list,field):$/;"	f
+make_tuple	script/outbrain.tools/item_mf.py	/^def make_tuple(feat_list,field):$/;"	f
+map_dict	script/kdd12.tools/user.py	/^map_dict = {}$/;"	v
+map_file	script/kdd12.tools/user.py	/^map_file = open("AdID.map", "r")$/;"	v
+mm	ffm.cpp	/^void mm(const ImpDouble *a, const ImpDouble *b, ImpDouble *c,$/;"	f
+model_path	ffm.h	/^    string model_path, predict_path;$/;"	m	class:Parameter
+mt	ffm.h	/^    ImpLong mt;$/;"	m	class:ImpProblem
+mv	ffm.cpp	/^void mv(const ImpDouble *a, const ImpDouble *b, ImpDouble *c,$/;"	f
+n	ffm.h	/^    ImpLong m, n, nnz_x, nnz_y;$/;"	m	class:ImpData
+n	ffm.h	/^    ImpLong m, n;$/;"	m	class:ImpProblem
+name_tpl	script/kdd12.tools/split.py	/^name_tpl = prc_filename(sys.argv[1])$/;"	v
+name_tpl	script/outbrain.tools/sample.py	/^name_tpl = prc_filename(sys.argv[1])$/;"	v
+nnz_x	ffm.h	/^    ImpLong m, n, nnz_x, nnz_y;$/;"	m	class:ImpData
+nnz_y	ffm.h	/^    ImpLong m, n, nnz_x, nnz_y;$/;"	m	class:ImpData
+norm_block	ffm.cpp	/^ImpDouble ImpProblem::norm_block(const ImpInt &f1,const ImpInt &f2) {$/;"	f	class:ImpProblem
+nr_pass	ffm.h	/^    ImpInt nr_pass, k, nr_threads;$/;"	m	class:Parameter
+nr_threads	ffm.h	/^    ImpInt nr_pass, k, nr_threads;$/;"	m	class:Parameter
+num	script/kdd12.tools/filter.py	/^num = ad_list.where(ad_list > threshold).count()$/;"	v
+num	script/kdd12.tools/split.py	/^        num = rd.randint(0, 9)$/;"	v
+num	script/kdd12.tools/split.py	/^    num = 0$/;"	v
+num	script/outbrain.tools/filter.py	/^num = ad_rank_list.where(ad_rank_list > 200).count()$/;"	v
+num	script/outbrain.tools/sample.py	/^        num = rd.randint(0, 9)$/;"	v
+num	script/outbrain.tools/sample.py	/^    num = 0$/;"	v
+of	script/kdd12.tools/ad.py	/^    of = open("ad.gby.csv", 'w')$/;"	v
+of	script/kdd12.tools/ad_ffm.py	/^of = open('ad.ffm', 'w')$/;"	v
+of	script/kdd12.tools/ad_fm.py	/^of = open('ad.fm', 'w')$/;"	v
+of	script/kdd12.tools/ad_mf.py	/^of = open('ad.mf', 'w')$/;"	v
+of	script/kdd12.tools/user.py	/^    of = open("user.gby.csv", 'w')$/;"	v
+of	script/kdd12.tools/user_ffm.py	/^of = open('user.ffm', 'w')$/;"	v
+of	script/kdd12.tools/user_fm.py	/^of = open('user.fm', 'w')$/;"	v
+of	script/kdd12.tools/user_mf.py	/^of = open('user.mf', 'w')$/;"	v
+of2	script/kdd12.tools/ad.py	/^    of2 = open("AdID.map", 'w')$/;"	v
+omega	ffm.h	/^    ImpFloat omega, lambda, r;$/;"	m	class:Parameter
+one_epoch	ffm.cpp	/^void ImpProblem::one_epoch() {$/;"	f	class:ImpProblem
+output	script/kdd12.tools/ad.py	/^                output = "{}{}".format(output,attr_str)$/;"	v
+output	script/kdd12.tools/ad.py	/^            output = "{},".format(output)$/;"	v
+output	script/kdd12.tools/ad.py	/^        output = "{}\\n".format(output)$/;"	v
+output	script/kdd12.tools/ad.py	/^        output = '{}'.format(adid)$/;"	v
+output	script/kdd12.tools/ad_ffm.py	/^            output = " ".join(make_tuple(feat_idx_list, i))$/;"	v
+output	script/kdd12.tools/ad_ffm.py	/^            output = "{} {}".format(output," ".join(make_tuple(feat_idx_list, i)))$/;"	v
+output	script/kdd12.tools/ad_ffm.py	/^    output = ""$/;"	v
+output	script/kdd12.tools/ad_fm.py	/^            output = " ".join(make_tuple(feat_idx_list, i))$/;"	v
+output	script/kdd12.tools/ad_fm.py	/^            output = "{} {}".format(output," ".join(make_tuple(feat_idx_list, i)))$/;"	v
+output	script/kdd12.tools/ad_fm.py	/^    output = ""$/;"	v
+output	script/kdd12.tools/ad_mf.py	/^            output = " ".join(make_tuple(feat_idx_list, i))$/;"	v
+output	script/kdd12.tools/ad_mf.py	/^            output = "{} {}".format(output," ".join(make_tuple(feat_idx_list, i)))$/;"	v
+output	script/kdd12.tools/ad_mf.py	/^    output = ""$/;"	v
+output	script/kdd12.tools/user.py	/^        output = "{},{}\\n".format(attr_str, ",".join(map(str, key)))$/;"	v
+output	script/kdd12.tools/user_ffm.py	/^        output = "{} {}".format(output," ".join(make_tuple(feat_idx_list, i)))$/;"	v
+output	script/kdd12.tools/user_ffm.py	/^    output = line['AdID'].strip().replace("|", ",")$/;"	v
+output	script/kdd12.tools/user_fm.py	/^        output = "{} {}".format(output," ".join(make_tuple(feat_idx_list, i)))$/;"	v
+output	script/kdd12.tools/user_fm.py	/^    output = line['AdID'].strip().replace("|", ",")$/;"	v
+output	script/kdd12.tools/user_mf.py	/^        output = "{} {}".format(output," ".join(make_tuple(feat_idx_list, i)))$/;"	v
+output	script/kdd12.tools/user_mf.py	/^    output = line['AdID'].strip().replace("|", ",")$/;"	v
+output	script/outbrain.tools/item_ffm.py	/^    output = "{} {}".format(output, " ".join(make_tuple(feat_idx_list, 1)))$/;"	v
+output	script/outbrain.tools/item_ffm.py	/^    output = "{}".format(" ".join(make_tuple(feat_idx_list, 0)))$/;"	v
+output	script/outbrain.tools/item_fm.py	/^    output = "{} {}".format(output, " ".join(make_tuple(feat_idx_list, 0)))$/;"	v
+output	script/outbrain.tools/item_fm.py	/^    output = "{}".format(" ".join(make_tuple(feat_idx_list, 0)))$/;"	v
+output	script/outbrain.tools/item_mf.py	/^        output = "{}".format(" ".join(make_tuple(feat_idx_list, 0)))$/;"	v
+param	ffm.h	/^    shared_ptr<Parameter> param;$/;"	m	class:ImpProblem
+param	train.cpp	/^    shared_ptr<Parameter> param;$/;"	m	struct:Option	file:
+parse_option	train.cpp	/^Option parse_option(int argc, char **argv)$/;"	f
+pq	ffm.cpp	/^ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {$/;"	f	class:ImpProblem
+prc_filename	script/kdd12.tools/split.py	/^prc_filename = lambda x : (x[:x.rfind(".")] ,x[x.rfind(".")+1:])$/;"	v
+prc_filename	script/outbrain.tools/sample.py	/^prc_filename = lambda x : (x[:x.rfind(".")] ,x[x.rfind(".")+1:])$/;"	v
+prec_k	ffm.cpp	/^void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts) {$/;"	f	class:ImpProblem
+pred_z	ffm.cpp	/^void ImpProblem::pred_z(const ImpLong i, ImpDouble *z) {$/;"	f	class:ImpProblem
+predict_path	ffm.h	/^    string model_path, predict_path;$/;"	m	class:Parameter
+print_data_info	ffm.cpp	/^void ImpData::print_data_info() {$/;"	f	class:ImpData
+print_epoch_info	ffm.cpp	/^void ImpProblem::print_epoch_info(ImpInt t) {$/;"	f	class:ImpProblem
+qrsqrt	ffm.cpp	/^ImpDouble qrsqrt(ImpDouble x)$/;"	f
+r	ffm.h	/^    ImpDouble loss, lambda, w, r;$/;"	m	class:ImpProblem
+r	ffm.h	/^    ImpFloat omega, lambda, r;$/;"	m	class:Parameter
+read	ffm.cpp	/^void ImpData::read(bool has_label, const ImpLong *ds) {$/;"	f	class:ImpData
+rf	script/kdd12.tools/ad_ffm.py	/^rf = open('ad.gby.csv')$/;"	v
+rf	script/kdd12.tools/ad_fm.py	/^rf = open('ad.gby.csv')$/;"	v
+rf	script/kdd12.tools/ad_mf.py	/^rf = open('ad.gby.csv')$/;"	v
+rf	script/kdd12.tools/user_ffm.py	/^rf = open('user.gby.csv')$/;"	v
+rf	script/kdd12.tools/user_fm.py	/^rf = open('user.gby.csv')$/;"	v
+rf	script/kdd12.tools/user_mf.py	/^rf = open('user.gby.csv')$/;"	v
+row_wise_inner	ffm.cpp	/^void row_wise_inner(const Vec &V1, const Vec &V2, const ImpInt &row,$/;"	f
+s_field	script/kdd12.tools/ad_fm.py	/^s_field = field0 + field1 + field2 + field3$/;"	v
+s_field	script/kdd12.tools/ad_mf.py	/^s_field = field0 + field1 + field2 + field3$/;"	v
+s_field	script/kdd12.tools/user_fm.py	/^s_field = field0 + field1$/;"	v
+s_field	script/kdd12.tools/user_mf.py	/^s_field = field0 + field1$/;"	v
+sa	ffm.h	/^    Vec a, b, va_loss, sa, sb;$/;"	m	class:ImpProblem
+sb	ffm.h	/^    Vec a, b, va_loss, sa, sb;$/;"	m	class:ImpProblem
+scal	ffm.cpp	/^void scal(ImpDouble *x, const ImpLong &l, const ImpDouble &lambda) {$/;"	f
+self_side	ffm.h	/^    bool self_side, freq = false;$/;"	m	class:Parameter
+solve	ffm.cpp	/^void ImpProblem::solve() {$/;"	f	class:ImpProblem
+solve_cross	ffm.cpp	/^void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {$/;"	f	class:ImpProblem
+solve_side	ffm.cpp	/^void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {$/;"	f	class:ImpProblem
+split_fields	ffm.cpp	/^void ImpData::split_fields() {$/;"	f	class:ImpData
+sub	script/outbrain.tools/sample.py	/^sub = open("{}.sub.{}".format(name_tpl[0], name_tpl[1]),"w")$/;"	v
+sum	ffm.cpp	/^ImpDouble sum(const Vec &v) {$/;"	f
+task	script/grid.sh	/^task(){$/;"	f
+te	script/kdd12.tools/split.py	/^te = open("{}.te.{}".format(name_tpl[0], name_tpl[1]),"w")$/;"	v
+te_path	train.cpp	/^    string xc_path, xt_path, tr_path, te_path;$/;"	m	struct:Option	file:
+threshold	script/kdd12.tools/filter.py	/^threshold =int( input("Enter threshold: "))$/;"	v
+top_k	ffm.h	/^    vector<ImpInt> top_k;$/;"	m	class:ImpProblem
+tr	script/kdd12.tools/split.py	/^tr = open("{}.tr.{}".format(name_tpl[0], name_tpl[1]),"w")$/;"	v
+tr_path	train.cpp	/^    string xc_path, xt_path, tr_path, te_path;$/;"	m	struct:Option	file:
+train_help	train.cpp	/^string train_help()$/;"	f
+transY	ffm.cpp	/^void ImpData::transY(const vector<Node*> &YT) {$/;"	f	class:ImpData
+update_cross	ffm.cpp	/^void ImpProblem::update_cross(const bool &sub_type, const Vec &S,$/;"	f	class:ImpProblem
+update_side	ffm.cpp	/^void ImpProblem::update_side(const bool &sub_type, const Vec &S$/;"	f	class:ImpProblem
+va	script/kdd12.tools/split.py	/^va = open("{}.va.{}".format(name_tpl[0], name_tpl[1]),"w")$/;"	v
+va_loss	ffm.h	/^    Vec a, b, va_loss, sa, sb;$/;"	m	class:ImpProblem
+val	ffm.h	/^    ImpDouble val;$/;"	m	class:Node
+validate	ffm.cpp	/^void ImpProblem::validate() {$/;"	f	class:ImpProblem
+values	script/kdd12.tools/ad_ffm.py	/^            values = line[key].split("|")$/;"	v
+values	script/kdd12.tools/ad_fm.py	/^            values = line[key].split("|")$/;"	v
+values	script/kdd12.tools/ad_mf.py	/^            values = line[key].split("|")$/;"	v
+values	script/kdd12.tools/user_ffm.py	/^            values = line[key].split("|")$/;"	v
+values	script/kdd12.tools/user_fm.py	/^            values = line[key].split("|")$/;"	v
+values	script/kdd12.tools/user_mf.py	/^            values = line[key].split("|")$/;"	v
+w	ffm.h	/^    ImpDouble loss, lambda, w, r;$/;"	m	class:ImpProblem
+xc_path	train.cpp	/^    string xc_path, xt_path, tr_path, te_path;$/;"	m	struct:Option	file:
+xt_path	train.cpp	/^    string xc_path, xt_path, tr_path, te_path;$/;"	m	struct:Option	file:

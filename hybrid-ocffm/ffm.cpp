@@ -377,8 +377,6 @@ void ImpProblem::init_y_tilde() {
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < m; i++) {
         for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
-            if (!y->fid)
-                continue;
             ImpLong j = y->idx;
             y->val = a[i]+b[j]+calc_cross(i, j) - 1;
         }
@@ -386,8 +384,6 @@ void ImpProblem::init_y_tilde() {
     #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < n; j++) {
         for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
-            if (!y->fid)
-                continue;
             ImpLong i = y->idx;
             y->val = a[i]+b[j]+calc_cross(i, j) - 1;
         }
@@ -507,6 +503,7 @@ void ImpProblem::init() {
     if (param->self_side)
         calc_side();
     init_y_tilde();
+    init_expyy();
 }
 
 void ImpProblem::cache_sasb() {
@@ -1183,3 +1180,29 @@ ImpDouble ImpProblem::func() {
 }
 
 
+ImpDouble l_pos_grad(const Node *y){
+    ImpDouble y_ij = y->fid;
+    ImpDouble y_tilde = y->val;
+    ImpDouble expyy = y->expyy;
+    return -y_ij / (1 + expyy) - w(y_tilde - r);
+}
+
+ImpDouble l_pos_hessian(const Node *y){
+    ImpDouble expyy = y->expyy;
+    return expyy / (1 + expyy) / (1 + expyy) - w;
+}
+
+void init_expyy(){
+    #pragma omp parallel for schedule(guided)
+    for (ImpLong i = 0; i < m; i++) {
+        for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
+            y->expyy = exp( y->val * (Impdouble) y->fid);
+        }
+    }
+    #pragma omp parallel for schedule(guided)
+    for (ImpLong j = 0; j < n; j++) {
+        for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
+            y->expyy = exp( y->val * (Impdouble) y->fid);
+        }
+    }
+}
