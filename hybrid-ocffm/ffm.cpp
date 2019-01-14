@@ -543,6 +543,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
 }
 
 void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1,Vec &G) {
+    axpy( W1.data(), G.data(), G.size(), lambda);
     gd_pos_cross(f1, f12, Q1, W1, G);
     gd_neg_cross(f1, f12, Q1, W1, G);
 }
