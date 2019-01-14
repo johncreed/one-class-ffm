@@ -121,11 +121,19 @@ private:
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
     void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
+    void gd_pos_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
+    void gd_neg_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
     void hs_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
+    void hs_pos_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
+    void hs_neg_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
 
     void solve_cross(const ImpInt &f1, const ImpInt &f2);
     void gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1, Vec &G);
+    void gd_pos_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1, Vec &G);
+    void gd_neg_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1, Vec &G);
     void hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
+    void hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
+    void hs_neg_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
 
     void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G, Vec &P1);
     void cache_sasb();
