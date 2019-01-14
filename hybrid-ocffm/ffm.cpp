@@ -412,18 +412,16 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     for (ImpLong i = 0; i < U1->m; i++) {
         a1[i] += gaps[i];
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
-            if (!y->fid)
-                continue;
             y->val += gaps[i];
+            y->expyy = exp( y->val * (ImpDouble) y->fid);
         }
     }
     #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
-            if (!y->fid)
-                continue;
             const ImpLong i = y->idx;
             y->val += gaps[i];
+            y->expyy = exp( y->val * (ImpDouble) y->fid);
         }
     }
 }
@@ -443,19 +441,17 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
     #pragma omp parallel for schedule(guided)
     for (ImpLong i = 0; i < U1->m; i++) {
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
-            if (!y->fid)
-                continue;
             const ImpLong j = y->idx;
             y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
+            y->expyy = exp( y->val * (ImpDouble) y->fid);
         }
     }
     #pragma omp parallel for schedule(guided)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
-            if (!y->fid)
-                continue;
             const ImpLong i = y->idx;
             y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
+            y->expyy = exp( y->val * (ImpDouble) y->fid);
         }
     }
 }
