@@ -71,7 +71,7 @@ void row_wise_inner(const Vec &V1, const Vec &V2, const ImpInt &row,
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
     default_random_engine ENGINE(rand());
     vec.resize(nr_rows*nr_cols, 0.1);
-    uniform_real_distribution<ImpDouble> dist(0, 0.1*qrsqrt(nr_cols));
+    uniform_real_distribution<ImpDouble> dist(-0.1*qrsqrt(nr_cols),0.1*qrsqrt(nr_cols));
 
     auto gen = std::bind(dist, ENGINE);
     generate(vec.begin(), vec.end(), gen);
@@ -638,10 +638,12 @@ void ImpProblem::solve_side(const ImpInt &f1, const ImpInt &f2) {
 
     gd_side(f1, W1, Q1, G1);
     cg(f1, f2, S1, Q1, G1, P1);
+    line_search(f1, f2, S1, Q1, W1, P1, G1);
     update_side(sub_type, S1, Q1, W1, U1, P1);
 
     gd_side(f2, H1, P1, G2);
     cg(f2, f1, S2, P1, G2, Q1);
+    line_search(f2, f1, S2, P1, H1, Q1, G2);
     update_side(sub_type, S2, P1, H1, U2, Q1);
 }
 
@@ -655,10 +657,12 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 
     gd_cross(f1, Q1, W1, GW);
     cg(f1, f2, SW, Q1, GW, P1);
+    line_search(f1, f2, SW, Q1, W1, P1, GW);
     update_cross(true, SW, Q1, W1, U1, P1);
 
     gd_cross(f2, P1, H1, GH);
     cg(f2, f1, SH, P1, GH, Q1);
+    line_search(f2, f1, SH, P1, H1, Q1, GH);
     update_cross(false, SH, P1, H1, V1, Q1);
 }
 
