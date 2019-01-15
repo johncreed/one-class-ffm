@@ -47,6 +47,7 @@ public:
     ImpLong idx;
     ImpDouble val;
     ImpDouble expyy;
+    ImpDouble delta;
     Node(): fid(0), idx(0), val(0) {};
 };
 
@@ -95,7 +96,8 @@ private:
     vector<Vec> W, H, P, Q, Pva, Qva;
     Vec a, b, va_loss, sa, sb;
     ImpDouble gauc, gauc_all;
-
+    Vec Gneg;
+    ImpDouble L_pos; 
     vector<ImpInt> top_k;
 
     void init_pair(const ImpInt &f12, const ImpInt &fi, const ImpInt &fj,
@@ -104,6 +106,7 @@ private:
     void add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1);
     void calc_side();
     void init_y_tilde();
+    void init_L_pos();
     void init_expyy();
     ImpDouble calc_cross(const ImpLong &i, const ImpLong &j);
 
@@ -128,14 +131,18 @@ private:
     void hs_neg_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
 
     void solve_cross(const ImpInt &f1, const ImpInt &f2);
-    void gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1, Vec &G);
-    void gd_pos_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1, Vec &G);
-    void gd_neg_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1, Vec &G);
+    void gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Vec &G);
+    void gd_pos_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Vec &G);
+    void gd_neg_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Vec &G);
     void hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
     void hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
     void hs_neg_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
 
     void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G, Vec &P1);
+void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, const Vec &W1, Vec &P1, const Vec &G);
+    void calc_delta_y_side(vector<Node*> &Y, const ImpLong m, const Vec &XS, const Vec &Q);
+    void calc_delta_y_cross(vector<Node*> &Y, const ImpLong m, const Vec &XS, const Vec &Q);
+    ImpDouble calc_L_pos(vector<Node*> &Y, const ImpLong m, const ImpDouble theta);
     void cache_sasb();
 
 
