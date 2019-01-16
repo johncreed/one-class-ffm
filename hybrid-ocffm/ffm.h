@@ -46,9 +46,17 @@ public:
     ImpInt fid;
     ImpLong idx;
     ImpDouble val;
+    Node(): fid(0), idx(0), val(0) {};
+};
+
+class YNode {
+public:
+    ImpDouble fid;
+    ImpLong idx;
+    ImpDouble val;
     ImpDouble expyy;
     ImpDouble delta;
-    Node(): fid(0), idx(0), val(0) {};
+    YNode(): fid(0), idx(0), val(0) {};
 };
 
 class ImpData {
@@ -56,8 +64,10 @@ public:
     string file_name;
     ImpLong m, n, nnz_x, nnz_y;
     ImpInt f;
-    vector<Node> M, N;
-    vector<Node*> X, Y;
+    vector<Node> N;
+    vector<YNode> M;
+    vector<Node*> X;
+    vector<YNode*> Y;
 
 
     vector<vector<Node>> Ns;
@@ -69,7 +79,7 @@ public:
     void read(bool has_label, const ImpLong* ds=nullptr);
     void print_data_info();
     void split_fields();
-    void transY(const vector<Node*> &YT);
+    void transY(const vector<YNode*> &YT);
 };
 
 
@@ -119,30 +129,30 @@ private:
     ImpDouble pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
     ImpDouble norm_block(const ImpInt &f1,const ImpInt &f2);
 
-    ImpDouble l_pos_grad(const Node* y);
-    ImpDouble l_pos_hessian(const Node* y);
+    ImpDouble l_pos_grad(const YNode* y);
+    ImpDouble l_pos_hessian(const YNode* y);
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
     void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
     void gd_pos_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
     void gd_neg_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
-    void hs_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
-    void hs_pos_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
-    void hs_neg_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
+    void hs_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
+    void hs_pos_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
+    void hs_neg_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
 
     void solve_cross(const ImpInt &f1, const ImpInt &f2);
     void gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Vec &G);
     void gd_pos_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Vec &G);
     void gd_neg_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Vec &G);
-    void hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
-    void hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
-    void hs_neg_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
+    void hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
+    void hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
+    void hs_neg_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
 
     void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G, Vec &P1);
 void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, const Vec &W1, Vec &P1, const Vec &G);
-    void calc_delta_y_side(vector<Node*> &Y, const ImpLong m, const Vec &XS, const Vec &Q);
-    void calc_delta_y_cross(vector<Node*> &Y, const ImpLong m, const Vec &XS, const Vec &Q);
-    ImpDouble calc_L_pos(vector<Node*> &Y, const ImpLong m, const ImpDouble theta);
+    void calc_delta_y_side(vector<YNode*> &Y, const ImpLong m, const Vec &XS, const Vec &Q);
+    void calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m, const Vec &XS, const Vec &Q);
+    ImpDouble calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDouble theta);
     void cache_sasb();
 
 
