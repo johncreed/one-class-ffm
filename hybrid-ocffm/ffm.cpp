@@ -993,15 +993,11 @@ ImpDouble ImpProblem::func() {
 
 
 ImpDouble ImpProblem::l_pos_grad(const YNode *y){
-    ImpDouble y_ij = y->fid;
-    ImpDouble y_hat = y->val;
-    ImpDouble expyy = y->expyy;
-    return -y_ij / (1 + expyy) - w * (y_hat - r);
+    return (y->val - y->fid) - w * (y->val - r);
 }
 
 ImpDouble ImpProblem::l_pos_hessian(const YNode *y){
-    ImpDouble expyy = y->expyy;
-    return expyy / (1 + expyy) / (1 + expyy) - w;
+    return 1.0 - w;
 }
 
 void ImpProblem::init_expyy(){
@@ -1430,11 +1426,7 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDo
     for(ImpLong i = 0; i < m; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
             ImpDouble y_hat_new = y->val + theta * y->delta;
-            ImpDouble yy = y_hat_new * (ImpDouble) y->fid;
-            if( -yy > 0 )
-                L_pos_new += -yy + log1p( exp(yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
-            else
-                L_pos_new += log1p( exp(-yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+            L_pos += 0.5 * (y_hat_new - y->fid) * (y_hat_new - y->fid) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
         }
     }
     return L_pos_new;
@@ -1444,11 +1436,7 @@ void ImpProblem::init_L_pos(){
     L_pos = 0;
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
-            ImpDouble yy = y->val * (ImpDouble) y->fid;
-            if( -yy > 0 )
-                L_pos += -yy + log1p( exp(yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
-            else
-                L_pos += log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
+            L_pos += 0.5 * (y->val - y->fid) * (y->val - y->fid) - 0.5 * w * (y->val - r) * (y->val - r);
         }
     }
 }
