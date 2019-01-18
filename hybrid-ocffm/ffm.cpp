@@ -460,6 +460,7 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
 void ImpProblem::init() {
     lambda = param->lambda;
     w = param->omega;
+    wn = param->omega_neg;
     r = param->r;
 
     m = U->m;
@@ -993,15 +994,33 @@ ImpDouble ImpProblem::func() {
 
 
 ImpDouble ImpProblem::l_pos_grad(const YNode *y){
-    ImpDouble y_ij = y->fid;
-    ImpDouble y_hat = y->val;
-    ImpDouble expyy = y->expyy;
-    return -y_ij / (1 + expyy) - w * (y_hat - r);
+    ImpDouble res;
+    if ( y->fid > 0){
+        ImpDouble y_ij = y->fid;
+        ImpDouble y_hat = y->val;
+        ImpDouble expyy = y->expyy;
+        res =  -y_ij / (1 + expyy) - w * (y_hat - r);
+    }
+    else{
+        ImpDouble y_ij = y->fid;
+        ImpDouble y_hat = y->val;
+        ImpDouble expyy = y->expyy;
+        res =  wn * -y_ij / (1 + expyy) - w * (y_hat - r);
+    }
+    return res;
 }
 
 ImpDouble ImpProblem::l_pos_hessian(const YNode *y){
-    ImpDouble expyy = y->expyy;
-    return expyy / (1 + expyy) / (1 + expyy) - w;
+    ImpDouble res;
+    if( y->fid > 0 ){
+        ImpDouble expyy = y->expyy;
+        res = expyy / (1 + expyy) / (1 + expyy) - w;
+    }
+    else{
+        ImpDouble expyy = y->expyy;
+        res = wn * expyy / (1 + expyy) / (1 + expyy) - w;
+    }
+    return res;
 }
 
 void ImpProblem::init_expyy(){
@@ -1429,12 +1448,13 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDo
     ImpDouble L_pos_new = 0;
     for(ImpLong i = 0; i < m; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
+            ImpDouble w2 = (y->fid > 0)? 1 : wn;
             ImpDouble y_hat_new = y->val + theta * y->delta;
             ImpDouble yy = y_hat_new * (ImpDouble) y->fid;
             if( -yy > 0 )
-                L_pos_new += -yy + log1p( exp(yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+                L_pos_new += w2 *(-yy + log1p( exp(yy) )) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
             else
-                L_pos_new += log1p( exp(-yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+                L_pos_new += w2 * log1p( exp(-yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
         }
     }
     return L_pos_new;
@@ -1444,11 +1464,12 @@ void ImpProblem::init_L_pos(){
     L_pos = 0;
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
+            ImpDouble w2 = (y->fid > 0)? 1 : wn;
             ImpDouble yy = y->val * (ImpDouble) y->fid;
             if( -yy > 0 )
-                L_pos += -yy + log1p( exp(yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
+                L_pos += w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y->val - r) * (y->val - r);
             else
-                L_pos += log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
+                L_pos += w2 * log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
         }
     }
 }

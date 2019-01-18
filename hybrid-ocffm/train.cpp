@@ -40,7 +40,8 @@ string train_help()
     "-l <lambda_2>: set regularization coefficient on r regularizer (default 0.1)\n"
     "-t <iter>: set number of iterations (default 20)\n"
     "-p <path>: set path to test set\n"
-    "-w <omega>: set cost weight for the negatives\n"
+    "-w <omega>: set cost weight for the unobserves\n"
+    "-wn <omega>: set cost weight for the negatives\n"
     "-r <rating>: set rating for the negatives\n"
     "-c <threads>: set number of cores\n"
     "-k <rank>: set number of rank\n"
@@ -106,6 +107,17 @@ Option parse_option(int argc, char **argv)
             if(!is_numerical(argv[i]))
                 throw invalid_argument("-r should be followed by a number");
             option.param->omega = atof(argv[i]);
+        }
+        else if(args[i].compare("-wn") == 0)
+        {
+            if((i+1) >= argc)
+                throw invalid_argument("need to specify max number of\
+                                        iterations after -t");
+            i++;
+
+            if(!is_numerical(argv[i]))
+                throw invalid_argument("-wn should be followed by a number");
+            option.param->omega_neg = atof(argv[i]);
         }
         else if(args[i].compare("-r") == 0)
         {

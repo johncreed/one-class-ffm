@@ -34,11 +34,11 @@ const int MIN_Z = -1000;
 
 class Parameter {
 public:
-    ImpFloat omega, lambda, r;
+    ImpFloat omega, omega_neg, lambda, r;
     ImpInt nr_pass, k, nr_threads;
     string model_path, predict_path;
     bool self_side, freq = false;
-    Parameter():omega(0.1), lambda(1e-5), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true) {};
+    Parameter():omega(0.1), omega_neg(0.1), lambda(1e-5), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true) {};
 };
 
 class Node {
@@ -94,7 +94,7 @@ public:
     ImpDouble func();
 
 private:
-    ImpDouble loss, lambda, w, r;
+    ImpDouble loss, lambda, w, wn, r;
 
     shared_ptr<ImpData> U, Uva, V;
     shared_ptr<Parameter> param;
