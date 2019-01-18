@@ -139,14 +139,41 @@ choose_l_list(){
   done
 }
 
+choose_r_list(){
+  # 2^1 ~ 2^4
+  r_all=(-1 -5 -10 -15)
+  r_train=()
+
+  # Print l_all
+  for i in ${!r_all[@]};
+  do
+    printf "%s: %s\n" "$i" "${r_all[$i]}" 
+  done
+
+  # Create l_train
+  while true;
+  do
+    echo -n "select idx: "
+    read idx
+    if [ $idx -eq -1 ]
+    then
+      break
+    fi
+    r_train+=(${r_all[${idx}]})
+  done
+}
+
 task(){
   for w in ${w_train[@]} 
   do
       for wn in ${wn_train[@]} 
       do
-          for l in ${l_train[@]}
+          for r in ${r_train[@]}
           do
-            echo "./train -k $k -l $l -t ${t} -r -1 -w $w -wn $wn $ns -c ${c} -p ${te} ${item} ${tr} > $logs_pth/${tr}.$l.$w.$wn.${ext}"
+            for l in ${l_train[@]}
+            do
+              echo "./train -k $k -l $l -t ${t} -r $r -w $w -wn $wn $ns -c ${c} -p ${te} ${item} ${tr} > $logs_pth/${tr}.$l.$r.$w.$wn.${ext}"
+            done
           done
       done
   done
@@ -190,9 +217,15 @@ do
   choose_wn_list
   echo "++++++++++++++++++++++++++"
   
+  # Set r range
+  clear
+  echo "===Set r range, -1 to exit==="
+  choose_r_list
+  echo "++++++++++++++++++++++++++"
+  
   # Set l range
   clear
-  echo "===Set w range, -1 to exit==="
+  echo "===Set l range, -1 to exit==="
   choose_l_list
   echo "++++++++++++++++++++++++++"
 
