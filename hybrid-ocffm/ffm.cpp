@@ -994,33 +994,17 @@ ImpDouble ImpProblem::func() {
 
 
 ImpDouble ImpProblem::l_pos_grad(const YNode *y){
-    ImpDouble res;
-    if ( y->fid > 0){
-        ImpDouble y_ij = y->fid;
-        ImpDouble y_hat = y->val;
-        ImpDouble expyy = y->expyy;
-        res =  -y_ij / (1 + expyy) - w * (y_hat - r);
-    }
-    else{
-        ImpDouble y_ij = y->fid;
-        ImpDouble y_hat = y->val;
-        ImpDouble expyy = y->expyy;
-        res =  wn * -y_ij / (1 + expyy) - w * (y_hat - r);
-    }
-    return res;
+    ImpDouble w2 = (y->fid > 0)? 1 : wn;
+    ImpDouble y_ij = y->fid;
+    ImpDouble y_hat = y->val;
+    ImpDouble expyy = y->expyy;
+    return  w2 * -y_ij / (1 + expyy) - w * (y_hat - r);
 }
 
 ImpDouble ImpProblem::l_pos_hessian(const YNode *y){
-    ImpDouble res;
-    if( y->fid > 0 ){
-        ImpDouble expyy = y->expyy;
-        res = expyy / (1 + expyy) / (1 + expyy) - w;
-    }
-    else{
-        ImpDouble expyy = y->expyy;
-        res = wn * expyy / (1 + expyy) / (1 + expyy) - w;
-    }
-    return res;
+    ImpDouble w2 = (y->fid > 0)? 1 : wn;
+    ImpDouble expyy = y->expyy;
+    return w2 * expyy / (1 + expyy) / (1 + expyy) - w;
 }
 
 void ImpProblem::init_expyy(){
