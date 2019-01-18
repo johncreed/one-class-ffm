@@ -71,7 +71,7 @@ void row_wise_inner(const Vec &V1, const Vec &V2, const ImpInt &row,
 void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
     default_random_engine ENGINE(rand());
     vec.resize(nr_rows*nr_cols, 0.1);
-    uniform_real_distribution<ImpDouble> dist(0, 0.1*qrsqrt(nr_cols));
+    uniform_real_distribution<ImpDouble> dist(-0.1*qrsqrt(nr_cols),0.1*qrsqrt(nr_cols));
 
     auto gen = std::bind(dist, ENGINE);
     generate(vec.begin(), vec.end(), gen);
