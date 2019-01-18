@@ -31,5 +31,7 @@
 *.out
 *.app
 
-# Vim swp
+# Vim swp, tags
 *.swp
+ctags
+tags
