@@ -869,7 +869,7 @@ ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool do_sum_all){
         auc = -1;
     }
     else
-        auc = (rank_sum - (tp + 1.0) * tp / 2.0)/ tp / fp;
+        auc = (rank_sum - ((ImpDouble)tp + 1.0) * (ImpDouble)tp / 2.0)/ (ImpDouble)tp / (ImpDouble)fp;
 
     return auc;
 }

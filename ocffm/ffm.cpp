@@ -977,12 +977,12 @@ void ImpProblem::validate() {
         }
         
         ImpDouble gauc_i = auc(z, i, true);
-        if( gauc_i > 0 ){
+        if( gauc_i != -1 ){
             gauc_all_sum += auc(z, i, true);
             gauc_all_weight_sum += 1;
         }
         gauc_i = auc(z, i, false);
-        if( gauc_i > 0){
+        if( gauc_i != -1 ){
             gauc_sum += auc(z, i, false) * (ImpDouble)(Uva->Y[i+1] - Uva->Y[i]);
             gauc_weight_sum += (Uva->Y[i+1] - Uva->Y[i]);
         }
@@ -1056,10 +1056,10 @@ ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool do_sum_all){
 
     if(tp == 0 || fp == 0)
     {
-        auc = 0;
+        auc = -1;
     }
     else
-        auc = (rank_sum - (tp + 1.0) * tp / 2.0)/ tp / fp;
+        auc = (rank_sum - ((ImpDouble)tp + 1.0) * (ImpDouble)tp / 2.0)/(ImpDouble) tp / (ImpDouble)fp;
 
     return auc;
 }
