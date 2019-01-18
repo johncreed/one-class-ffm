@@ -782,7 +782,6 @@ void ImpProblem::validate() {
         pred_z(i, z.data());
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-            cout << y->fid << " 1:" << z[j]+at[i] << endl;
             ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
         
@@ -1405,6 +1404,8 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         }
         theta *= beta;
     }
+    if( theta != 1 )
+        cerr << "Do line search " << theta << endl << flush;
 }
 
 void ImpProblem::calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q){
