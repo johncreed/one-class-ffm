@@ -934,7 +934,7 @@ void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-        if (!Uva->file_name.empty() && iter % 5 == 0) {
+        if (!Uva->file_name.empty() && iter % 10 == 0) {
             validate();
             print_epoch_info(iter);
         }
