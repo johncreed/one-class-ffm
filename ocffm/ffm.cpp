@@ -972,7 +972,6 @@ void ImpProblem::validate() {
         pred_z(i, z.data());
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-            cout << y->fid << " 1:" << z[j]+at[i] << endl;
             ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
         
