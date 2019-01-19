@@ -934,7 +934,7 @@ void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-        if (!Uva->file_name.empty() && iter % 10 == 0) {
+        if (!Uva->file_name.empty() && iter % 1 == 0) {
             validate();
             print_epoch_info(iter);
         }
@@ -997,13 +997,15 @@ ImpDouble ImpProblem::l_pos_grad(const YNode *y){
     ImpDouble y_ij = y->fid;
     ImpDouble y_hat = y->val;
     ImpDouble expyy = y->expyy;
-    return  w2 * -y_ij / (1 + expyy) - w * (y_hat - r);
+    ImpDouble g_grad = ( y->fid > 0 )? -y_ij / (1 + expyy) : (y_hat - y_ij); 
+    return  w2 * g_grad - w * (y_hat - r);
 }
 
 ImpDouble ImpProblem::l_pos_hessian(const YNode *y){
     ImpDouble w2 = (y->fid > 0)? 1 : wn;
     ImpDouble expyy = y->expyy;
-    return w2 * expyy / (1 + expyy) / (1 + expyy) - w;
+    ImpDouble g_hessian = ( y->fid > 0)? expyy / (1 + expyy) / (1 + expyy) : 1; 
+    return w2 * g_hessian - w;
 }
 
 void ImpProblem::init_expyy(){
@@ -1392,7 +1394,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     while(true){
         if(theta < 1e-20){
             scal(S1.data(), S1.size(), 0);
-            cerr << "Step size too small and skip this block." << endl;
+            //cerr << "Step size too small and skip this block." << endl;
             break;
         }
         ImpDouble L_pos_new = calc_L_pos(Y, m1, theta);
@@ -1404,8 +1406,8 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         }
         theta *= beta;
     }
-    if( theta != 1 )
-        cerr << "Do line search " << theta << endl << flush;
+    //if( theta != 1 )
+        //cerr << "Do line search " << theta << endl << flush;
 }
 
 void ImpProblem::calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q){
@@ -1433,13 +1435,21 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDo
     ImpDouble L_pos_new = 0;
     for(ImpLong i = 0; i < m; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
-            ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            ImpDouble y_hat_new = y->val + theta * y->delta;
-            ImpDouble yy = y_hat_new * (ImpDouble) y->fid;
-            if( -yy > 0 )
-                L_pos_new += w2 *(-yy + log1p( exp(yy) )) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
-            else
-                L_pos_new += w2 * log1p( exp(-yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+            if (y->fid > 0){
+                ImpDouble w2 = (y->fid > 0)? 1 : wn;
+                ImpDouble y_hat_new = y->val + theta * y->delta;
+                ImpDouble yy = y_hat_new * (ImpDouble) y->fid;
+                if( -yy > 0 )
+                    L_pos_new += w2 *(-yy + log1p( exp(yy) )) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+                else
+                    L_pos_new += w2 * log1p( exp(-yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+            }
+            else{
+                ImpDouble w2 = (y->fid > 0)? 1 : wn;
+                ImpDouble y_hat_new = y->val + theta * y->delta;
+                L_pos_new += w2 * 0.5 * (y_hat_new - y->fid) * (y_hat_new - y->fid) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+            
+            }
         }
     }
     return L_pos_new;
@@ -1449,12 +1459,18 @@ void ImpProblem::init_L_pos(){
     L_pos = 0;
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
-            ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            ImpDouble yy = y->val * (ImpDouble) y->fid;
-            if( -yy > 0 )
-                L_pos += w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y->val - r) * (y->val - r);
-            else
-                L_pos += w2 * log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
+            if( y->fid > 0 ){
+                ImpDouble w2 = (y->fid > 0)? 1 : wn;
+                ImpDouble yy = y->val * (ImpDouble) y->fid;
+                if( -yy > 0 )
+                    L_pos += w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y->val - r) * (y->val - r);
+                else
+                    L_pos += w2 * log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
+            }
+            else{
+                ImpDouble w2 = (y->fid > 0)? 1 : wn;
+                L_pos += w2 * 0.5 * (y->val - y->fid) * (y->val - y->fid) - 0.5 * w * (y->val - r) * (y->val - r);
+            }
         }
     }
 }
