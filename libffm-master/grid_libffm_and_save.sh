@@ -2,11 +2,11 @@
 
 num_core=20
 
-r_train=(0.003125 0.0125 0.05)
+r_train=(0.4 0.1 0.025 0.00625 0.0015625 0.000390625)
 l_train=(1e-6 1e-5 1e-4 1e-3)
-k=64
+k=32
 t=20
-libffm_tr="ob.trva.ffm"
+libffm_tr="ob.tr.libffm"
 models_pth="models"
 stdout_pth="std_out.log"
 
