@@ -6,6 +6,7 @@
 #include <cstring>
 #include <stdlib.h>
 #include <unordered_set>
+#include <unordered_map>
 #include <algorithm>
 #include <functional>
 #include <iomanip>
@@ -26,8 +27,8 @@ using namespace std;
 
 typedef double ImpFloat;
 typedef double ImpDouble;
-typedef unsigned int ImpInt;
-typedef unsigned long int ImpLong;
+typedef int ImpInt;
+typedef long int ImpLong;
 typedef vector<ImpDouble> Vec;
 
 const int MIN_Z = -1000;
@@ -87,7 +88,7 @@ public:
     void ffm_load_model(string & model_path);
 
 private:
-    ImpDouble loss, lambda, w, r;
+    ImpDouble loss, gauc, gauc_all, lambda, w, r;
 
     shared_ptr<ImpData> U, Uva, V;
     shared_ptr<Parameter> param;
@@ -133,6 +134,7 @@ private:
     void one_epoch();
     void init_va(ImpInt size);
 
+    ImpDouble auc(Vec &z, ImpLong i, bool all);
     void pred_z(const ImpLong i, ImpDouble *z);
     void pred_items();
     void prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts);

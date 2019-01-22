@@ -140,7 +140,8 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
                 nnz_j++;
                 ImpLong idx = stoi(label_str);
                 M[nnz_j-1].idx = idx;
-                popular[idx] += 1;
+                if (idx >= 0)
+                    popular[idx] += 1;
             }
             nny[i] = nnz_j;
         }
@@ -564,7 +565,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
     if(param->freq){
         const vector<ImpLong> &freq = U1->freq[fi];
         const ImpLong df1 = U1->Ds[fi];
-        assert( df1 == freq.size());
+        assert( (unsigned) df1 == freq.size());
         for(ImpLong i = 0; i < df1; i++)
             axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[i]));
     }
@@ -650,7 +651,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
     if(param->freq){
         vector<ImpLong> &freq = U1->freq[fi];
         const ImpLong df1 = U1->Ds[fi];
-        assert( df1 == freq.size());
+        assert( (unsigned) df1 == freq.size());
         for(ImpLong i = 0; i < df1; i++)
             axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[i]));
     }
@@ -788,7 +789,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
 
         if(param->freq){
             vector<ImpLong> &freq = U1->freq[fi];
-            assert( Df1 == freq.size());
+            assert( (unsigned) Df1 == freq.size());
             for(ImpLong i = 0; i < Df1; i++)
                 axpy( V.data()+i*k, Hv.data()+i*k, k, lambda * ImpDouble(freq[i]));
         }
@@ -984,7 +985,9 @@ void ImpProblem::validate() {
     }
 
     ImpDouble ploss = 0;
-#pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss)
+    ImpDouble gauc_sum = 0, gauc_all_sum = 0;
+    ImpDouble gauc_all_weight_sum = 0, gauc_weight_sum = 0;
+    #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss, gauc_all_sum, gauc_sum, gauc_all_weight_sum, gauc_weight_sum)
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z, z_copy;
         if(Uva->nnx[i] == 0) {
@@ -996,19 +999,23 @@ void ImpProblem::validate() {
         }
         for(Node* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-#ifdef EBUG
-            cout << "(" << i << "," << j << "): "<< setprecision(10) << z[j]+at[i] << endl;
-#endif
-            if (j < z.size())
+            if (j < 0)
+                continue;
+            if ( (unsigned) j < z.size())
                 ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
         }
+        
+        ImpDouble gauc_i = auc(z, i, true);
+        if( gauc_i != -1 ){
+            gauc_all_sum += gauc_i;
+            gauc_all_weight_sum += 1;
+        }
+        gauc_i = auc(z, i, false);
+        if( gauc_i != -1){
+            gauc_sum += gauc_i * (ImpDouble)(Uva->Y[i+1] - Uva->Y[i]);
+            gauc_weight_sum += (Uva->Y[i+1] - Uva->Y[i]);
+        }
 
-#ifdef EBUG_nDCG
-        z.resize(n);
-        z_copy.resize(n);
-        for(ImpInt i = 0; i < n ; i++)
-          z[i] = z_copy[i] = n - i;
-#endif
         z_copy.assign(z.begin(), z.end());
         // Precision @
         prec_k(z.data(), i, hit_counts);
@@ -1017,6 +1024,8 @@ void ImpProblem::validate() {
         valid_samples++;
     }
 
+    gauc_all = gauc_all_sum / gauc_all_weight_sum;
+    gauc = gauc_sum / gauc_weight_sum;
     loss = sqrt(ploss/Uva->m);
 
     fill(va_loss_prec.begin(), va_loss_prec.end(), 0);
@@ -1031,6 +1040,64 @@ void ImpProblem::validate() {
         va_loss_prec[i] /= ImpDouble(valid_samples*top_k[i]);
         va_loss_ndcg[i] /= ImpDouble(valid_samples);
     }
+}
+
+class Comp{
+    const ImpDouble *dec_val;
+    public:
+    Comp(const ImpDouble *ptr): dec_val(ptr){}
+    bool operator()(int i, int j) const{
+        return dec_val[i] < dec_val[j];
+    }
+};
+
+ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool do_sum_all){
+    ImpDouble rank_sum  = 0;
+    ImpDouble auc  = 0;
+    ImpLong size = z.size();
+    vector<ImpLong> indices(size);
+
+    for(ImpLong j = 0; j < size; j++) indices[j] = j;
+
+    sort(indices.begin(), indices.end(), Comp(z.data()));
+
+    ImpLong tp = 0,fp = 0;
+    ImpLong rank = 0;
+    for(ImpLong j = 0; j < size; j++) {
+        bool is_pos = false;
+        bool is_obs = false;
+        ImpLong idx = indices[j];
+        for(Node *y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
+            if(y->idx == idx || y->idx == -idx - 1)
+                is_obs = true;
+            if(y->idx == idx ){
+                is_pos = true; 
+                break;
+            }
+        }
+
+        if( !do_sum_all  && !is_obs)
+            continue;
+
+        if(is_pos){ 
+            tp++;
+            rank_sum += (rank + 1);
+        }
+        else{
+            fp++;
+        }
+
+        rank += 1;
+    }
+
+    if(tp == 0 || fp == 0)
+    {
+        auc = -1;
+    }
+    else
+        auc = (rank_sum - ((ImpDouble)tp + 1.0) * (ImpDouble)tp / 2.0)/ (ImpDouble)tp / (ImpDouble)fp;
+
+    return auc;
 }
 
 void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts) {
@@ -1080,6 +1147,10 @@ void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
 #endif
 #endif
     ImpLong max_z_idx = U->popular.size();
+    ImpInt pos_count = 0;
+    for(Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++){
+        if (nd->idx >= 0) pos_count++;
+    }
     for (ImpInt state = 0; state < nr_k; state++) {
         while(valid_count < top_k[state]) {
             if ( valid_count >= max_z_idx )
@@ -1111,7 +1182,8 @@ void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
                 }
             }
 
-            if( ImpInt(Uva->Y[i+1] - Uva->Y[i]) > valid_count )
+            //if( ImpInt(Uva->Y[i+1] - Uva->Y[i]) > valid_count )
+            if( pos_count > valid_count)
                 idcg_score[state] += 1.0 / log2(valid_count + 2);
             valid_count++;
         }
@@ -1151,6 +1223,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
         cout << setprecision(3) << loss;
     }
     cout << endl;
+    cout << "gauc: " << gauc << " gauc_all: " << gauc_all << endl;
 }
 
 void ImpProblem::solve() {
@@ -1250,6 +1323,7 @@ void save_model(const ImpProblem& prob, string & model_path ){
 }
 
 void ImpProblem::ffm_load_model(string & model_path ) {
+    cout << model_path << endl;
     ifstream f_in(model_path);
 
     string dummy;
@@ -1258,7 +1332,9 @@ void ImpProblem::ffm_load_model(string & model_path ) {
     bool normalization;
 
     f_in >> dummy >> n_feature;
+    //cout << dummy << " " << n_feature << endl;
     f_in >> dummy >> n_field;
+    //cout << dummy << " " << n_field << endl;
     f_in >> dummy >> _k;
     f_in >> dummy >> normalization;
     assert( n_field == f );
@@ -1275,14 +1351,14 @@ void ImpProblem::ffm_load_model(string & model_path ) {
                 for(ImpInt d = 0; d < k; d++) {
                     f_in >> W1[j*k+d];
                 }
-#ifdef EBUG
+                
                 istringstream iss(dummy);
                 ImpInt _j, _f;
                 char dum;
                 iss >> dum >> dum >> _j >> dum >> _f;
                 assert( _j == j + offset );
                 assert( _f == f2 );
-#endif
+
             }
         }
         offset += df1;
