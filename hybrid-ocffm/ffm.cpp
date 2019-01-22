@@ -493,6 +493,8 @@ void ImpProblem::init() {
             const shared_ptr<ImpData> d2 = ((f2<fu)? U: V);
             const ImpInt fj = ((f2>=fu)? f2-fu: f2);
             const ImpInt f12 = index_vec(f1, f2, f);
+            if( !param->self_side && ( f1 >= fu || f2 < fu ))
+                continue;
             init_pair(f12, fi, fj, d1, d2);
         }
     }
@@ -705,6 +707,8 @@ void ImpProblem::init_va(ImpInt size) {
         for (ImpInt f2 = f1; f2 < f; f2++) {
             const shared_ptr<ImpData> d2 = ((f2<fu)? Uva: V);
             const ImpInt f12 = index_vec(f1, f2, f);
+            if( !param->self_side && ( f1 >= fu || f2 < fu ))
+                continue;
             Pva[f12].resize(d1->m*k);
             Qva[f12].resize(d2->m*k);
         }
@@ -751,6 +755,8 @@ void ImpProblem::validate() {
             const ImpInt fj = ((f2>=fu)? f2-fu: f2);
 
             const ImpInt f12 = index_vec(f1, f2, f);
+            if( !param->self_side && ( f1 >= fu || f2 < fu ))
+                continue;
             UTX(d1->Xs[fi], d1->m, W[f12], Pva[f12]);
             UTX(d2->Xs[fj], d2->m, H[f12], Qva[f12]);
         }
