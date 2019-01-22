@@ -7,8 +7,8 @@ l_train=(1e-6 1e-5 1e-4 1e-3)
 k=32
 t=20
 libffm_tr="ob.tr.libffm"
-models_pth="models"
-stdout_pth="std_out.log"
+libffm_va="ob.va.libffm"
+stdout_pth="log"
 
 create_models_pth(){
   for r in ${r_train[@]} 
