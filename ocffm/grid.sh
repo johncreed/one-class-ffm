@@ -14,7 +14,7 @@ echo "=== Choose solve type ===
 7: kkbox, fm-fm     |
 8: kkbox, mf-mf--ns |
 ------------------"
-echo -n "sovle (0~5): "
+echo -n "sovle (0~8): "
 read solve_type
 }
 
@@ -51,8 +51,8 @@ set_up_solve_type(){
   case $solve_type in
     0)
       # Ext & logs_pth
-      tr_ext=ffm
-      i_ext=ffm
+      tr_ext=ocffm
+      i_ext=ocffm
       # Data
       name=ob
       tr=ob.${tr_data}.${tr_ext}
@@ -60,7 +60,7 @@ set_up_solve_type(){
       item=item.${i_ext}
       # Var
       set_ns
-      t=100
+      t=41
       ;;
     1)
       # Ext & logs_pth
@@ -182,8 +182,8 @@ set_up_solve_type(){
 
 
 choose_w_list(){
-  # 2^0 ~ 2^-11
-  w_all=(1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 0.0009765625 0.00048828125)
+  # 2^0 ~ 2^-13
+  w_all=(1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 0.0009765625 0.00048828125 0.000244140625 0.0001220703125)
   w_train=()
 
   # Print w_all
