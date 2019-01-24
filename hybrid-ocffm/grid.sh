@@ -46,11 +46,11 @@ set_up_solve_type(){
       # Data
       name=ob
       tr=ob.${tr_data}.${tr_ext}
-      te=ob.${te_data}.${tr_ext}
+      te=ob.${te_data}.sub.${tr_ext}
       item=item.${i_ext}
       # Var
       set_ns
-      t=100
+      t=51
       ;;
     *)
       echo "No match"
