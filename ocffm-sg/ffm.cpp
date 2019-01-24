@@ -849,24 +849,26 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
     update_cross(false, SH, P1, H1, V1, Q1);
 }
 
+
 void ImpProblem::one_epoch() {
 
-    if (param->self_side) {
-        for (ImpInt f1 = 0; f1 < fu; f1++)
-            for (ImpInt f2 = f1; f2 < fu; f2++)
-                solve_side(f1, f2);
-
-        for (ImpInt f1 = fu; f1 < f; f1++)
-            for (ImpInt f2 = f1; f2 < f; f2++)
-                solve_side(f1, f2);
+    vector<ImpLong> outer_order(m);
+    iota(outer_order.begin(), outer_order.end(), 0);
+    random_shuffle(outer_order.begin(), outer_order.end());
+    for(auto i: outer_order){
+        vector<ImpLong> inner_order(n);
+        iota(inner_order.begin(), inner_order.end(), 0);
+        random_shuffle(inner_order.begin(), inner_order.end());
+        for(auto j: inner_order){
+            // TODO Update P Q
+            update_P_Q();
+            // TODO Update W H
+            update_W_H(i, j);
+            // TODO Update cached var
+            update_cached_var();
+        }
     }
 
-    for (ImpInt f1 = 0; f1 < fu; f1++)
-        for (ImpInt f2 = fu; f2 < f; f2++)
-            solve_cross(f1, f2);
-
-    if (param->self_side)
-        cache_sasb();
 }
 
 void ImpProblem::init_va(ImpInt size) {
@@ -1147,16 +1149,11 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
-#ifdef EBUG_nDCG
-            cout << "DEBUG nDCG" << endl;
-            validate();
-#else
             one_epoch();
             if (!Uva->file_name.empty() && iter % 10 == 9) {
                 validate();
                 print_epoch_info(iter);
             }
-#endif
     }
 }
 
@@ -1287,3 +1284,6 @@ ImpDouble ImpProblem::func() {
 }
 
 
+void ImpProblem::update_W_H(ImpLong i, ImpLong j){}
+void ImpProblem::update_P_Q(){}
+void ImpProblem::update_cached_var(){}

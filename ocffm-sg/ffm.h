@@ -138,6 +138,9 @@ private:
     void validate();
     void print_epoch_info(ImpInt t);
 
+    void update_W_H(ImpLong i, ImpLong j);
+    void update_P_Q();
+    void update_cached_var();
 };
 
 
