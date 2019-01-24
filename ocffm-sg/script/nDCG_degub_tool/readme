@@ -1,0 +1,12 @@
+# Edit MAKEFILE
+enable EBUG_nDCG
+enable SHOW_SCORE_ONLY
+make clean train
+
+# Generate answer 
+./gen_ans.py 
+
+# Run 
+./train -k 8 -t 1 -p case1.mf text_item.mf case1.mf
+
+# Have fun!
