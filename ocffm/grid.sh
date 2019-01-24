@@ -230,9 +230,9 @@ choose_l_list(){
 }
 
 task(){
-  for w in ${w_train[@]} 
+  for l in ${l_train[@]}
   do
-      for l in ${l_train[@]}
+      for w in ${w_train[@]}
       do
         echo "./train -k $k -l $l -t ${t} -r -1 -w $w $ns -c ${c} -p ${te} ${item} ${tr} > $logs_pth/${tr}.$l.$w.${ext}"
       done
