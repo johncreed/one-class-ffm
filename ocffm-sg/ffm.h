@@ -6,6 +6,7 @@
 #include <cstring>
 #include <stdlib.h>
 #include <unordered_set>
+#include <unordered_map>
 #include <algorithm>
 #include <functional>
 #include <iomanip>
@@ -29,16 +30,17 @@ typedef double ImpDouble;
 typedef unsigned int ImpInt;
 typedef unsigned long int ImpLong;
 typedef vector<ImpDouble> Vec;
+typedef pair<ImpLong, ImpLong> ImpPLL;
 
 const int MIN_Z = -1000;
 
 class Parameter {
 public:
-    ImpFloat omega, lambda, r;
+    ImpFloat omega, lambda, r, eta;
     ImpInt nr_pass, k, nr_threads;
     string model_path, predict_path;
     bool self_side, freq = false;
-    Parameter():omega(0.1), lambda(1e-5), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true) {};
+    Parameter():omega(0.1), lambda(1e-5), r(-1), eta(0.01), nr_pass(20), k(4), nr_threads(1), self_side(true) {};
 };
 
 class Node {
@@ -63,6 +65,7 @@ public:
     vector<ImpLong> Ds;
     vector<vector<ImpLong>> freq;
     vector<ImpDouble> popular;
+    vector<unordered_set<ImpLong>> observed_sets;
 
     ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
     void read(bool has_label, const ImpLong* ds=nullptr);
@@ -85,7 +88,7 @@ public:
     void write_header(ofstream& o_f) const;
     void write_W_and_H(ofstream& o_f) const;
 private:
-    ImpDouble loss, lambda, w, r;
+    ImpDouble loss, lambda, w, r, eta;
 
     shared_ptr<ImpData> U, Uva, V;
     shared_ptr<Parameter> param;
@@ -94,7 +97,7 @@ private:
     ImpLong m, n;
     ImpLong mt;
 
-    vector<Vec> W, H, P, Q, Pva, Qva;
+    vector<Vec> W, H, W_grad_sum, H_grad_sum, P, Q, Pva, Qva;
     Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb;
 
     vector<ImpInt> top_k;
@@ -140,7 +143,6 @@ private:
 
     void update_W_H(ImpLong i, ImpLong j);
     void update_P_Q();
-    void update_cached_var();
 };
 
 
