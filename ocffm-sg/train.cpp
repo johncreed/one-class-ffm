@@ -43,6 +43,7 @@ string train_help()
     "-o <path>: set path to save model file\n"
     "-w <omega>: set cost weight for the negatives\n"
     "-r <rating>: set rating for the negatives\n"
+    "-eta <rating>: set learning rating\n"
     "-c <threads>: set number of cores\n"
     "-k <rank>: set number of rank\n"
     "--no-item: set item-bias\n"
@@ -105,7 +106,7 @@ Option parse_option(int argc, char **argv)
             i++;
 
             if(!is_numerical(argv[i]))
-                throw invalid_argument("-r should be followed by a number");
+                throw invalid_argument("-w should be followed by a number");
             option.param->omega = atof(argv[i]);
         }
         else if(args[i].compare("-r") == 0)
@@ -117,6 +118,17 @@ Option parse_option(int argc, char **argv)
 
             if(!is_numerical(argv[i]))
                 throw invalid_argument("-r should be followed by a number");
+            option.param->r = atof(argv[i]);
+        }
+        else if(args[i].compare("-eta") == 0)
+        {
+            if((i+1) >= argc)
+                throw invalid_argument("need to specify max number of\
+                                        iterations after -t");
+            i++;
+
+            if(!is_numerical(argv[i]))
+                throw invalid_argument("-eta should be followed by a number");
             option.param->r = atof(argv[i]);
         }
         else if(args[i].compare("-c") == 0)
