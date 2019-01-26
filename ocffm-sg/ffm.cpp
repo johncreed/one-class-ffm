@@ -115,13 +115,13 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
 
     X.resize(m+1);
     Y.resize(m+1);
-    observed_sets.resize(m);
 
     if (has_label) {
         nnz_y = y_nnz;
         M.resize(y_nnz);
         popular.resize(n);
         fill(popular.begin(), popular.end(), 0);
+        observed_sets.resize(m);
     }
 
     nnx.resize(m);
@@ -949,11 +949,14 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
         Node* X1_start = (f1<fu)?  d1->Xs[f1_base][i] : d1->Xs[f1_base][j];
         Node* X1_end = (f1<fu)?  d1->Xs[f1_base][i+1] : d1->Xs[f1_base][j+1];
         for(ImpLong f2 = f1; f2 < f; f2++){
+            const ImpInt f12 = index_vec(f1, f2, f);
+            if(!param->self_side && (f1>=fu || f2<fu))
+                continue;
+
             const shared_ptr<ImpData> d2 = ((f2<fu)? U: V);
             const ImpLong f2_base = (f2 < fu)? f2 : f2 - fu;
             Node* X2_start = (f1<fu)?  d2->Xs[f2_base][i] : d2->Xs[f2_base][j];
             Node* X2_end = (f1<fu)?  d2->Xs[f2_base][i+1] : d2->Xs[f2_base][j+1];
-            const ImpInt f12 = index_vec(f1, f2, f);
             Vec &W12 = W[f12], &H12 = H[f12];
             Vec &W_G12 = W_grad_sum[f12], &H_G12 = H_grad_sum[f12];
 #ifdef DEBUG
@@ -995,14 +998,15 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
                     ImpDouble *h = H12.data() + (x2->idx * k);
                     ImpDouble lambda2 = lambda / freq2[x2->idx];
                     ImpDouble *Gh = H_G12.data() + (x2->idx * k);
+                    
+                    ImpDouble scale = (is_observed)? (1 - Y_hat) : (r - Y_hat);
                     //Solve w
                     Vec gw(k, 0);
                     axpy( w, gw.data(), k, lambda1);
-                    ImpDouble scale = (is_observed)? (1 - Y_hat) : (r - Y_hat);
-                    axpy(qp, gw.data(), k, -scale * scale);
+                    axpy(qp, gw.data(), k, -scale * x1->val);
                     for(ImpLong d = 0; d < k; d++){
                         Gw[d] += gw[d] * gw[d];
-                        w[d] += - eta / sqrt(Gw[d]) * gw[d];
+                        w[d] -= eta / sqrt(Gw[d]) * gw[d];
                     }
                     //Solve h
                     Vec gh(k, 0);
@@ -1013,10 +1017,10 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
                     else{
                         scale = (r - Y_hat) * x1->val;
                     }
-                    axpy(pp, gh.data(), k, -scale * scale);
+                    axpy(pp, gh.data(), k, -scale * x2->val);
                     for(ImpLong d = 0; d < k; d++){
                         Gh[d] += gh[d] * gh[d];
-                        h[d] += - eta / sqrt(Gh[d]) * gh[d];
+                        h[d] -=  eta / sqrt(Gh[d]) * gh[d];
                     }
                 }
             }
