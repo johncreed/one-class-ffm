@@ -65,7 +65,7 @@ public:
     vector<ImpLong> Ds;
     vector<vector<ImpLong>> freq;
     vector<ImpDouble> popular;
-    vector<unordered_set<ImpLong>> observed_sets;
+    vector<unordered_set<ImpLong>> obs_sets;
 
     ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
     void read(bool has_label, const ImpLong* ds=nullptr);
@@ -97,7 +97,7 @@ private:
     ImpLong m, n;
     ImpLong mt;
 
-    vector<Vec> W, H, W_grad_sum, H_grad_sum, P, Q, Pva, Qva;
+    vector<Vec> W, H, GW_sum, GH_sum, P, Q, Pva, Qva;
     Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb;
 
     vector<ImpInt> top_k;

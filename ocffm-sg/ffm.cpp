@@ -121,7 +121,7 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         M.resize(y_nnz);
         popular.resize(n);
         fill(popular.begin(), popular.end(), 0);
-        observed_sets.resize(m);
+        obs_sets.resize(m);
     }
 
     nnx.resize(m);
@@ -142,7 +142,7 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
                 ImpLong idx = stoi(label_str);
                 M[nnz_j-1].idx = idx;
                 popular[idx] += 1;
-                observed_sets[i].insert(idx);
+                obs_sets[i].insert(idx);
             }
             nny[i] = nnz_j;
         }
@@ -345,8 +345,8 @@ void ImpProblem::init_pair(const ImpInt &f12,
 
     init_mat(W[f12], Df1, k);
     init_mat(H[f12], Df2, k);
-    W_grad_sum[f12].resize(Df1*k, 1);
-    H_grad_sum[f12].resize(Df2*k, 1);
+    GW_sum[f12].resize(Df1*k, 1);
+    GH_sum[f12].resize(Df2*k, 1);
     P[f12].resize(d1->m*k, 0);
     Q[f12].resize(d2->m*k, 0);
     UTX(X1, d1->m, W[f12], P[f12]);
@@ -432,8 +432,8 @@ void ImpProblem::init() {
 
     W.resize(nr_blocks);
     H.resize(nr_blocks);
-    W_grad_sum.resize(nr_blocks);
-    H_grad_sum.resize(nr_blocks);
+    GW_sum.resize(nr_blocks);
+    GH_sum.resize(nr_blocks);
 
     P.resize(nr_blocks);
     Q.resize(nr_blocks);
@@ -942,12 +942,12 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             Y_hat += pq(i, j, f1, f2);
         }
     }
-    bool is_obs = ( U->observed_sets[i].find(j) != U->observed_sets[i].end() )? true : false;
+    bool is_obs = ( U->obs_sets[i].find(j) != U->obs_sets[i].end() )? true : false;
     for(ImpLong f1 = 0; f1 < f; f1++){
         const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
         const ImpLong f1_base = (f1 < fu)? f1 : f1 - fu;
-        Node* X1_begin = (f1<fu)?  d1->Xs[f1_base][i] : d1->Xs[f1_base][j];
-        Node* X1_end = (f1<fu)?  d1->Xs[f1_base][i+1] : d1->Xs[f1_base][j+1];
+        Node *X1_begin = (f1<fu)?  d1->Xs[f1_base][i] : d1->Xs[f1_base][j];
+        Node *X1_end = (f1<fu)?  d1->Xs[f1_base][i+1] : d1->Xs[f1_base][j+1];
         for(ImpLong f2 = f1; f2 < f; f2++){
             const ImpInt f12 = index_vec(f1, f2, f);
             if(!param->self_side && (f1>=fu || f2<fu))
@@ -955,10 +955,10 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
 
             const shared_ptr<ImpData> d2 = ((f2<fu)? U: V);
             const ImpLong f2_base = (f2 < fu)? f2 : f2 - fu;
-            Node* X2_begin = (f1<fu)?  d2->Xs[f2_base][i] : d2->Xs[f2_base][j];
-            Node* X2_end = (f1<fu)?  d2->Xs[f2_base][i+1] : d2->Xs[f2_base][j+1];
+            Node *X2_begin = (f2<fu)?  d2->Xs[f2_base][i] : d2->Xs[f2_base][j];
+            Node *X2_end = (f2<fu)?  d2->Xs[f2_base][i+1] : d2->Xs[f2_base][j+1];
             Vec &W12 = W[f12], &H12 = H[f12];
-            Vec &GW_sum12 = W_grad_sum[f12], &GH_sum12 = H_grad_sum[f12];
+            Vec &GW_sum12 = GW_sum[f12], &GH_sum12 = GH_sum[f12];
 #ifdef DEBUG
             if(f1<fu)
                 assert( P[f12].size() > i * k);
@@ -976,7 +976,7 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             vector<ImpLong> &freq1 = d1->freq[f1_base], &freq2 = d2->freq[f2_base];
 
             ImpLong len_X1 = 0;
-            for(Node* x1 = X1_begin; x1 != X1_end; n1++)
+            for(Node* x = X1_begin; x != X1_end; x++)
                 len_X1++;
             #pragma omp parallel for schedule(guided)
             for(ImpLong ii = 0 ; ii < len_X1; ii++){
