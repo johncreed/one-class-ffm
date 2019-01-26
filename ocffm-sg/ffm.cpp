@@ -953,7 +953,7 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
         Node *X_begin = (f1<fu)?  d->Xs[f1_base][i] : d->Xs[f1_base][j];
         Node *X_end = (f1<fu)?  d->Xs[f1_base][i+1] : d->Xs[f1_base][j+1];
         //Solve W f1 f2
-        for(ImpLong f2 = 0; f2 < f1; f2++){
+        for(ImpLong f2 = 0; f2 <= f1; f2++){
             const ImpInt f12 = index_vec(f2, f1, f);
             ImpDouble *qp = (f2<fu)? (Q[f12].data() + i * k) : (Q[f12].data() + j * k);
             Vec &W12 = W[f12], &GW_sum12 = GW_sum[f12];
@@ -971,7 +971,7 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             }
         }
         //Solve H f1 f2
-        for(ImpLong f2 = f1; f2 < f; f2++){
+        for(ImpLong f2 = f1; f2 < fu+fv; f2++){
             const ImpInt f12 = index_vec(f1, f2, f);
             ImpDouble *pp = (f2<fu)? (P[f12].data() + i * k) : (P[f12].data() + j * k);
             Vec &H12 = H[f12], &GH_sum12 = GH_sum[f12];
