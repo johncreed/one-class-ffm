@@ -1147,16 +1147,13 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
-#ifdef EBUG_nDCG
-            cout << "DEBUG nDCG" << endl;
-            validate();
-#else
+            double start_time = omp_get_time();
             one_epoch();
-            if (!Uva->file_name.empty() && iter % 10 == 9) {
+            cout << "iter" << iter+1 << "time: " << omp_get_time() - start_time << endl << flush;
+            if (!Uva->file_name.empty() && iter % 1 == 0) {
                 validate();
                 print_epoch_info(iter);
             }
-#endif
     }
 }
 
