@@ -943,6 +943,7 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
         }
     }
     bool is_obs = ( U->obs_sets[i].find(j) != U->obs_sets[i].end() )? true : false;
+    #pragma omp parallel for schedule(guided)
     for(ImpLong f1 = 0; f1 < f; f1++){
         const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
         const ImpLong f1_base = (f1 < fu)? f1 : f1 - fu;
@@ -978,7 +979,6 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             ImpLong len_X1 = 0;
             for(Node* x = X1_begin; x != X1_end; x++)
                 len_X1++;
-            #pragma omp parallel for schedule(guided)
             for(ImpLong ii = 0 ; ii < len_X1; ii++){
                 Node* x1 = X1_begin + ii;
 #ifdef DEBUG
