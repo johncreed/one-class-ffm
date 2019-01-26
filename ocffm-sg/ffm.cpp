@@ -942,11 +942,11 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             Y_hat += pq(i, j, f1, f2);
         }
     }
-    bool is_observed = ( U->observed_sets[i].find(j) != U->observed_sets[i].end() )? true : false;
+    bool is_obs = ( U->observed_sets[i].find(j) != U->observed_sets[i].end() )? true : false;
     for(ImpLong f1 = 0; f1 < f; f1++){
         const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
         const ImpLong f1_base = (f1 < fu)? f1 : f1 - fu;
-        Node* X1_start = (f1<fu)?  d1->Xs[f1_base][i] : d1->Xs[f1_base][j];
+        Node* X1_begin = (f1<fu)?  d1->Xs[f1_base][i] : d1->Xs[f1_base][j];
         Node* X1_end = (f1<fu)?  d1->Xs[f1_base][i+1] : d1->Xs[f1_base][j+1];
         for(ImpLong f2 = f1; f2 < f; f2++){
             const ImpInt f12 = index_vec(f1, f2, f);
@@ -955,10 +955,10 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
 
             const shared_ptr<ImpData> d2 = ((f2<fu)? U: V);
             const ImpLong f2_base = (f2 < fu)? f2 : f2 - fu;
-            Node* X2_start = (f1<fu)?  d2->Xs[f2_base][i] : d2->Xs[f2_base][j];
+            Node* X2_begin = (f1<fu)?  d2->Xs[f2_base][i] : d2->Xs[f2_base][j];
             Node* X2_end = (f1<fu)?  d2->Xs[f2_base][i+1] : d2->Xs[f2_base][j+1];
             Vec &W12 = W[f12], &H12 = H[f12];
-            Vec &W_G12 = W_grad_sum[f12], &H_G12 = H_grad_sum[f12];
+            Vec &GW_sum12 = W_grad_sum[f12], &GH_sum12 = H_grad_sum[f12];
 #ifdef DEBUG
             if(f1<fu)
                 assert( P[f12].size() > i * k);
@@ -976,30 +976,30 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             vector<ImpLong> &freq1 = d1->freq[f1_base], &freq2 = d2->freq[f2_base];
 
             ImpLong len_X1 = 0;
-            for(Node* n1 = X1_start; n1 != X1_end; n1++)
+            for(Node* x1 = X1_begin; x1 != X1_end; n1++)
                 len_X1++;
             #pragma omp parallel for schedule(guided)
             for(ImpLong ii = 0 ; ii < len_X1; ii++){
-                Node* x1 = X1_start + ii;
+                Node* x1 = X1_begin + ii;
 #ifdef DEBUG
-                assert(W12.size() > x1->idx * k);
                 assert(freq1.size() > x1->idx);
-                assert(W_G12.size() > x1->idx * k);
+                assert(W12.size() > x1->idx * k);
+                assert(GW_sum12.size() > x1->idx * k);
 #endif
                 ImpDouble *w = W12.data() + (x1->idx * k);
                 ImpDouble lambda1 = lambda / freq1[x1->idx];
-                ImpDouble *Gw = W_G12.data() + (x1->idx * k);
-                for(Node* x2 = X2_start; x2 != X2_end; x2++){
+                ImpDouble *Gw = GW_sum12.data() + (x1->idx * k);
+                for(Node* x2 = X2_begin; x2 != X2_end; x2++){
 #ifdef DEBUG
-                    assert(H12.size() > x2->idx * k);
                     assert(freq2.size() > x2->idx);
-                    assert(H_G12.size() > x2->idx * k);
+                    assert(H12.size() > x2->idx * k);
+                    assert(GH_sum12.size() > x2->idx * k);
 #endif
                     ImpDouble *h = H12.data() + (x2->idx * k);
                     ImpDouble lambda2 = lambda / freq2[x2->idx];
-                    ImpDouble *Gh = H_G12.data() + (x2->idx * k);
+                    ImpDouble *Gh = GH_sum12.data() + (x2->idx * k);
                     
-                    ImpDouble scale = (is_observed)? (1 - Y_hat) : (r - Y_hat);
+                    ImpDouble scale = (is_obs)? (1 - Y_hat) : (r - Y_hat);
                     //Solve w
                     Vec gw(k, 0);
                     axpy( w, gw.data(), k, lambda1);
@@ -1011,12 +1011,6 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
                     //Solve h
                     Vec gh(k, 0);
                     axpy( h, gh.data(), k, lambda2);
-                    if( is_observed ){
-                        scale = (1 - Y_hat) * x1->val;
-                    }
-                    else{
-                        scale = (r - Y_hat) * x1->val;
-                    }
                     axpy(pp, gh.data(), k, -scale * x2->val);
                     for(ImpLong d = 0; d < k; d++){
                         Gh[d] += gh[d] * gh[d];
