@@ -918,7 +918,7 @@ ImpDouble ImpProblem::func() {
 }
 
 
-void ImpProblem::update_P_Q(){
+void ImpProblem::update_P_Q(ImpLong i, ImpLong j){
     #pragma omp parallel for schedule(guided)
     for (ImpInt f1 = 0; f1 < f; f1++) {
         const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
@@ -929,8 +929,11 @@ void ImpProblem::update_P_Q(){
             const ImpInt f12 = index_vec(f1, f2, f);
             if(!param->self_side && (f1>=fu || f2<fu))
                 continue;
-            UTX(d1->Xs[fi], d1->m, W[f12], P[f12]);
-            UTX(d2->Xs[fj], d2->m, H[f12], Q[f12]);
+            ImpInt Pi = (f1 < fu)? i : j;
+            ImpInt Qj = (f2 < fu)? i : j;
+            const vector<Node*> &X1 = d1->Xs[fi], &X2 = d2->Xs[fj];
+            UTx(X1[Pi], X1[Pi+1], W[f12], P[f12].data() + Pi * k );
+            UTx(X2[Qi], X2[Qi+1], H[f12], Q[f12].data() + Qj * k );
         }
     }
 }
