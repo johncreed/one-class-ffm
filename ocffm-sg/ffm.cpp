@@ -494,7 +494,7 @@ void ImpProblem::one_epoch() {
         random_shuffle(inner_order.begin(), inner_order.end());
         for(auto j: inner_order){
             // TODO Update P Q
-            update_P_Q();
+            update_P_Q(i, j);
             // TODO Update W H
             update_W_H(i, j);
             if(counter % 50 == 0)
@@ -933,7 +933,7 @@ void ImpProblem::update_P_Q(ImpLong i, ImpLong j){
             ImpInt Qj = (f2 < fu)? i : j;
             const vector<Node*> &X1 = d1->Xs[fi], &X2 = d2->Xs[fj];
             UTx(X1[Pi], X1[Pi+1], W[f12], P[f12].data() + Pi * k );
-            UTx(X2[Qi], X2[Qi+1], H[f12], Q[f12].data() + Qj * k );
+            UTx(X2[Qj], X2[Qj+1], H[f12], Q[f12].data() + Qj * k );
         }
     }
 }
