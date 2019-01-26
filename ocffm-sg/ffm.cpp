@@ -956,46 +956,64 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             const ImpInt f12 = index_vec(f1, f2, f);
             Vec &W12 = W[f12], &H12 = H[f12];
             Vec &W_G12 = W_grad_sum[f12], &H_G12 = H_grad_sum[f12];
+#ifdef DEBUG
+            if(f1<fu)
+                assert( P[f12].size() > i * k);
+            else
+                assert( P[f12].size() > j * k);
+            if(f2<fu)
+                assert( Q[f12].size() > i * k);
+            else
+                assert( Q[f12].size() > j * k);
+            assert( d1->freq.size() > f1_base );
+            assert( d2->freq.size() > f2_base );
+#endif
             ImpDouble *pp = (f1<fu)? P[f12].data() + i*k : P[f12].data() + j*k;
             ImpDouble *qp = (f2<fu)? Q[f12].data()+ i*k : Q[f12].data() + j*k;
+            vector<ImpLong> &freq1 = d1->freq[f1_base], &freq2 = d2->freq[f2_base];
 
             ImpLong len_X1 = 0;
             for(Node* n1 = X1_start; n1 != X1_end; n1++)
                 len_X1++;
             #pragma omp parallel for schedule(guided)
-            for(ImpLong x1 = 0 ; x1 < len_X1; x1++){
-                Node* n1 = X1_start + x1;
-                ImpDouble *w = W12.data() + (n1->idx * k);
-                assert(W12.size() > n1->idx * k);
-                ImpDouble *Gw = W_G12.data() + (n1->idx * k);
-                for(Node* n2 = X2_start; n2 != X2_end; n2++){
-                    ImpDouble *h = H12.data() + (n2->idx * k);
-                    ImpDouble *Gh = H_G12.data() + (n2->idx * k);
+            for(ImpLong ii = 0 ; ii < len_X1; ii++){
+                Node* x1 = X1_start + ii;
+#ifdef DEBUG
+                assert(W12.size() > x1->idx * k);
+                assert(freq1.size() > x1->idx);
+                assert(W_G12.size() > x1->idx * k);
+#endif
+                ImpDouble *w = W12.data() + (x1->idx * k);
+                ImpDouble lambda1 = lambda / freq1[x1->idx];
+                ImpDouble *Gw = W_G12.data() + (x1->idx * k);
+                for(Node* x2 = X2_start; x2 != X2_end; x2++){
+#ifdef DEBUG
+                    assert(H12.size() > x2->idx * k);
+                    assert(freq2.size() > x2->idx);
+                    assert(H_G12.size() > x2->idx * k);
+#endif
+                    ImpDouble *h = H12.data() + (x2->idx * k);
+                    ImpDouble lambda2 = lambda / freq2[x2->idx];
+                    ImpDouble *Gh = H_G12.data() + (x2->idx * k);
                     //Solve w
                     Vec gw(k, 0);
-                    axpy( w, gw.data(), k, lambda);
-                    ImpDouble scale;
-                    if( is_observed ){
-                        scale = (1 - Y_hat) * n1->val;
-                    }
-                    else{
-                        scale = (r - Y_hat) * n1->val;
-                    }
-                    axpy(qp, gw.data(), k, -scale);
+                    axpy( w, gw.data(), k, lambda1);
+                    ImpDouble scale = (is_observed)? (1 - Y_hat) : (r - Y_hat);
+                    axpy(qp, gw.data(), k, -scale * scale);
                     for(ImpLong d = 0; d < k; d++){
                         Gw[d] += gw[d] * gw[d];
                         w[d] += - eta / sqrt(Gw[d]) * gw[d];
                     }
                     //Solve h
                     Vec gh(k, 0);
-                    axpy( h, gh.data(), k, lambda);
+                    axpy( h, gh.data(), k, lambda2);
                     if( is_observed ){
-                        scale = (1 - Y_hat) * n1->val;
+                        scale = (1 - Y_hat) * x1->val;
                     }
                     else{
-                        scale = (r - Y_hat) * n1->val;
+                        scale = (r - Y_hat) * x1->val;
                     }
-                    axpy(pp, gh.data(), k, -scale);
+                    axpy(pp, gh.data(), k, -scale * scale);
                     for(ImpLong d = 0; d < k; d++){
                         Gh[d] += gh[d] * gh[d];
                         h[d] += - eta / sqrt(Gh[d]) * gh[d];
