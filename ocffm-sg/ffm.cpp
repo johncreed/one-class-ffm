@@ -948,13 +948,30 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
     #pragma omp parallel for schedule(guided)
     for(ImpLong f1 = 0; f1 < f; f1++){
         const shared_ptr<ImpData> d = ((f1<fu)? U: V);
-        const vector<ImpLong> &freq_ = d->freq[f1];
         const ImpLong f1_base = (f1 < fu)? f1 : f1 - fu;
+#ifdef DEBUG
+        assert( d->freq.size() > f1_base );
+        assert( d->Xs.size() > f1_base );
+        if(f1<fu)
+            assert(d->Xs[f1_base] > i+1);
+        else
+            assert(d->Xs[f1_base] > j+1);
+#endif
+        const vector<ImpLong> &freq_ = d->freq[f1_base];
         Node *X_begin = (f1<fu)?  d->Xs[f1_base][i] : d->Xs[f1_base][j];
         Node *X_end = (f1<fu)?  d->Xs[f1_base][i+1] : d->Xs[f1_base][j+1];
         //Solve W f1 f2
-        for(ImpLong f2 = 0; f2 <= f1; f2++){
+        for(ImpLong f2 = f1; f2 < f; f2++){
             const ImpInt f12 = index_vec(f2, f1, f);
+#ifdef DEBUG
+            assert(Q.size() > f12);
+            if(f2<fu)
+                assert(Q[f12].size() > i*k);
+            else
+                assert(Q[f12].size() > j*k);
+            assert(W.size() > f12);
+            assert(GW_sum.size() > f12);
+#endif
             ImpDouble *qp = (f2<fu)? (Q[f12].data() + i * k) : (Q[f12].data() + j * k);
             Vec &W12 = W[f12], &GW_sum12 = GW_sum[f12];
             for(Node *x = X_begin; x != X_end; x++){
@@ -971,8 +988,17 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             }
         }
         //Solve H f1 f2
-        for(ImpLong f2 = f1; f2 < fu+fv; f2++){
+        for(ImpLong f2 = 0; f2 < f1; f2++){
             const ImpInt f12 = index_vec(f1, f2, f);
+#ifdef DEBUG
+            assert(P.size() > f12);
+            if(f2<fu)
+                assert(P[f12].size() > i*k);
+            else
+                assert(P[f12].size() > j*k);
+            assert(H.size() > f12);
+            assert(GH_sum.size() > f12);
+#endif
             ImpDouble *pp = (f2<fu)? (P[f12].data() + i * k) : (P[f12].data() + j * k);
             Vec &H12 = H[f12], &GH_sum12 = GH_sum[f12];
             for(Node *x = X_begin; x != X_end; x++){
