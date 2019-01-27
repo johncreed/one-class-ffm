@@ -482,14 +482,10 @@ void ImpProblem::cache_sasb() {
 }
 
 void ImpProblem::one_epoch() {
-
-    cout << m * n << endl;
-    cout << m << " " <<  n << endl;
-    ImpLong counter = 0;
     vector<ImpLong> outer_order(m);
     iota(outer_order.begin(), outer_order.end(), 0);
     random_shuffle(outer_order.begin(), outer_order.end());
-    #pragma omp parallel for schedule(guided) reduction(+: counter)
+    #pragma omp parallel for schedule(guided)
     for(ImpLong ii = 0; ii < outer_order.size(); ii++){
         ImpLong i = outer_order[ii];
         vector<ImpLong> inner_order(n);
@@ -498,9 +494,6 @@ void ImpProblem::one_epoch() {
         for(auto j: inner_order){
             update_p_q(i, j);
             update_W_H(i, j);
-            if( counter % 100000 == 0)
-                cout << counter << " " << flush   ;
-            counter ++;
         }
     }
 }
