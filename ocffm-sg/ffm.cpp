@@ -1016,7 +1016,7 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             }
         }
         //Solve H f1 f2
-        for(ImpLong f2 = 0; f2 < f1; f2++){
+        for(ImpLong f2 = 0; f2 <= f1; f2++){
             const ImpInt f12 = index_vec(f2, f1, f);
 #ifdef DEBUG
             assert(P.size() > f12);
