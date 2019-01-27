@@ -1023,7 +1023,7 @@ void ImpProblem::gd_side(const ImpLong &i, const ImpDouble &grad, ImpDouble *gw1
         const ImpLong idx = x->idx;
         ImpDouble *w = W1.data()+idx*k;
         ImpDouble *gw = gw1+idx*k;
-        axpy(w, G.data(), k, lambda * ImpDouble(freq[idx]));
+        axpy(w, G.data(), k, lambda / ImpDouble(freq[idx]));
         axpy(qp, G.data(), k, grad * x->val);
         for(ImpLong d = 0; d < k; d++){
             gw[d] += G[d] * G[d];
@@ -1046,7 +1046,7 @@ void ImpProblem::gd_cross(const ImpLong &i, const ImpLong &j, const ImpDouble &g
         const ImpLong idx = x->idx;
         ImpDouble *w = W1.data()+idx*k;
         ImpDouble *gw = gw1+idx*k;
-        axpy(w, G.data(), k, lambda * ImpDouble(freq[idx]));
+        axpy(w, G.data(), k, lambda / ImpDouble(freq[idx]));
         axpy(qp, G.data(), k, grad * x->val);
         for(ImpLong d = 0; d < k; d++){
             gw[d] += G[d] * G[d];
