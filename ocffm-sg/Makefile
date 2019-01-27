@@ -1,7 +1,7 @@
-CXX = g++
+CXX = g++ 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-	CXX = g++
+	CXX = g++ 
 endif
 
 #To init MKLROOT just Do  "dot white dot/init.sh". That is, ". ./init.sh" 
@@ -10,7 +10,7 @@ endif
 CXXFLAGS = -Wall -O3 -std=c++0x -march=native
 MKLFLAGS = -m64 -I${MKLROOT}/include -Wl,--no-as-needed -L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm -ldl
 DFLAG += -DUSEOMP
-#DFLAG += -DEBUG
+DFLAG += -D DEBUG
 #DFLAG += -D EBUG_nDCG
 #DFLAG += -D SHOW_SCORE_ONLY
 #DFLAG += -D DEBUG_SAVE

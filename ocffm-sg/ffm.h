@@ -142,7 +142,8 @@ private:
     void print_epoch_info(ImpInt t);
 
     void update_W_H(ImpLong i, ImpLong j);
-    void update_P_Q(ImpLong i, ImpLong j);
+    void update_p_q(ImpLong i, ImpLong j);
+    void update_P_Q();
 };
 
 

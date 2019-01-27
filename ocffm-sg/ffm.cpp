@@ -51,6 +51,7 @@ void mv(const ImpDouble *a, const ImpDouble *b, ImpDouble *c,
 }
 
 const ImpInt index_vec(const ImpInt f1, const ImpInt f2, const ImpInt f) {
+    assert( f1 <= f2);
     return f2 + (f-1)*f1 - f1*(f1-1)/2;
 }
 
@@ -487,17 +488,19 @@ void ImpProblem::one_epoch() {
     ImpLong counter = 0;
     vector<ImpLong> outer_order(m);
     iota(outer_order.begin(), outer_order.end(), 0);
-    random_shuffle(outer_order.begin(), outer_order.end());
-    for(auto i: outer_order){
+    //random_shuffle(outer_order.begin(), outer_order.end());
+    #pragma omp parallel for schedule(guided) reduction(+: counter)
+    for(ImpLong ii = 0; ii < outer_order.size(); ii++){
+        ImpLong i = outer_order[ii];
         vector<ImpLong> inner_order(n);
         iota(inner_order.begin(), inner_order.end(), 0);
-        random_shuffle(inner_order.begin(), inner_order.end());
+        //random_shuffle(inner_order.begin(), inner_order.end());
         for(auto j: inner_order){
-            update_P_Q(i, j);
+            update_p_q(i, j);
             update_W_H(i, j);
-            if(counter % 50 == 0)
-                cout << counter << " " << flush;
-            counter++;
+            if( counter % 100000 == 0)
+                cout << counter << " " << flush   ;
+            counter ++;
         }
     }
 
@@ -783,6 +786,7 @@ void ImpProblem::solve() {
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
             one_epoch();
             if (!Uva->file_name.empty() && iter % 1 == 0) {
+                update_P_Q();
                 validate();
                 print_epoch_info(iter);
             }
@@ -915,8 +919,7 @@ ImpDouble ImpProblem::func() {
     return 0.5*res;
 }
 
-
-void ImpProblem::update_P_Q(ImpLong i, ImpLong j){
+void ImpProblem::update_P_Q(){
     #pragma omp parallel for schedule(guided)
     for (ImpInt f1 = 0; f1 < f; f1++) {
         const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
@@ -927,9 +930,28 @@ void ImpProblem::update_P_Q(ImpLong i, ImpLong j){
             const ImpInt f12 = index_vec(f1, f2, f);
             if(!param->self_side && (f1>=fu || f2<fu))
                 continue;
+            const vector<Node*> &X1 = d1->Xs[fi], &X2 = d2->Xs[fj];
+            UTX(X1, d1->m, W[f12], P[f12]);
+            UTX(X2, d2->m, H[f12], Q[f12]);
+        }
+    }
+}
+
+void ImpProblem::update_p_q(ImpLong i, ImpLong j){
+    for (ImpInt f1 = 0; f1 < f; f1++) {
+        const shared_ptr<ImpData> d1 = ((f1<fu)? U: V);
+        const ImpInt fi = ((f1>=fu)? f1-fu: f1);
+        for (ImpInt f2 = f1; f2 < f; f2++) {
+            const shared_ptr<ImpData> d2 = ((f2<fu)? U: V);
+            const ImpInt fj = ((f2>=fu)? f2-fu: f2);
+            const ImpInt f12 = index_vec(f1, f2, f);
+            if(!param->self_side && (f1>=fu || f2<fu))
+                continue;
+            const vector<Node*> &X1 = d1->Xs[fi], &X2 = d2->Xs[fj];
             ImpInt Pi = (f1 < fu)? i : j;
             ImpInt Qj = (f2 < fu)? i : j;
-            const vector<Node*> &X1 = d1->Xs[fi], &X2 = d2->Xs[fj];
+            fill(P[f12].data() + Pi*k, P[f12].data() + Pi*k + k, 0);
+            fill(Q[f12].data() + Qj*k, Q[f12].data() + Qj*k + k, 0);
             UTx(X1[Pi], X1[Pi+1], W[f12], P[f12].data() + Pi * k );
             UTx(X2[Qj], X2[Qj+1], H[f12], Q[f12].data() + Qj * k );
         }
@@ -944,8 +966,7 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
         }
     }
     bool is_obs = ( U->obs_sets[i].find(j) != U->obs_sets[i].end() )? true : false;
-    ImpDouble loss_grad = (is_obs)? -(1.0 - Y_hat) : -(r - Y_hat);
-    #pragma omp parallel for schedule(guided)
+    ImpDouble loss_grad = (is_obs)? -(1.0 - Y_hat) : - w * (r - Y_hat);
     for(ImpLong f1 = 0; f1 < f; f1++){
         const shared_ptr<ImpData> d = ((f1<fu)? U: V);
         const ImpLong f1_base = (f1 < fu)? f1 : f1 - fu;
@@ -953,16 +974,16 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
         assert( d->freq.size() > f1_base );
         assert( d->Xs.size() > f1_base );
         if(f1<fu)
-            assert(d->Xs[f1_base] > i+1);
+            assert(d->Xs[f1_base].size() > i+1);
         else
-            assert(d->Xs[f1_base] > j+1);
+            assert(d->Xs[f1_base].size() > j+1);
 #endif
         const vector<ImpLong> &freq_ = d->freq[f1_base];
         Node *X_begin = (f1<fu)?  d->Xs[f1_base][i] : d->Xs[f1_base][j];
         Node *X_end = (f1<fu)?  d->Xs[f1_base][i+1] : d->Xs[f1_base][j+1];
         //Solve W f1 f2
         for(ImpLong f2 = f1; f2 < f; f2++){
-            const ImpInt f12 = index_vec(f2, f1, f);
+            const ImpInt f12 = index_vec(f1, f2, f);
 #ifdef DEBUG
             assert(Q.size() > f12);
             if(f2<fu)
@@ -975,9 +996,16 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             ImpDouble *qp = (f2<fu)? (Q[f12].data() + i * k) : (Q[f12].data() + j * k);
             Vec &W12 = W[f12], &GW_sum12 = GW_sum[f12];
             for(Node *x = X_begin; x != X_end; x++){
+#ifdef DEBUG
+                assert(W12.size() > x->idx * k);
+                assert(GW_sum12.size() > x->idx * k);
+#endif
                 ImpDouble *w = W12.data() + x->idx * k;
                 ImpDouble *Gw = GW_sum12.data() + (x->idx * k);
                 Vec gw(k, 0);
+#ifdef DEBUG
+                assert(freq_.size() > x->idx);
+#endif
                 ImpDouble lambda_freq = lambda / (ImpDouble) freq_[x->idx];
                 axpy(w, gw.data(), k, lambda_freq);
                 axpy(qp, gw.data(), k, loss_grad * x->val);
@@ -989,7 +1017,7 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
         }
         //Solve H f1 f2
         for(ImpLong f2 = 0; f2 < f1; f2++){
-            const ImpInt f12 = index_vec(f1, f2, f);
+            const ImpInt f12 = index_vec(f2, f1, f);
 #ifdef DEBUG
             assert(P.size() > f12);
             if(f2<fu)
@@ -1002,9 +1030,16 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
             ImpDouble *pp = (f2<fu)? (P[f12].data() + i * k) : (P[f12].data() + j * k);
             Vec &H12 = H[f12], &GH_sum12 = GH_sum[f12];
             for(Node *x = X_begin; x != X_end; x++){
+#ifdef DEBUG
+                assert(H12.size() > x->idx * k);
+                assert(GH_sum12.size() > x->idx * k);
+#endif
                 ImpDouble *h = H12.data() + x->idx * k;
                 ImpDouble *Gh = GH_sum12.data() + x->idx * k;
                 Vec gh(k, 0);
+#ifdef DEBUG
+                assert(freq_.size() > x->idx);
+#endif
                 ImpDouble lambda_freq = lambda / (ImpDouble) freq_[x->idx];
                 axpy(h, gh.data(), k, lambda_freq);
                 axpy(pp, gh.data(), k, loss_grad * x->val);
