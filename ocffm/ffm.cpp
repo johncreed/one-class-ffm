@@ -1149,7 +1149,7 @@ void ImpProblem::solve() {
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
             double start_time = omp_get_wtime();
             one_epoch();
-            cout << "iter" << iter+1 << "time: " << omp_get_wtime() - start_time << endl << flush;
+            cout << "iter " << iter+1 << "time: " << omp_get_wtime() - start_time << endl << flush;
             if (!Uva->file_name.empty() && iter % 1 == 0) {
                 validate();
                 print_epoch_info(iter);

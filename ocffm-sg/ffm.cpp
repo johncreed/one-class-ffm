@@ -488,13 +488,13 @@ void ImpProblem::one_epoch() {
     ImpLong counter = 0;
     vector<ImpLong> outer_order(m);
     iota(outer_order.begin(), outer_order.end(), 0);
-    //random_shuffle(outer_order.begin(), outer_order.end());
+    random_shuffle(outer_order.begin(), outer_order.end());
     #pragma omp parallel for schedule(guided) reduction(+: counter)
     for(ImpLong ii = 0; ii < outer_order.size(); ii++){
         ImpLong i = outer_order[ii];
         vector<ImpLong> inner_order(n);
         iota(inner_order.begin(), inner_order.end(), 0);
-        //random_shuffle(inner_order.begin(), inner_order.end());
+        random_shuffle(inner_order.begin(), inner_order.end());
         for(auto j: inner_order){
             update_p_q(i, j);
             update_W_H(i, j);
@@ -503,8 +503,6 @@ void ImpProblem::one_epoch() {
             counter ++;
         }
     }
-    cout << func() << endl;
-
 }
 
 void ImpProblem::init_va(ImpInt size) {
@@ -785,7 +783,9 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
+            ImpDouble s_time = omp_get_wtime();
             one_epoch();
+            cout << "iter " << iter+1 << "time: " << omp_get_wtime() - start_time << endl << flush;
             if (!Uva->file_name.empty() && iter % 1 == 0) {
                 update_P_Q();
                 validate();
