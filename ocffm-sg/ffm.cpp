@@ -776,7 +776,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
 void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
-            ImpDouble s_time = omp_get_wtime();
+            ImpDouble start_time = omp_get_wtime();
             one_epoch();
             cout << "iter " << iter+1 << "time: " << omp_get_wtime() - start_time << endl << flush;
             if (!Uva->file_name.empty() && iter % 1 == 0) {
