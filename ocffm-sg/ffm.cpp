@@ -503,6 +503,7 @@ void ImpProblem::one_epoch() {
             counter ++;
         }
     }
+    cout << func() << endl;
 
 }
 
@@ -967,87 +968,90 @@ void ImpProblem::update_W_H(ImpLong i, ImpLong j){
     }
     bool is_obs = ( U->obs_sets[i].find(j) != U->obs_sets[i].end() )? true : false;
     ImpDouble loss_grad = (is_obs)? -(1.0 - Y_hat) : - w * (r - Y_hat);
-    for(ImpLong f1 = 0; f1 < f; f1++){
-        const shared_ptr<ImpData> d = ((f1<fu)? U: V);
-        const ImpLong f1_base = (f1 < fu)? f1 : f1 - fu;
-#ifdef DEBUG
-        assert( d->freq.size() > f1_base );
-        assert( d->Xs.size() > f1_base );
-        if(f1<fu)
-            assert(d->Xs[f1_base].size() > i+1);
-        else
-            assert(d->Xs[f1_base].size() > j+1);
-#endif
-        const vector<ImpLong> &freq_ = d->freq[f1_base];
-        Node *X_begin = (f1<fu)?  d->Xs[f1_base][i] : d->Xs[f1_base][j];
-        Node *X_end = (f1<fu)?  d->Xs[f1_base][i+1] : d->Xs[f1_base][j+1];
-        //Solve W f1 f2
-        for(ImpLong f2 = f1; f2 < f; f2++){
-            const ImpInt f12 = index_vec(f1, f2, f);
-#ifdef DEBUG
-            assert(Q.size() > f12);
-            if(f2<fu)
-                assert(Q[f12].size() > i*k);
-            else
-                assert(Q[f12].size() > j*k);
-            assert(W.size() > f12);
-            assert(GW_sum.size() > f12);
-#endif
-            ImpDouble *qp = (f2<fu)? (Q[f12].data() + i * k) : (Q[f12].data() + j * k);
-            Vec &W12 = W[f12], &GW_sum12 = GW_sum[f12];
-            for(Node *x = X_begin; x != X_end; x++){
-#ifdef DEBUG
-                assert(W12.size() > x->idx * k);
-                assert(GW_sum12.size() > x->idx * k);
-#endif
-                ImpDouble *w = W12.data() + x->idx * k;
-                ImpDouble *Gw = GW_sum12.data() + (x->idx * k);
-                Vec gw(k, 0);
-#ifdef DEBUG
-                assert(freq_.size() > x->idx);
-#endif
-                ImpDouble lambda_freq = lambda / (ImpDouble) freq_[x->idx];
-                axpy(w, gw.data(), k, lambda_freq);
-                axpy(qp, gw.data(), k, loss_grad * x->val);
-                for(ImpLong d = 0; d < k; d++){
-                    Gw[d] += gw[d] * gw[d];
-                    w[d] -= eta / sqrt(Gw[d]) * gw[d];
-                }
-            }
-        }
-        //Solve H f1 f2
-        for(ImpLong f2 = 0; f2 <= f1; f2++){
-            const ImpInt f12 = index_vec(f2, f1, f);
-#ifdef DEBUG
-            assert(P.size() > f12);
-            if(f2<fu)
-                assert(P[f12].size() > i*k);
-            else
-                assert(P[f12].size() > j*k);
-            assert(H.size() > f12);
-            assert(GH_sum.size() > f12);
-#endif
-            ImpDouble *pp = (f2<fu)? (P[f12].data() + i * k) : (P[f12].data() + j * k);
-            Vec &H12 = H[f12], &GH_sum12 = GH_sum[f12];
-            for(Node *x = X_begin; x != X_end; x++){
-#ifdef DEBUG
-                assert(H12.size() > x->idx * k);
-                assert(GH_sum12.size() > x->idx * k);
-#endif
-                ImpDouble *h = H12.data() + x->idx * k;
-                ImpDouble *Gh = GH_sum12.data() + x->idx * k;
-                Vec gh(k, 0);
-#ifdef DEBUG
-                assert(freq_.size() > x->idx);
-#endif
-                ImpDouble lambda_freq = lambda / (ImpDouble) freq_[x->idx];
-                axpy(h, gh.data(), k, lambda_freq);
-                axpy(pp, gh.data(), k, loss_grad * x->val);
-                for(ImpLong d = 0; d < k; d++){
-                    Gh[d] += gh[d] * gh[d];
-                    h[d] -= eta / sqrt(Gh[d]) * gh[d];
-                }
-            }
+    if (param->self_side) {
+        for (ImpInt f1 = 0; f1 < fu; f1++)
+            for (ImpInt f2 = f1; f2 < fu; f2++)
+                solve_side(i, f1, f2, loss_grad);
+
+        for (ImpInt f1 = fu; f1 < f; f1++)
+            for (ImpInt f2 = f1; f2 < f; f2++)
+                solve_side(j, f1, f2, loss_grad);
+    }
+
+    for (ImpInt f1 = 0; f1 < fu; f1++)
+        for (ImpInt f2 = fu; f2 < f; f2++)
+            solve_cross(i, j, f1, f2, loss_grad);
+}
+
+void ImpProblem::solve_side(const ImpLong &i, const ImpInt &f1, const ImpInt &f2, const ImpDouble &loss_grad) {
+    const ImpInt f12 = index_vec(f1, f2, f);
+    const bool sub_type = (f1 < fu)? 1 : 0;
+    const shared_ptr<ImpData> X12 = (sub_type)? U : V;
+    Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
+
+    Vec G1(k, 0), G2(k, 0);
+    ImpDouble *gw1 = GW_sum[f12].data();
+    ImpDouble *gh1 = GH_sum[f12].data();
+
+    gd_side(i, loss_grad, gw1, f1, W1, Q1, G1);
+    gd_side(i, loss_grad, gh1, f2, H1, P1, G2);
+}
+
+void ImpProblem::solve_cross(const ImpLong &i, const ImpLong &j, const ImpInt &f1, const ImpInt &f2, const ImpDouble &loss_grad) {
+    const ImpInt f12 = index_vec(f1, f2, f);
+    Vec &W1 = W[f12], &H1 = H[f12], &P1 = P[f12], &Q1 = Q[f12];
+
+    Vec GW(k, 0), GH(k, 0);
+    ImpDouble *gw1 = GW_sum[f12].data();
+    ImpDouble *gh1 = GH_sum[f12].data();
+
+    gd_cross(i, j, loss_grad, gw1, f1, f12, Q1, W1, GW);
+    gd_cross(j, i, loss_grad, gh1, f2, f12, P1, H1, GH);
+}
+
+void ImpProblem::gd_side(const ImpLong &i, const ImpDouble &grad, ImpDouble *gw1, const ImpInt &f1, Vec &W1, const Vec &Q1, Vec &G) {
+
+    const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
+
+    const ImpInt base = (f1 < fu)? 0: fu;
+    const ImpInt fi = f1-base;
+    const vector<Node*> &X = U1->Xs[fi];
+    const ImpDouble *qp = Q1.data()+i*k;
+
+    const vector<ImpLong> &freq = U1->freq[fi];
+    for (Node* x = X[i]; x < X[i+1]; x++) {
+        const ImpLong idx = x->idx;
+        ImpDouble *w = W1.data()+idx*k;
+        ImpDouble *gw = gw1+idx*k;
+        axpy(w, G.data(), k, lambda / ImpDouble(freq[idx]));
+        axpy(qp, G.data(), k, grad * x->val);
+        for(ImpLong d = 0; d < k; d++){
+            gw[d] += G[d] * G[d];
+            w[d] -= eta / sqrt(gw[d]) * G[d];
         }
     }
+}
+
+void ImpProblem::gd_cross(const ImpLong &i, const ImpLong &j, const ImpDouble &grad, ImpDouble *gw1, const ImpInt &f1, const ImpInt &f12, const Vec &Q1, Vec &W1,Vec &G) {
+
+
+    const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
+    const ImpInt fi = (f1 < fu)? f1 : f1 - fu;
+    const vector<Node*> &X = U1->Xs[fi];
+    const vector<ImpLong> &freq = U1->freq[fi];
+
+    const ImpDouble *qp = Q1.data()+j*k;
+
+    for (Node* x = X[i]; x < X[i+1]; x++) {
+        const ImpLong idx = x->idx;
+        ImpDouble *w = W1.data()+idx*k;
+        ImpDouble *gw = gw1+idx*k;
+        axpy(w, G.data(), k, lambda / ImpDouble(freq[idx]));
+        axpy(qp, G.data(), k, grad * x->val);
+        for(ImpLong d = 0; d < k; d++){
+            gw[d] += G[d] * G[d];
+            w[d] -= eta / sqrt(gw[d]) * G[d];
+        }
+    }
+
 }
