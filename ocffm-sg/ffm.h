@@ -119,17 +119,11 @@ private:
     ImpDouble pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2);
     ImpDouble norm_block(const ImpInt &f1,const ImpInt &f2);
 
-    void solve_side(const ImpInt &f1, const ImpInt &f2);
-    void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
-    void hs_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
+    void solve_side(const ImpLong &i, const ImpInt &f1, const ImpInt &f2, const ImpDouble &loss_grad);
+    void gd_side(const ImpLong &i, const ImpDouble &grad, ImpDouble *gw1, const ImpInt &f1, Vec &W1, const Vec &Q1, Vec &G);
 
-    void solve_cross(const ImpInt &f1, const ImpInt &f2);
-    void gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, const Vec &W1, Vec &G);
-    void hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, const Vec &VQTQ, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<Node*> &Y, Vec &Hv_);
-
-    void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G, Vec &P1);
-    void cache_sasb();
-
+    void solve_cross(const ImpLong &i, const ImpLong &j, const ImpInt &f1, const ImpInt &f2, const ImpDouble &loss_grad);
+    void gd_cross(const ImpLong &i, const ImpLong &j, const ImpDouble &grad, ImpDouble *gw1, const ImpInt &f1, const ImpInt &f12, const Vec &Q1, Vec &W1,Vec &G);
 
     void one_epoch();
     void init_va(ImpInt size);
@@ -144,6 +138,7 @@ private:
     void update_W_H(ImpLong i, ImpLong j);
     void update_p_q(ImpLong i, ImpLong j);
     void update_P_Q();
+    void cache_sasb();
 };
 
 
