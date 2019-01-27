@@ -129,7 +129,7 @@ Option parse_option(int argc, char **argv)
 
             if(!is_numerical(argv[i]))
                 throw invalid_argument("-eta should be followed by a number");
-            option.param->r = atof(argv[i]);
+            option.param->eta = atof(argv[i]);
         }
         else if(args[i].compare("-c") == 0)
         {
