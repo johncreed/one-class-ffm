@@ -533,21 +533,24 @@ void ImpProblem::cache_sasb() {
 void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
     axpy( W1.data(), G.data(), G.size(), lambda);
     gd_pos_side(f1, W1, Q1, G);
-    gd_neg_side(f1, W1, Q1, G);
+    if (w != 0)
+        gd_neg_side(f1, W1, Q1, G);
 }
 
 void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
         const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX,
         const vector<YNode*> &Y, Vec &Hv_) {
     hs_pos_side(m1, n1, V, Hv, Q1, UX, Y, Hv_);
-    hs_neg_side(m1, n1, V, Hv, Q1, UX, Y, Hv_);
+    if (w != 0)
+        hs_neg_side(m1, n1, V, Hv, Q1, UX, Y, Hv_);
 }
 
 void ImpProblem::gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1,Vec &G) {
     fill(G.begin(), G.end(), 0);
     axpy( W1.data(), G.data(), G.size(), lambda);
     gd_pos_cross(f1, Q1, W1, G);
-    gd_neg_cross(f1, Q1, W1, G);
+    if (w != 0)
+        gd_neg_cross(f1, Q1, W1, G);
 }
 
 
@@ -555,7 +558,8 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
         const Vec &VQTQ, Vec &Hv, const Vec &Q1,
         const vector<Node*> &X, const vector<YNode*> &Y, Vec &Hv_) {
     hs_pos_cross(m1, n1, V, VQTQ, Hv, Q1, X, Y, Hv_);
-    hs_neg_cross(m1, n1, V, VQTQ, Hv, Q1, X, Y, Hv_);
+    if (w != 0)
+        hs_neg_cross(m1, n1, V, VQTQ, Hv, Q1, X, Y, Hv_);
 }
 
 void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
@@ -1409,30 +1413,32 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpInt nr_threads = param->nr_threads;
     Vec Hs_(nr_threads*Df1k);
 
-    ImpDouble sTg_neg, sHs, sTg;
+    ImpDouble sTg_neg=0, sHs=0, sTg=0;
 
     sTg = inner(S1.data(), G.data(), S1.size());
 
-    axpy( W1.data(), Gneg.data(), W1.size(), lambda);
-    sTg_neg = inner(S1.data(), Gneg.data(), S1.size());
+    if (w != 0) {
+        axpy( W1.data(), Gneg.data(), W1.size(), lambda);
+        sTg_neg = inner(S1.data(), Gneg.data(), S1.size());
 
-    Vec Hs(Df1k, 0);
-    Vec QTQ, SQTQ;
-    if (!(f1 < fu && f2 < fu) && !(f1>=fu && f2>=fu)) {
-        QTQ.resize(k*k, 0);
-        SQTQ.resize(Df1k, 0);
-        mm(Q1.data(), Q1.data(), QTQ.data(), k, n1);
+        Vec Hs(Df1k, 0);
+        Vec QTQ, SQTQ;
+        if (!(f1 < fu && f2 < fu) && !(f1>=fu && f2>=fu)) {
+            QTQ.resize(k*k, 0);
+            SQTQ.resize(Df1k, 0);
+            mm(Q1.data(), Q1.data(), QTQ.data(), k, n1);
+        }
+        fill(Hs.begin(), Hs.end(), 0);
+        fill(Hs_.begin(), Hs_.end(), 0);
+        axpy( S1.data(), Hs.data(), S1.size(), lambda);
+        if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
+            hs_neg_side(m1, n1, S1, Hs, Q1, X, Y, Hs_);
+        else {
+            mm(S1.data(), QTQ.data(), SQTQ.data(), Df1, k, k);
+            hs_neg_cross(m1, n1, S1, SQTQ, Hs, Q1, X, Y, Hs_);
+        }
+        sHs = inner(S1.data(), Hs.data(), S1.size());
     }
-    fill(Hs.begin(), Hs.end(), 0);
-    fill(Hs_.begin(), Hs_.end(), 0);
-    axpy( S1.data(), Hs.data(), S1.size(), lambda);
-    if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
-        hs_neg_side(m1, n1, S1, Hs, Q1, X, Y, Hs_);
-    else {
-        mm(S1.data(), QTQ.data(), SQTQ.data(), Df1, k, k);
-        hs_neg_cross(m1, n1, S1, SQTQ, Hs, Q1, X, Y, Hs_);
-    }
-    sHs = inner(S1.data(), Hs.data(), S1.size());
 
     Vec XS(P1.size(), 0);
     UTX(X, m1, S1, XS);
