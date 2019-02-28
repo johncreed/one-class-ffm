@@ -801,7 +801,7 @@ void ImpProblem::validate() {
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
             ImpDouble yy = (z[j]+at[i])*y->fid;
             if (-yy > 0)
-                ploss += w2 *(-yy + log1p( exp(z[j]+at[i]) ));
+                ploss += w2 *(-yy + log1p(yy));
             else
                 ploss += w2 * log1p( exp(-yy) );
         }
@@ -825,7 +825,7 @@ void ImpProblem::validate() {
 
     gauc_all = gauc_all_sum / gauc_all_weight_sum;
     gauc = gauc_sum / gauc_weight_sum;
-    loss = sqrt(ploss/Uva->m);
+    loss = ploss/Uva->M.size();
 
     fill(va_loss_prec.begin(), va_loss_prec.end(), 0);
     fill(va_loss_ndcg.begin(), va_loss_ndcg.end(), 0);
@@ -1476,6 +1476,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
 void ImpProblem::calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q){
     const ImpDouble *qp = Q.data();
     const ImpDouble *pp = XS.data();
+    #pragma omp parallel for schedule(guided)
     for(ImpLong i = 0 ; i < m1; i++){
         ImpDouble delta =  inner(pp + i * k, qp + i * k, k);
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
@@ -1486,6 +1487,7 @@ void ImpProblem::calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Ve
 void ImpProblem::calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q){
     const ImpDouble *qp = Q.data();
     const ImpDouble *pp = XS.data();
+    #pragma omp parallel for schedule(guided)
     for(ImpLong i = 0 ; i < m1; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
             ImpLong j = y->idx;
@@ -1496,6 +1498,7 @@ void ImpProblem::calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const V
 
 ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDouble theta){
     ImpDouble L_pos_new = 0;
+    #pragma omp parallel for schedule(guided) reduction(+: L_pos_new)
     for(ImpLong i = 0; i < m; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
@@ -1512,6 +1515,7 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDo
     
 void ImpProblem::init_L_pos(){
     L_pos = 0;
+    #pragma omp parallel for schedule(guided) reduction(+: L_pos)
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
