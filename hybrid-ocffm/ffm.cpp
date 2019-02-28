@@ -801,7 +801,7 @@ void ImpProblem::validate() {
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
             ImpDouble yy = (z[j]+at[i])*y->fid;
             if (-yy > 0)
-                ploss += w2 *(-yy + log1p(yy));
+                ploss += w2 *(-yy + log1p( exp(yy) ));
             else
                 ploss += w2 * log1p( exp(-yy) );
         }
@@ -1513,16 +1513,17 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDo
 }
     
 void ImpProblem::init_L_pos(){
-    L_pos = 0;
-    #pragma omp parallel for schedule(guided) reduction(+: L_pos)
+    ImpDouble res = 0;
+    #pragma omp parallel for schedule(guided) reduction(+: res)
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
             ImpDouble yy = y->val * (ImpDouble) y->fid;
             if( -yy > 0 )
-                L_pos += w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y->val - r) * (y->val - r);
+                res += w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y->val - r) * (y->val - r);
             else
-                L_pos += w2 * log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
+                res += w2 * log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
         }
     }
+    L_pos = res;
 }
