@@ -795,9 +795,15 @@ void ImpProblem::validate() {
         Vec z_copy;
         Vec z(bt);
         pred_z(i, z.data());
+
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-            ploss += (1-z[j]-at[i])*(1-z[j]-at[i]);
+            ImpDouble w2 = (y->fid > 0)? 1 : wn;
+            ImpDouble yy = (z[j]+at[i])*y->fid;
+            if (-yy > 0)
+                ploss += w2 *(-yy + log1p( exp(z[j]+at[i]) ));
+            else
+                ploss += w2 * log1p( exp(-yy) );
         }
         
         ImpDouble gauc_i = auc(z, i, true);
@@ -1413,9 +1419,11 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpInt nr_threads = param->nr_threads;
     Vec Hs_(nr_threads*Df1k);
 
-    ImpDouble sTg_neg=0, sHs=0, sTg=0;
+    ImpDouble sTg_neg=0, sHs=0, sTg, wTs, sTs;
 
     sTg = inner(S1.data(), G.data(), S1.size());
+    wTs = inner(S1.data(), W1.data(), S1.size());
+    sTs = inner(S1.data(), S1.data(), S1.size());
 
     if (w != 0) {
         axpy( W1.data(), Gneg.data(), W1.size(), lambda);
@@ -1430,7 +1438,6 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         }
         fill(Hs.begin(), Hs.end(), 0);
         fill(Hs_.begin(), Hs_.end(), 0);
-        axpy( S1.data(), Hs.data(), S1.size(), lambda);
         if ((f1 < fu && f2 < fu) || (f1>=fu && f2>=fu))
             hs_neg_side(m1, n1, S1, Hs, Q1, X, Y, Hs_);
         else {
@@ -1454,7 +1461,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
             break;
         }
         ImpDouble L_pos_new = calc_L_pos(Y, m1, theta);
-        ImpDouble delta = L_pos_new - L_pos + theta * sTg_neg + 0.5 * theta * theta * sHs;
+        ImpDouble delta = L_pos_new - L_pos + theta * sTg_neg + 0.5 * theta * theta * sHs + lambda* 0.5 * (theta*wTs + theta*theta*sTs);
         if( delta <= nu * theta * sTg ){
             L_pos = L_pos_new;
             scal(S1.data(), S1.size(), theta);
