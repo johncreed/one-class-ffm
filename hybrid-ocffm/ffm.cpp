@@ -1426,7 +1426,6 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     sTs = inner(S1.data(), S1.data(), S1.size());
 
     if (w != 0) {
-        axpy( W1.data(), Gneg.data(), W1.size(), lambda);
         sTg_neg = inner(S1.data(), Gneg.data(), S1.size());
 
         Vec Hs(Df1k, 0);
@@ -1461,7 +1460,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
             break;
         }
         ImpDouble L_pos_new = calc_L_pos(Y, m1, theta);
-        ImpDouble delta = L_pos_new - L_pos + theta * sTg_neg + 0.5 * theta * theta * sHs + lambda* 0.5 * (theta*wTs + theta*theta*sTs);
+        ImpDouble delta = L_pos_new - L_pos + theta * sTg_neg + 0.5 * theta * theta * sHs + lambda*(theta*wTs + 0.5*theta*theta*sTs);
         if( delta <= nu * theta * sTg ){
             L_pos = L_pos_new;
             scal(S1.data(), S1.size(), theta);
