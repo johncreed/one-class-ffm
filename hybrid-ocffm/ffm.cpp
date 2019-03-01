@@ -719,8 +719,8 @@ void ImpProblem::init_va(ImpInt size) {
         }
     }
 
-    va_loss_prec.resize(size);
-    va_loss_ndcg.resize(size);
+    va_loss_prec.resize(size,0);
+    va_loss_ndcg.resize(size,0);
     top_k.resize(size);
     ImpInt start = 5;
 
@@ -734,7 +734,7 @@ void ImpProblem::init_va(ImpInt size) {
         start *= 2;
     }
     cout.width(12);
-    cout << "ploss";
+    cout << "logloss";
     cout << endl;
 }
 
@@ -746,6 +746,68 @@ void ImpProblem::pred_z(const ImpLong i, ImpDouble *z) {
             mv(q1, p1, z, n, k, 1, false);
         }
     }
+}
+
+ImpDouble ImpProblem::pred_i_j(const ImpLong i, const ImpLong j) {
+    ImpDouble res = 0;
+    for(ImpInt f1 = 0; f1 < fu; f1++) {
+        for(ImpInt f2 = fu; f2 < f; f2++) {
+            ImpInt f12 = index_vec(f1, f2, f);
+            ImpDouble *p1 = Pva[f12].data()+i*k, *q1 = Qva[f12].data()+j*k;
+            res += inner(p1, q1, k);
+        }
+    }
+    return res;
+}
+
+void ImpProblem::logloss() {
+    for (ImpInt f1 = 0; f1 < f; f1++) {
+        const shared_ptr<ImpData> d1 = ((f1<fu)? Uva: V);
+        const ImpInt fi = ((f1>=fu)? f1-fu: f1);
+
+        for (ImpInt f2 = f1; f2 < f; f2++) {
+            const shared_ptr<ImpData> d2 = ((f2<fu)? Uva: V);
+            const ImpInt fj = ((f2>=fu)? f2-fu: f2);
+
+            const ImpInt f12 = index_vec(f1, f2, f);
+            if( !param->self_side && ( f1 >= fu || f2 < fu ))
+                continue;
+            UTX(d1->Xs[fi], d1->m, W[f12], Pva[f12]);
+            UTX(d2->Xs[fj], d2->m, H[f12], Qva[f12]);
+        }
+    }
+
+    Vec at(Uva->m, 0), bt(V->m, 0);
+
+    if (param->self_side) {
+        for (ImpInt f1 = 0; f1 < fu; f1++) {
+            for (ImpInt f2 = f1; f2 < fu; f2++) {
+                const ImpInt f12 = index_vec(f1, f2, f);
+                add_side(Pva[f12], Qva[f12], Uva->m, at);
+            }
+        }
+        for (ImpInt f1 = fu; f1 < f; f1++) {
+            for (ImpInt f2 = f1; f2 < f; f2++) {
+                const ImpInt f12 = index_vec(f1, f2, f);
+                add_side(Pva[f12], Qva[f12], V->m, bt);
+            }
+        }
+    }
+
+    ImpDouble ploss = 0;
+    #pragma omp parallel for schedule(static) reduction(+: ploss)
+    for (ImpLong i = 0; i < Uva->m; i++) {
+        for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
+            const ImpLong j = y->idx;
+            ImpDouble w2 = (y->fid > 0)? 1 : wn;
+            ImpDouble yy = ( pred_i_j(i, j) + at[i])*y->fid;
+            if (-yy > 0)
+                ploss += w2 *(-yy + log1p( exp(yy) ));
+            else
+                ploss += w2 * log1p( exp(-yy) );
+        }
+    }
+    loss = ploss/Uva->M.size();
 }
 
 void ImpProblem::validate() {
@@ -998,7 +1060,7 @@ void ImpProblem::solve() {
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
         if (!Uva->file_name.empty() && iter % 10 == 0) {
-            validate();
+            logloss();
             print_epoch_info(iter);
         }
     }
