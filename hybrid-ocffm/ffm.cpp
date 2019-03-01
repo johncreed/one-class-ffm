@@ -313,7 +313,7 @@ void ImpProblem::UTx(const Node* x0, const Node* x1, const Vec &A, ImpDouble *c)
 void ImpProblem::UTX(const vector<Node*> &X, const ImpLong m1, const Vec &A, Vec &C) {
     fill(C.begin(), C.end(), 0);
     ImpDouble* c = C.data();
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++)
         UTx(X[i], X[i+1], A, c+i*k);
 }
@@ -409,7 +409,7 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     axpy( XS.data(), P1.data(), XS.size(), 1);
     row_wise_inner(XS, Q1, m1, k, 1, gaps);
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < U1->m; i++) {
         a1[i] += gaps[i];
         for (YNode* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
@@ -417,7 +417,7 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
             y->expyy = exp( y->val * (ImpDouble) y->fid);
         }
     }
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (YNode* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
