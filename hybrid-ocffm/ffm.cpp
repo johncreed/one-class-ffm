@@ -374,14 +374,14 @@ ImpDouble ImpProblem::calc_cross(const ImpLong &i, const ImpLong &j) {
 }
 
 void ImpProblem::init_y_tilde() {
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
             ImpLong j = y->idx;
             y->val = a[i]+b[j]+calc_cross(i, j);
         }
     }
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong j = 0; j < n; j++) {
         for (YNode* y = V->Y[j]; y < V->Y[j+1]; y++) {
             ImpLong i = y->idx;
@@ -439,7 +439,7 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
     UTX(X12, m1, S, XS);
     axpy( XS.data(), P1.data(), P1.size(), 1);
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < U1->m; i++) {
         for (YNode* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             const ImpLong j = y->idx;
@@ -447,7 +447,7 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
             y->expyy = exp( y->val * (ImpDouble) y->fid);
         }
     }
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (YNode* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
@@ -1132,13 +1132,13 @@ ImpDouble ImpProblem::l_pos_hessian(const YNode *y){
 }
 
 void ImpProblem::init_expyy(){
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
             y->expyy = exp( y->val * (ImpDouble) y->fid);
         }
     }
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong j = 0; j < n; j++) {
         for (YNode* y = V->Y[j]; y < V->Y[j+1]; y++) {
             y->expyy = exp( y->val * (ImpDouble) y->fid);
@@ -1162,7 +1162,7 @@ void ImpProblem::gd_pos_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec
 
     const ImpDouble *qp = Q1.data();
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
         const ImpDouble *q1 = qp+i*k;
@@ -1204,7 +1204,7 @@ void ImpProblem::gd_neg_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec
 
     const ImpDouble *qp = Q1.data();
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
         const ImpDouble *q1 = qp+i*k;
@@ -1237,7 +1237,7 @@ void ImpProblem::hs_pos_side(const ImpLong &m1, const ImpLong &n1,
 
     const ImpLong block_size = Hv.size();
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
         for (ImpLong i = 0; i < m1; i++) {
             ImpInt id = omp_get_thread_num();
             const ImpDouble* q1 = qp+i*k;
@@ -1277,7 +1277,7 @@ void ImpProblem::hs_neg_side(const ImpLong &m1, const ImpLong &n1,
 
     const ImpLong block_size = Hv.size();
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
         for (ImpLong i = 0; i < m1; i++) {
             ImpInt id = omp_get_thread_num();
             const ImpDouble* q1 = qp+i*k;
@@ -1318,7 +1318,7 @@ void ImpProblem::gd_pos_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
     
     const ImpDouble *qp = Q1.data();
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         Vec pk(k, 0);
         const ImpInt id = omp_get_thread_num();
@@ -1377,7 +1377,7 @@ void ImpProblem::gd_neg_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
 
     const ImpDouble *tp = T.data();
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
         const ImpDouble *t1 = tp+i*k;
@@ -1410,7 +1410,7 @@ void ImpProblem::hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V
     const ImpLong block_size = Hv.size();
     const ImpInt nr_threads = param->nr_threads;
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
         Vec phi(k, 0), ka(k, 0);
@@ -1446,7 +1446,7 @@ void ImpProblem::hs_neg_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V
     const ImpLong block_size = Hv.size();
     const ImpInt nr_threads = param->nr_threads;
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
         Vec tau(k, 0);
@@ -1538,7 +1538,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
 void ImpProblem::calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q){
     const ImpDouble *qp = Q.data();
     const ImpDouble *pp = XS.data();
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for(ImpLong i = 0 ; i < m1; i++){
         ImpDouble delta =  inner(pp + i * k, qp + i * k, k);
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
@@ -1549,7 +1549,7 @@ void ImpProblem::calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Ve
 void ImpProblem::calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q){
     const ImpDouble *qp = Q.data();
     const ImpDouble *pp = XS.data();
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for(ImpLong i = 0 ; i < m1; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
             ImpLong j = y->idx;
@@ -1560,7 +1560,7 @@ void ImpProblem::calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const V
 
 ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDouble theta){
     ImpDouble L_pos_new = 0;
-    #pragma omp parallel for schedule(guided) reduction(+: L_pos_new)
+    #pragma omp parallel for schedule(dynamic) reduction(+: L_pos_new)
     for(ImpLong i = 0; i < m; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
@@ -1577,7 +1577,7 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDo
     
 void ImpProblem::init_L_pos(){
     ImpDouble res = 0;
-    #pragma omp parallel for schedule(guided) reduction(+: res)
+    #pragma omp parallel for schedule(dynamic) reduction(+: res)
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
