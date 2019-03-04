@@ -795,7 +795,7 @@ void ImpProblem::logloss() {
     }
 
     ImpDouble ploss = 0;
-    #pragma omp parallel for schedule(static) reduction(+: ploss)
+    #pragma omp parallel for schedule(dynamic) reduction(+: ploss)
     for (ImpLong i = 0; i < Uva->m; i++) {
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
@@ -853,7 +853,7 @@ void ImpProblem::validate() {
     ImpDouble ploss = 0;
     ImpDouble gauc_sum = 0, gauc_all_sum = 0;
     ImpDouble gauc_all_weight_sum = 0, gauc_weight_sum = 0;
-    #pragma omp parallel for schedule(static) reduction(+: valid_samples, ploss, gauc_all_sum, gauc_sum, gauc_all_weight_sum, gauc_weight_sum)
+    #pragma omp parallel for schedule(dynamic) reduction(+: valid_samples, ploss, gauc_all_sum, gauc_sum, gauc_all_weight_sum, gauc_weight_sum)
     for (ImpLong i = 0; i < Uva->m; i++) {
         Vec z_copy;
         Vec z(bt);
@@ -1041,7 +1041,8 @@ void ImpProblem::print_epoch_info(ImpInt t) {
     ImpInt nr_k = top_k.size();
     cout.width(2);
     cout << t+1;
-    if (!Uva->file_name.empty()) {
+    if (!Uva->file_name.empty() && t % 1 == 0) {
+        logloss();
         for (ImpInt i = 0; i < nr_k; i++ ) {
             cout.width(9);
             cout << "( " <<setprecision(3) << va_loss_prec[i]*100 << " ,";
@@ -1050,19 +1051,16 @@ void ImpProblem::print_epoch_info(ImpInt t) {
         }
         cout.width(13);
         cout << setprecision(3) << loss;
+        cout << endl;
+        //cout << "gauc: " << gauc << " gauc_all: " << gauc_all << endl;
     }
-    cout << endl;
-    cout << "gauc: " << gauc << " gauc_all: " << gauc_all << endl;
 }
 
 void ImpProblem::solve() {
     init_va(5);
     for (ImpInt iter = 0; iter < param->nr_pass; iter++) {
         one_epoch();
-        if (!Uva->file_name.empty() && iter % 1 == 0) {
-            logloss();
-            print_epoch_info(iter);
-        }
+        print_epoch_info(iter);
     }
 }
 
