@@ -1066,6 +1066,67 @@ void ImpProblem::solve() {
     }
 }
 
+void ImpProblem::write_header(ofstream &f_out) const{
+    f_out << f << endl;
+    f_out << fu << endl;
+    f_out << fv << endl;
+    f_out << k << endl;
+    
+    for(ImpInt fi = 0; fi < fu ; fi++)
+        f_out << U->Ds[fi] << endl;
+    
+    for(ImpInt fi = 0; fi < fv ; fi++)
+        f_out << V->Ds[fi] << endl;
+}
+
+void write_block(const Vec& block, const ImpLong& num_of_rows, const ImpInt& num_of_columns, char block_type, const ImpInt fi, const ImpInt fj, ofstream &f_out){
+    ostringstream stringStream;
+    stringStream << block_type << ',' << fi << ',' << fj;
+    string line_info =  stringStream.str();
+
+    for( ImpLong row_i = 0; row_i < num_of_rows; row_i++ ){
+        f_out << line_info << ',' << row_i;
+        ImpLong offset = row_i * num_of_columns;
+        for(ImpInt col_i = 0; col_i < num_of_columns ; col_i++ ){
+            f_out << " " <<block[offset + col_i];
+        }
+        f_out << endl;
+    }
+}
+
+void ImpProblem::write_W_and_H(ofstream &f_out) const{
+    for(ImpInt fi = 0; fi < f ; fi++){
+        for(ImpInt fj = fi; fj < f; fj++){
+            ImpInt fij = index_vec(fi, fj, f);
+            ImpInt fi_base = (fi >= fu )? fi - fu : fi;
+            ImpInt fj_base = (fj >= fu )? fj - fu : fj;
+            if ( fi < fu && fj < fu ){
+                if( !param->self_side )
+                    continue;
+                write_block(W[fij], U->Ds[fi_base], k, 'W', fi, fj, f_out);
+                write_block(H[fij], U->Ds[fj_base], k, 'H', fi, fj, f_out);
+            }
+            else if (fi < fu && fj >= fu){
+                write_block(W[fij], U->Ds[fi_base], k, 'W', fi, fj, f_out);
+                write_block(H[fij], V->Ds[fj_base], k, 'H', fi, fj, f_out);
+            }
+            else if( fi >= fu && fj >= fu){
+                if( !param->self_side )
+                    continue;
+                write_block(W[fij], V->Ds[fi_base], k, 'W', fi, fj, f_out);
+                write_block(H[fij], V->Ds[fj_base], k, 'H', fi, fj, f_out);
+            }
+        }
+    }
+
+}
+
+void save_model(const ImpProblem& prob, string & model_path ){
+    ofstream f_out(model_path, ios::out | ios::trunc );
+    prob.write_header( f_out );
+    prob.write_W_and_H( f_out );  
+}
+
 ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
     ImpInt f12 = index_vec(f1, f2, f);
     ImpInt Pi = (f1 < fu)? i : j;
