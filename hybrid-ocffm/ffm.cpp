@@ -531,7 +531,18 @@ void ImpProblem::cache_sasb() {
 }
 
 void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
-    axpy( W1.data(), G.data(), G.size(), lambda);
+    fill(G.begin(), G.end(), 0);
+    const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
+    const ImpLong Df1 = U1->Ds[f1];
+    if(param->freq){
+        vector<ImpLong> &freq = U1->freq[f1];
+        assert( Df1 == freq.size());
+        for(ImpLong i = 0; i < Df1; i++)
+            axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[i]));
+    }
+    else{
+        axpy( W1.data(), G.data(), G.size(), lambda);
+    }
     gd_pos_side(f1, W1, Q1, G);
     if (w != 0)
         gd_neg_side(f1, W1, Q1, G);
@@ -547,7 +558,17 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
 
 void ImpProblem::gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1,Vec &G) {
     fill(G.begin(), G.end(), 0);
-    axpy( W1.data(), G.data(), G.size(), lambda);
+    const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
+    const ImpLong Df1 = U1->Ds[f1];
+    if(param->freq){
+        vector<ImpLong> &freq = U1->freq[f1];
+        assert( Df1 == freq.size());
+        for(ImpLong i = 0; i < Df1; i++)
+            axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[i]));
+    }
+    else{
+        axpy( W1.data(), G.data(), G.size(), lambda);
+    }
     gd_pos_cross(f1, Q1, W1, G);
     if (w != 0)
         gd_neg_cross(f1, Q1, W1, G);
@@ -1541,11 +1562,21 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     const ImpInt nr_threads = param->nr_threads;
     Vec Hs_(nr_threads*Df1k);
 
-    ImpDouble sTg_neg=0, sHs=0, sTg, wTs, sTs;
+    ImpDouble sTg_neg=0, sHs=0, sTg, wTs=0, sTs=0;
 
     sTg = inner(S1.data(), G.data(), S1.size());
-    wTs = inner(S1.data(), W1.data(), S1.size());
-    sTs = inner(S1.data(), S1.data(), S1.size());
+    if(param->freq){
+        vector<ImpLong> &freq = U1->freq[f1];
+        assert( Df1 == freq.size());
+        for(ImpLong i = 0; i < Df1; i++) {
+            wTs += inner( S1.data()+i*k, W1.data()+i*k, k)*lambda * ImpDouble(freq[i]);
+            sTs += inner( S1.data()+i*k, S1.data()+i*k, k)*lambda * ImpDouble(freq[i]);
+        }
+    }
+    else{
+        wTs = lambda*inner(S1.data(), W1.data(), S1.size());
+        sTs = lambda*inner(S1.data(), S1.data(), S1.size());
+    }
 
     if (w != 0) {
         sTg_neg = inner(S1.data(), Gneg.data(), S1.size());
@@ -1582,7 +1613,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
             break;
         }
         ImpDouble L_pos_new = calc_L_pos(Y, m1, theta);
-        ImpDouble delta = L_pos_new - L_pos + theta * sTg_neg + 0.5 * theta * theta * sHs + lambda*(theta*wTs + 0.5*theta*theta*sTs);
+        ImpDouble delta = L_pos_new - L_pos + theta * sTg_neg + 0.5 * theta * theta * sHs + (theta*wTs + 0.5*theta*theta*sTs);
         if( delta <= nu * theta * sTg ){
             L_pos = L_pos_new;
             scal(S1.data(), S1.size(), theta);
