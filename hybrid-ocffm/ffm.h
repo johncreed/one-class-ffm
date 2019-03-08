@@ -96,7 +96,7 @@ public:
     void write_header(ofstream& o_f) const;
     void write_W_and_H(ofstream& o_f) const;
 private:
-    ImpDouble loss, lambda, w, wn, r;
+    ImpDouble loss, lambda, w, wn, r, tr_loss;
 
     shared_ptr<ImpData> U, Uva, V;
     shared_ptr<Parameter> param;

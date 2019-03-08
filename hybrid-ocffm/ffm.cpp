@@ -881,6 +881,21 @@ void ImpProblem::validate() {
         }
     }
 
+    ImpDouble tr_loss = 0;
+    #pragma omp parallel for schedule(dynamic) reduction(+: tr_loss)
+    for(ImpLong i = 0; i < m; i++){
+        for(YNode *y = U->Y[i]; y != U->Y[i+1]; y++){
+            ImpDouble w2 = (y->fid > 0)? 1 : wn;
+            ImpDouble yy = y->val * (ImpDouble) y->fid;
+            if( -yy > 0 )
+                tr_loss += w2 *(-yy + log1p( exp(yy) ));
+            else
+                tr_loss += w2 * log1p( exp(-yy) );
+        }
+    }
+
+    tr_loss /= U->M.size();
+
     ImpDouble ploss = 0;
     ImpDouble gauc_sum = 0, gauc_all_sum = 0;
     ImpDouble gauc_all_weight_sum = 0, gauc_weight_sum = 0;
@@ -1084,7 +1099,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
         cout.width(13);
         cout << setprecision(3) << loss;
         cout << endl;
-        cout << "gauc: " << gauc << " gauc_all: " << gauc_all << endl;
+        cout << "tr_loss: " << tr_loss <<  " gauc: " << gauc << " gauc_all: " << gauc_all << endl;
     }
 }
 
