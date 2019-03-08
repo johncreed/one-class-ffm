@@ -533,9 +533,10 @@ void ImpProblem::cache_sasb() {
 void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G) {
     fill(G.begin(), G.end(), 0);
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
-    const ImpLong Df1 = U1->Ds[f1];
+    const ImpInt fi = (f1 < fu)? f1: f1-fu;
     if(param->freq){
-        vector<ImpLong> &freq = U1->freq[f1];
+        const ImpLong Df1 = U1->Ds[fi];
+        vector<ImpLong> &freq = U1->freq[fi];
         assert( Df1 == freq.size());
         for(ImpLong i = 0; i < Df1; i++)
             axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[i]));
@@ -559,9 +560,10 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
 void ImpProblem::gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1,Vec &G) {
     fill(G.begin(), G.end(), 0);
     const shared_ptr<ImpData> U1 = (f1 < fu)? U:V;
-    const ImpLong Df1 = U1->Ds[f1];
+    const ImpInt fi = (f1 < fu)? f1: f1-fu;
     if(param->freq){
-        vector<ImpLong> &freq = U1->freq[f1];
+        const ImpLong Df1 = U1->Ds[fi];
+        vector<ImpLong> &freq = U1->freq[fi];
         assert( Df1 == freq.size());
         for(ImpLong i = 0; i < Df1; i++)
             axpy( W1.data()+i*k, G.data()+i*k, k, lambda * ImpDouble(freq[i]));
@@ -1071,7 +1073,8 @@ void ImpProblem::print_epoch_info(ImpInt t) {
     cout.width(2);
     cout << t+1;
     if (!Uva->file_name.empty() && t % 1 == 0) {
-        logloss();
+        //logloss();
+        validate();
         for (ImpInt i = 0; i < nr_k; i++ ) {
             cout.width(9);
             cout << "( " <<setprecision(3) << va_loss_prec[i]*100 << " ,";
@@ -1081,7 +1084,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
         cout.width(13);
         cout << setprecision(3) << loss;
         cout << endl;
-        //cout << "gauc: " << gauc << " gauc_all: " << gauc_all << endl;
+        cout << "gauc: " << gauc << " gauc_all: " << gauc_all << endl;
     }
 }
 
@@ -1574,7 +1577,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
 
     sTg = inner(S1.data(), G.data(), S1.size());
     if(param->freq){
-        vector<ImpLong> &freq = U1->freq[f1];
+        vector<ImpLong> &freq = U1->freq[fi];
         assert( Df1 == freq.size());
         for(ImpLong i = 0; i < Df1; i++) {
             wTs += inner( S1.data()+i*k, W1.data()+i*k, k)*lambda * ImpDouble(freq[i]);
