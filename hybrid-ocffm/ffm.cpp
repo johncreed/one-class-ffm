@@ -871,13 +871,21 @@ void ImpProblem::validate() {
         }
     }
 
+    Vec item_w(V->m, 0);
+    for (ImpLong i = 0; i < Uva->m; i++) {
+        for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
+            const ImpLong j = y->idx;
+            item_w[j]++;
+        }
+    }
+
     ImpDouble ploss = 0;
     ImpDouble gauc_sum = 0, gauc_all_sum = 0;
     ImpDouble gauc_all_weight_sum = 0, gauc_weight_sum = 0;
     #pragma omp parallel for schedule(dynamic) reduction(+: valid_samples, ploss, gauc_all_sum, gauc_sum, gauc_all_weight_sum, gauc_weight_sum)
     for (ImpLong i = 0; i < Uva->m; i++) {
-        Vec z_copy;
-        Vec z(bt);
+        Vec z_copy, z(bt);
+
         pred_z(i, z.data());
 
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
@@ -885,9 +893,9 @@ void ImpProblem::validate() {
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
             ImpDouble yy = (z[j]+at[i])*y->fid;
             if (-yy > 0)
-                ploss += w2 *(-yy + log1p( exp(yy) ));
+                ploss += w2 *(-yy + log1p( exp(yy) )) / item_w[j];
             else
-                ploss += w2 * log1p( exp(-yy) );
+                ploss += w2 * log1p( exp(-yy) ) / item_w[j];
         }
         
         ImpDouble gauc_i = auc(z, i, true);
@@ -909,7 +917,7 @@ void ImpProblem::validate() {
 
     gauc_all = gauc_all_sum / gauc_all_weight_sum;
     gauc = gauc_sum / gauc_weight_sum;
-    loss = ploss/Uva->M.size();
+    loss = ploss/V->m;
 
     fill(va_loss_prec.begin(), va_loss_prec.end(), 0);
     fill(va_loss_ndcg.begin(), va_loss_ndcg.end(), 0);
