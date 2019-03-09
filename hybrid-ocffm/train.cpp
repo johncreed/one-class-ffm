@@ -163,6 +163,9 @@ Option parse_option(int argc, char **argv)
         else if(args[i].compare("--freq") == 0){
             option.param->freq = true;
         }
+        else if(args[i].compare("--weighted") == 0){
+            option.param->item_weight = true;
+        }
         else
         {
             break;
@@ -198,6 +201,8 @@ int main(int argc, char *argv[])
         V->read(false);
         V->transY(U->Y);
         V->split_fields();
+
+        assert(U->n == V->m);
 
         if (!Ut->file_name.empty()) {
             Ut->read(true, U->Ds.data());

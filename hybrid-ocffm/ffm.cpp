@@ -172,9 +172,9 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
 void ImpData::split_fields() {
     Ns.resize(f);
     Xs.resize(f);
+
     Ds.resize(f);
     freq.resize(f);
-
 
     vector<ImpLong> f_sum_nnz(f, 0);
     vector<vector<ImpLong>> f_nnz(f);
@@ -500,9 +500,13 @@ void ImpProblem::init() {
     }
 
     cache_sasb();
+
     if (param->self_side)
         calc_side();
+
+    init_item_weights();
     init_y_tilde();
+
     init_L_pos();
     init_expyy();
 }
@@ -873,28 +877,31 @@ void ImpProblem::validate() {
         }
     }
 
-    Vec item_w(V->m, 0);
+    Vec va_item_w(n, 0);
     for (ImpLong i = 0; i < Uva->m; i++) {
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-            item_w[j]++;
+            va_item_w[j]++;
         }
     }
 
     ImpDouble tr_loss_t = 0;
     #pragma omp parallel for schedule(dynamic) reduction(+: tr_loss_t)
     for(ImpLong i = 0; i < m; i++){
-        for(YNode *y = U->Y[i]; y != U->Y[i+1]; y++){
-            ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            ImpDouble yy = y->val * (ImpDouble) y->fid;
+        for(YNode *y = U->Y[i]; y < U->Y[i+1]; y++){
+
+            const ImpDouble yy = y->val * (ImpDouble) y->fid;
+            const ImpDouble w2 = (y->fid > 0)? 1 : wn;
+            const ImpDouble iw = param->item_weight? item_w[y->idx]: 1;
+
             if( -yy > 0 )
-                tr_loss_t += w2 *(-yy + log1p( exp(yy) ));
+                tr_loss_t += iw*w2 *(-yy + log1p( exp(yy) ));
             else
-                tr_loss_t += w2 * log1p( exp(-yy) );
+                tr_loss_t += iw*w2 * log1p( exp(-yy) );
         }
     }
 
-    tr_loss = tr_loss_t/U->M.size();
+    tr_loss = param->item_weight? tr_loss_t/n : tr_loss_t/U->M.size();
 
     ImpDouble ploss = 0;
     ImpDouble gauc_sum = 0, gauc_all_sum = 0;
@@ -907,12 +914,15 @@ void ImpProblem::validate() {
 
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-            ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            ImpDouble yy = (z[j]+at[i])*y->fid;
+            const ImpDouble yy = (z[j]+at[i])*y->fid;
+
+            const ImpDouble w2 = (y->fid > 0)? 1 : wn;
+            const ImpDouble iw = param->item_weight? va_item_w[y->idx]: 1;
+
             if (-yy > 0)
-                ploss += w2 *(-yy + log1p( exp(yy) )) / item_w[j];
+                ploss += iw*w2 *(-yy + log1p( exp(yy) )) / item_w[j];
             else
-                ploss += w2 * log1p( exp(-yy) ) / item_w[j];
+                ploss += iw*w2 * log1p( exp(-yy) ) / item_w[j];
         }
         
         ImpDouble gauc_i = auc(z, i, true);
@@ -934,7 +944,7 @@ void ImpProblem::validate() {
 
     gauc_all = gauc_all_sum / gauc_all_weight_sum;
     gauc = gauc_sum / gauc_weight_sum;
-    loss = ploss/V->m;
+    loss = (param->item_weight)? ploss/n : ploss/Uva->M.size();
 
     fill(va_loss_prec.begin(), va_loss_prec.end(), 0);
     fill(va_loss_ndcg.begin(), va_loss_ndcg.end(), 0);
@@ -948,7 +958,6 @@ void ImpProblem::validate() {
         va_loss_prec[i] /= ImpDouble(valid_samples*top_k[i]);
         va_loss_ndcg[i] /= ImpDouble(valid_samples);
     }
-
 }
 
 void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
@@ -1273,8 +1282,11 @@ void ImpProblem::gd_pos_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec
         const ImpInt id = omp_get_thread_num();
         const ImpDouble *q1 = qp+i*k;
         ImpDouble z_i = 0;
-        for (YNode* y = Y[i]; y < Y[i+1]; y++)
-            z_i += l_pos_grad(y);
+        for (YNode* y = Y[i]; y < Y[i+1]; y++) {
+            ImpLong idx = (f1 < fu)? y->idx: i;
+            const ImpDouble iw = param->item_weight? item_w[idx]: 1;
+            z_i += l_pos_grad(y)*iw;
+        }
         for (Node* x = X[i]; x < X[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
@@ -1349,7 +1361,9 @@ void ImpProblem::hs_pos_side(const ImpLong &m1, const ImpLong &n1,
             const ImpDouble* q1 = qp+i*k;
             ImpDouble d_1 = 0;
             for (YNode* y = Y[i]; y < Y[i+1]; y++) {
-                d_1 += l_pos_hessian(y);
+                ImpLong idx = (m1 == m)? y->idx: i;
+                const ImpDouble iw = param->item_weight? item_w[idx]: 1;
+                d_1 += l_pos_hessian(y)*iw;
             }
             ImpDouble z_1 = 0;
             for (Node* x = UX[i]; x < UX[i+1]; x++) {
@@ -1429,9 +1443,13 @@ void ImpProblem::gd_pos_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
         Vec pk(k, 0);
         const ImpInt id = omp_get_thread_num();
         for (YNode* y = Y[i]; y < Y[i+1]; y++) {
-            const ImpDouble scale = l_pos_grad(y);
+            ImpLong idx = (f1 < fu)? y->idx: i;
             const ImpLong j = y->idx;
             const ImpDouble *q1 = qp+j*k;
+
+            const ImpDouble iw = param->item_weight? item_w[idx]: 1;
+            const ImpDouble scale = l_pos_grad(y)*iw;
+
             for (ImpInt d = 0; d < k; d++)
                 pk[d] += scale*q1[d];
         }
@@ -1519,13 +1537,20 @@ void ImpProblem::hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V
     #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
+
         Vec phi(k, 0), ka(k, 0);
         UTx(X[i], X[i+1], V, phi.data());
 
         for (YNode* y = Y[i]; y < Y[i+1]; y++) {
-            const ImpLong idx = y->idx;
-            const ImpDouble *dp = qp + idx*k;
-            const ImpDouble val = inner(phi.data(), dp, k) * l_pos_hessian(y);
+
+            const ImpLong j = y->idx;
+            const ImpDouble *dp = qp + j*k;
+
+            const ImpLong idx = (m1 == m)? j: i;
+            const ImpDouble iw = param->item_weight? item_w[idx]: 1;
+
+            const ImpDouble val = inner(phi.data(), dp, k) * l_pos_hessian(y)*iw;
+
             for (ImpInt d = 0; d < k; d++)
                 ka[d] += val*dp[d];
         }
@@ -1679,13 +1704,16 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDo
     #pragma omp parallel for schedule(dynamic) reduction(+: L_pos_new)
     for(ImpLong i = 0; i < m; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
-            ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            ImpDouble y_hat_new = y->val + theta * y->delta;
-            ImpDouble yy = y_hat_new * (ImpDouble) y->fid;
+            const ImpDouble y_hat_new = y->val + theta * y->delta;
+            const ImpDouble yy = y_hat_new * (ImpDouble) y->fid;
+
+            const ImpDouble iw = param->item_weight? item_w[y->idx]: 1;
+            const ImpDouble w2 = (y->fid > 0)? 1 : wn;
+
             if( -yy > 0 )
-                L_pos_new += w2 *(-yy + log1p( exp(yy) )) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+                L_pos_new += iw*w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
             else
-                L_pos_new += w2 * log1p( exp(-yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+                L_pos_new += iw*w2 * log1p( exp(-yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
         }
     }
     return L_pos_new;
@@ -1696,13 +1724,30 @@ void ImpProblem::init_L_pos(){
     #pragma omp parallel for schedule(dynamic) reduction(+: res)
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
-            ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            ImpDouble yy = y->val * (ImpDouble) y->fid;
+
+            const ImpDouble iw = param->item_weight? item_w[y->idx]: 1;
+            const ImpDouble w2 = (y->fid > 0)? 1 : wn;
+            const ImpDouble yy = y->val * (ImpDouble) y->fid;
+
             if( -yy > 0 )
-                res += w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y->val - r) * (y->val - r);
+                res += iw * w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y->val - r) * (y->val - r);
             else
-                res += w2 * log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
+                res += iw * w2 * log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
         }
     }
     L_pos = res;
+}
+
+void ImpProblem::init_item_weights(){
+    item_w.resize(n, 0);
+    for (ImpLong i = 0; i < m; i++) {
+        for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
+            const ImpLong j = y->idx;
+            item_w[j]++;
+        }
+    }
+
+    for (ImpLong j = 0; j < n; j++) {
+        item_w[j] = (item_w[j] > 0)? 1/item_w[j]: 1;
+    }
 }

@@ -37,8 +37,8 @@ public:
     ImpFloat omega, omega_neg, lambda, r;
     ImpInt nr_pass, k, nr_threads;
     string model_path, predict_path;
-    bool self_side, freq = false;
-    Parameter():omega(0.1), omega_neg(0.1), lambda(1e-5), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true) {};
+    bool self_side, freq, item_weight;
+    Parameter():omega(0), omega_neg(1), lambda(4), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true), freq(false), item_weight(false) {};
 };
 
 class Node {
@@ -75,6 +75,7 @@ public:
     vector<ImpLong> Ds;
     vector<vector<ImpLong>> freq;
 
+
     ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
     void read(bool has_label, const ImpLong* ds=nullptr);
     void print_data_info();
@@ -107,9 +108,8 @@ private:
     ImpLong mt;
 
     vector<Vec> W, H, P, Q, Pva, Qva;
-    Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb;
+    Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb, Gneg, item_w;
     ImpDouble gauc=0, gauc_all=0;
-    Vec Gneg;
     ImpDouble L_pos; 
     vector<ImpInt> top_k;
 
@@ -118,6 +118,7 @@ private:
 
     void add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1);
     void calc_side();
+    void init_item_weights();
     void init_y_tilde();
     void init_L_pos();
     void init_expyy();
@@ -171,6 +172,5 @@ void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, con
     void validate();
     void logloss();
     void print_epoch_info(ImpInt t);
-
 };
 
