@@ -48,6 +48,8 @@ string train_help()
     "-k <rank>: set number of rank\n"
     "--no-item: set item-bias\n"
     "--freq: enable freq-aware lambda\n"
+    "--weighted: enable weighted logloss\n"
+    "--ns: disable self interaction\n"
     );
 }
 
