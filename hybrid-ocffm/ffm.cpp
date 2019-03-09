@@ -1166,10 +1166,10 @@ void ImpProblem::write_W_and_H(ofstream &f_out) const{
 
 }
 
-void save_model(const ImpProblem& prob, string & model_path ){
+void ImpProblem::save_model(string & model_path ){
     ofstream f_out(model_path, ios::out | ios::trunc );
-    prob.write_header( f_out );
-    prob.write_W_and_H( f_out );  
+    write_header( f_out );
+    write_W_and_H( f_out );
 }
 
 ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {

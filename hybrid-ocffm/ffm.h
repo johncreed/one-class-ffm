@@ -91,6 +91,7 @@ public:
 
     void init();
     void solve();
+    void save_model(string & model_path);
     ImpDouble func();
     
     void write_header(ofstream& o_f) const;
@@ -173,4 +174,3 @@ void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, con
 
 };
 
-void save_model(const ImpProblem & prob, string & model_path );
