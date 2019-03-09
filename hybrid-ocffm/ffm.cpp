@@ -1365,7 +1365,7 @@ void ImpProblem::hs_pos_side(const ImpLong &m1, const ImpLong &n1,
             const ImpDouble* q1 = qp+i*k;
             ImpDouble d_1 = 0;
             for (YNode* y = Y[i]; y < Y[i+1]; y++) {
-                ImpLong idx = (m1 == m)? y->idx: i;
+                const ImpLong idx = (m1 == m)? y->idx: i;
                 const ImpDouble iw = param->item_weight? item_w[idx]: 1;
                 d_1 += l_pos_hessian(y)*iw;
             }
@@ -1447,7 +1447,7 @@ void ImpProblem::gd_pos_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
         Vec pk(k, 0);
         const ImpInt id = omp_get_thread_num();
         for (YNode* y = Y[i]; y < Y[i+1]; y++) {
-            ImpLong idx = (f1 < fu)? y->idx: i;
+            const ImpLong idx = (f1 < fu)? y->idx: i;
             const ImpLong j = y->idx;
             const ImpDouble *q1 = qp+j*k;
 
@@ -1703,16 +1703,17 @@ void ImpProblem::calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const V
     }
 }
 
-ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDouble theta){
+ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpDouble theta){
     ImpDouble L_pos_new = 0;
     #pragma omp parallel for schedule(dynamic) reduction(+: L_pos_new)
-    for(ImpLong i = 0; i < m; i++){
+    for(ImpLong i = 0; i < m1; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
             const ImpDouble y_hat_new = y->val + theta * y->delta;
             const ImpDouble yy = y_hat_new * (ImpDouble) y->fid;
-
-            const ImpDouble iw = param->item_weight? item_w[y->idx]: 1;
             const ImpDouble w2 = (y->fid > 0)? 1 : wn;
+
+            const ImpLong idx = (m1 == m)? y->idx: i;
+            const ImpDouble iw = param->item_weight? item_w[idx]: 1;
 
             if( -yy > 0 )
                 L_pos_new += iw*w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);

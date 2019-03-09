@@ -154,9 +154,11 @@ private:
 
     void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G, Vec &P1);
 void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, const Vec &W1, Vec &P1, const Vec &G);
-    void calc_delta_y_side(vector<YNode*> &Y, const ImpLong m, const Vec &XS, const Vec &Q);
-    void calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m, const Vec &XS, const Vec &Q);
-    ImpDouble calc_L_pos(vector<YNode*> &Y, const ImpLong m, const ImpDouble theta);
+
+    void calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q);
+    void calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q);
+    ImpDouble calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpDouble theta);
+
     void cache_sasb();
 
 
