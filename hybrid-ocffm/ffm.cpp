@@ -884,6 +884,10 @@ void ImpProblem::validate() {
             va_item_w[j]++;
         }
     }
+    for (ImpLong j = 0; j < n; j++) {
+        va_item_w[j] = (va_item_w[j] > 0)? 1/va_item_w[j]: 1;
+    }
+
 
     ImpDouble tr_loss_t = 0;
     #pragma omp parallel for schedule(dynamic) reduction(+: tr_loss_t)
@@ -920,9 +924,9 @@ void ImpProblem::validate() {
             const ImpDouble iw = param->item_weight? va_item_w[y->idx]: 1;
 
             if (-yy > 0)
-                ploss += iw*w2 *(-yy + log1p( exp(yy) )) / item_w[j];
+                ploss += iw*w2 *(-yy + log1p( exp(yy) ));
             else
-                ploss += iw*w2 * log1p( exp(-yy) ) / item_w[j];
+                ploss += iw*w2 * log1p( exp(-yy) );
         }
         
         ImpDouble gauc_i = auc(z, i, true);
