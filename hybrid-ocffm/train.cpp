@@ -6,7 +6,7 @@
 
 struct Option {
     shared_ptr<Parameter> param;
-    string xc_path, xt_path, tr_path, te_path, model_path;
+    string xc_path, xt_path, tr_path, te_path;
 };
 
 string basename(string path) {
@@ -104,7 +104,7 @@ Option parse_option(int argc, char **argv)
                 throw invalid_argument("need to specify path after -o");
             i++;
 
-            option.model_path = string(args[i]);
+            option.param->model_path = string(args[i]);
         }
         else if(args[i].compare("-w") == 0)
         {
@@ -207,8 +207,8 @@ int main(int argc, char *argv[])
         ImpProblem prob(U, Ut, V, option.param);
         prob.init();
         prob.solve();
-        if( !option.model_path.empty() )
-          prob.save_model(option.model_path );
+        if( !option.param->model_path.empty() )
+          prob.save_model(option.param->model_path );
     }
     catch (invalid_argument &e)
     {
