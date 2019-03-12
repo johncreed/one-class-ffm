@@ -1236,21 +1236,19 @@ ImpDouble ImpProblem::func() {
 }
 
 
-ImpDouble ImpProblem::l_pos_grad(const YNode *y){
-    ImpDouble w2 = (y->fid > 0)? 1 : wn;
-    ImpDouble y_ij = y->fid;
-    ImpDouble y_hat = y->val;
-    ImpDouble expyy = y->expyy;
-    return  w2 * -y_ij / (1 + expyy) - w * (y_hat - r);
+ImpDouble ImpProblem::l_pos_grad(const YNode *y, const ImpDouble iw) {
+    const ImpDouble w2 = (y->fid > 0)? 1 : wn;
+    const ImpDouble y_ij = y->fid, y_hat = y->val, expyy = y->expyy;
+    return  iw*w2 * -y_ij / (1 + expyy) - w * (y_hat - r);
 }
 
-ImpDouble ImpProblem::l_pos_hessian(const YNode *y){
-    ImpDouble w2 = (y->fid > 0)? 1 : wn;
-    ImpDouble expyy = y->expyy;
-    return w2 * expyy / (1 + expyy) / (1 + expyy) - w;
+ImpDouble ImpProblem::l_pos_hessian(const YNode *y, const ImpDouble iw) {
+    const ImpDouble w2 = (y->fid > 0)? 1 : wn;
+    const ImpDouble expyy = y->expyy;
+    return iw*w2 * expyy / (1 + expyy) / (1 + expyy) - w;
 }
 
-void ImpProblem::init_expyy(){
+void ImpProblem::init_expyy() {
     #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
@@ -1289,7 +1287,7 @@ void ImpProblem::gd_pos_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec
         for (YNode* y = Y[i]; y < Y[i+1]; y++) {
             ImpLong idx = (f1 < fu)? y->idx: i;
             const ImpDouble iw = param->item_weight? item_w[idx]: 1;
-            z_i += l_pos_grad(y)*iw;
+            z_i += l_pos_grad(y, iw);
         }
         for (Node* x = X[i]; x < X[i+1]; x++) {
             const ImpLong idx = x->idx;
@@ -1367,7 +1365,7 @@ void ImpProblem::hs_pos_side(const ImpLong &m1, const ImpLong &n1,
             for (YNode* y = Y[i]; y < Y[i+1]; y++) {
                 const ImpLong idx = (m1 == m)? y->idx: i;
                 const ImpDouble iw = param->item_weight? item_w[idx]: 1;
-                d_1 += l_pos_hessian(y)*iw;
+                d_1 += l_pos_hessian(y, iw);
             }
             ImpDouble z_1 = 0;
             for (Node* x = UX[i]; x < UX[i+1]; x++) {
@@ -1452,7 +1450,7 @@ void ImpProblem::gd_pos_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
             const ImpDouble *q1 = qp+j*k;
 
             const ImpDouble iw = param->item_weight? item_w[idx]: 1;
-            const ImpDouble scale = l_pos_grad(y)*iw;
+            const ImpDouble scale = l_pos_grad(y, iw);
 
             for (ImpInt d = 0; d < k; d++)
                 pk[d] += scale*q1[d];
@@ -1553,7 +1551,7 @@ void ImpProblem::hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V
             const ImpLong idx = (m1 == m)? j: i;
             const ImpDouble iw = param->item_weight? item_w[idx]: 1;
 
-            const ImpDouble val = inner(phi.data(), dp, k) * l_pos_hessian(y)*iw;
+            const ImpDouble val = inner(phi.data(), dp, k) * l_pos_hessian(y, iw);
 
             for (ImpInt d = 0; d < k; d++)
                 ka[d] += val*dp[d];
