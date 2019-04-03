@@ -820,6 +820,24 @@ void ImpProblem::logloss() {
             }
         }
     }
+    
+    ImpDouble tr_loss_t = 0;
+    #pragma omp parallel for schedule(dynamic) reduction(+: tr_loss_t)
+    for(ImpLong i = 0; i < m; i++){
+        for(YNode *y = U->Y[i]; y < U->Y[i+1]; y++){
+
+            const ImpDouble yy = y->val * (ImpDouble) y->fid;
+            const ImpDouble w2 = (y->fid > 0)? 1 : wn;
+            const ImpDouble iw = param->item_weight? item_w[y->idx]: 1;
+
+            if( -yy > 0 )
+                tr_loss_t += iw*w2 *(-yy + log1p( exp(yy) ));
+            else
+                tr_loss_t += iw*w2 * log1p( exp(-yy) );
+        }
+    }
+
+    tr_loss = param->item_weight? tr_loss_t/n : tr_loss_t/U->M.size();
 
     ImpDouble ploss = 0;
     #pragma omp parallel for schedule(dynamic) reduction(+: ploss)
@@ -827,7 +845,7 @@ void ImpProblem::logloss() {
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            ImpDouble yy = ( pred_i_j(i, j) + at[i])*y->fid;
+            ImpDouble yy = (pred_i_j(i, j) + at[i])*y->fid;
             if (-yy > 0)
                 ploss += w2 *(-yy + log1p( exp(yy) ));
             else
@@ -1099,10 +1117,10 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<I
 void ImpProblem::print_epoch_info(ImpInt t) {
     ImpInt nr_k = top_k.size();
     cout.width(2);
-    cout << t+1;
-    if (!Uva->file_name.empty() && t % 1 == 0) {
-        //logloss();
-        validate();
+    cout << t+1 << " ";
+    if (!Uva->file_name.empty() && (t+1) % 2 == 0) {
+        logloss();
+        //validate();
         for (ImpInt i = 0; i < nr_k; i++ ) {
             cout.width(9);
             cout << "( " <<setprecision(3) << va_loss_prec[i]*100 << " ,";
