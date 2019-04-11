@@ -831,12 +831,12 @@ void ImpProblem::auc(){
     #pragma omp parallel for schedule(dynamic) reduction(+: gauc_sum, gauc_weight_sum)
     for (ImpLong i = 0; i < Uva->m; i++){
         ImpLong num_obv = ImpLong(Uva->Y[i+1] - Uva->Y[i]);
-        Vec z(num_obv, bt[i]);
+        Vec z(num_obv, 0);
         Vec label(num_obv, 0);
         ImpLong k = 0;
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++, k++){
             const ImpLong j = y->idx;
-            z[k] += (pred_i_j(i, j) + at[i])*y->fid;
+            z[k] += (pred_i_j(i, j) + bt[j])*y->fid;
             label[k] = y->fid;
         }
         gauc_sum += num_obv * auc_i(z,label);
@@ -1075,13 +1075,15 @@ ImpDouble ImpProblem::auc_i(Vec &z, Vec &label){
     ImpDouble rank_sum  = 0;
     ImpDouble auc  = 0;
     ImpLong size = z.size();
-    
-    sort(label.begin(), label.end(), Comp(z.data()));
+    vector<ImpLong> indices(size);
+
+    for(ImpLong j = 0; j < size; j++) indices[j] = j;
+    sort(indices.begin(), indices.end(), Comp(z.data()));
 
     ImpLong tp = 0,fp = 0;
     ImpLong rank = 0;
     for(ImpLong j = 0; j < size; j++) {
-        bool is_pos = (label[j] > 0)? true : false;
+        bool is_pos = (label[indices[j]] > 0)? true : false;
 
         if(is_pos){ 
             tp++;
