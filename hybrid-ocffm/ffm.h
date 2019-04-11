@@ -173,8 +173,10 @@ void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, con
     void ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &hit_counts);
     void pred_items();
     ImpDouble auc(Vec &z, ImpLong i, bool all);
+    ImpDouble auc_i(Vec &z, Vec &label);
     void prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts);
     void validate();
+    void auc();
     void logloss();
     void print_epoch_info(ImpInt t);
 };

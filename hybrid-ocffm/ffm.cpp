@@ -823,6 +823,26 @@ void ImpProblem::init_Pva_Qva_at_bt(){
     }
 }
 
+void ImpProblem::auc(){
+    ImpDouble gauc_sum = 0;
+    ImpDouble gauc_weight_sum = 0;
+    #pragma omp parallel for schedule(dynamic) reduction(+: gauc_sum, gauc_weight_sum)
+    for (ImpLong i = 0; i < Uva->m; i++){
+        ImpLong num_obv = ImpLong(Uva->Y[i+1] - Uva->Y[i]);
+        Vec z(num_obv, bt[i]);
+        Vec label(num_obv, 0);
+        ImpLong k = 0;
+        for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++, k++){
+            const ImpLong j = y->idx;
+            z[k] += (pred_i_j(i, j) + at[i])*y->fid;
+            label[k] = y->fid;
+        }
+        gauc_sum += num_obv * auc_i(z,label);
+        gauc_weight_sum += num_obv;
+    }
+    gauc = gauc_sum/gauc_weight_sum;
+}
+
 void ImpProblem::logloss() {
     ImpDouble tr_loss_t = 0;
     #pragma omp parallel for schedule(dynamic) reduction(+: tr_loss_t)
@@ -1050,6 +1070,39 @@ ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool do_sum_all){
     return auc;
 }
 
+ImpDouble ImpProblem::auc_i(Vec &z, Vec &label){
+    ImpDouble rank_sum  = 0;
+    ImpDouble auc  = 0;
+    ImpLong size = z.size();
+    
+    sort(label.begin(), label.end(), Comp(z.data()));
+
+    ImpLong tp = 0,fp = 0;
+    ImpLong rank = 0;
+    for(ImpLong j = 0; j < size; j++) {
+        bool is_pos = (label[j] > 0)? true : false;
+
+        if(is_pos){ 
+            tp++;
+            rank_sum += (rank + 1);
+        }
+        else{
+            fp++;
+        }
+
+        rank += 1;
+    }
+
+    if(tp == 0 || fp == 0)
+    {
+        auc = -1;
+    }
+    else
+        auc = (rank_sum - ((ImpDouble)tp + 1.0) * (ImpDouble)tp / 2.0)/ (ImpDouble)tp / (ImpDouble)fp;
+
+    return auc;
+}
+
 void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts) {
     ImpInt valid_count = 0;
     const ImpInt nr_k = top_k.size();
@@ -1087,6 +1140,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
     cout << t+1 << " ";
     if (!Uva->file_name.empty() && (t+1) % 2 == 0){
         init_Pva_Qva_at_bt();
+        auc();
         logloss();
         //validate();
         for (ImpInt i = 0; i < nr_k; i++ ) {
