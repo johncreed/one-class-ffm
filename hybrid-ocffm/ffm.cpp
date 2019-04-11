@@ -836,11 +836,14 @@ void ImpProblem::auc(){
         ImpLong k = 0;
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++, k++){
             const ImpLong j = y->idx;
-            z[k] += (pred_i_j(i, j) + bt[j])*y->fid;
+            z[k] += pred_i_j(i, j) + bt[j];
             label[k] = y->fid;
         }
-        gauc_sum += num_obv * auc_i(z,label);
-        gauc_weight_sum += num_obv;
+        ImpDouble gauc_i = auc_i(z,label);
+        if(gauc_i != -1){
+            gauc_sum += num_obv * gauc_i;
+            gauc_weight_sum += num_obv;
+        }
     }
     gauc = gauc_sum/gauc_weight_sum;
 }
