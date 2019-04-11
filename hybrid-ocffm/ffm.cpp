@@ -806,6 +806,8 @@ void ImpProblem::init_Pva_Qva_at_bt(){
 
     at.resize(Uva->m, 0);
     bt.resize(V->m, 0);
+    fill(at.begin(), at.end(), 0);
+    fill(bt.begin(), bt.end(), 0);
 
     if (param->self_side) {
         for (ImpInt f1 = 0; f1 < fu; f1++) {
@@ -927,12 +929,11 @@ void ImpProblem::validate() {
             const ImpDouble yy = (z[j]+at[i])*y->fid;
 
             const ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            const ImpDouble iw = param->item_weight? va_item_w[y->idx]: 1;
 
             if (-yy > 0)
-                ploss += iw*w2 *(-yy + log1p( exp(yy) ));
+                ploss += w2 *(-yy + log1p( exp(yy) ));
             else
-                ploss += iw*w2 * log1p( exp(-yy) );
+                ploss += w2 * log1p( exp(-yy) );
         }
         
         ImpDouble gauc_i = auc(z, i, true);
@@ -954,7 +955,7 @@ void ImpProblem::validate() {
 
     gauc_all = gauc_all_sum / gauc_all_weight_sum;
     gauc = gauc_sum / gauc_weight_sum;
-    loss = (param->item_weight)? ploss/n : ploss/Uva->M.size();
+    loss = ploss/Uva->M.size();
 
     fill(va_loss_prec.begin(), va_loss_prec.end(), 0);
     fill(va_loss_ndcg.begin(), va_loss_ndcg.end(), 0);
