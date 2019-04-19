@@ -111,6 +111,7 @@ private:
     Vec at, bt;
     Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb, Gneg, item_w;
     ImpDouble gauc=0, gauc_all=0;
+    ImpDouble auc = 0;
     ImpDouble L_pos; 
     vector<ImpInt> top_k;
 
@@ -172,11 +173,12 @@ void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, con
     ImpDouble pred_i_j(const ImpLong i, const ImpLong j);
     void ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &hit_counts);
     void pred_items();
-    ImpDouble auc(Vec &z, ImpLong i, bool all);
-    ImpDouble auc_i(Vec &z, Vec &label);
+    ImpDouble calc_gauc_i(Vec &z, ImpLong i, bool all);
+    ImpDouble calc_auc_i(Vec &z, Vec &label);
     void prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts);
     void validate();
     void calc_gauc();
+    void calc_auc();
     void logloss();
     void print_epoch_info(ImpInt t);
 };
