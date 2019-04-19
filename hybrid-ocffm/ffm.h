@@ -176,7 +176,7 @@ void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, con
     ImpDouble auc_i(Vec &z, Vec &label);
     void prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts);
     void validate();
-    void auc();
+    void calc_gauc();
     void logloss();
     void print_epoch_info(ImpInt t);
 };

@@ -825,7 +825,7 @@ void ImpProblem::init_Pva_Qva_at_bt(){
     }
 }
 
-void ImpProblem::auc(){
+void ImpProblem::calc_gauc(){
     ImpDouble gauc_sum = 0;
     ImpDouble gauc_weight_sum = 0;
     #pragma omp parallel for schedule(dynamic) reduction(+: gauc_sum, gauc_weight_sum)
@@ -1146,7 +1146,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
     cout << t+1 << " ";
     if (!Uva->file_name.empty() && (t+1) % 2 == 0){
         init_Pva_Qva_at_bt();
-        auc();
+        calc_gauc();
         logloss();
         //validate();
         for (ImpInt i = 0; i < nr_k; i++ ) {
