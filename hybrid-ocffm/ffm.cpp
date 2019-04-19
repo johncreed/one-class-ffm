@@ -839,13 +839,44 @@ void ImpProblem::calc_gauc(){
             z[k] += pred_i_j(i, j) + bt[j];
             label[k] = y->fid;
         }
-        ImpDouble gauc_i = auc_i(z,label);
+        ImpDouble gauc_i = calc_auc_i(z,label);
         if(gauc_i != -1){
             gauc_sum += num_obv * gauc_i;
             gauc_weight_sum += num_obv;
         }
     }
     gauc = gauc_sum/gauc_weight_sum;
+}
+
+void ImpProblem::calc_auc(){
+    vector<Vec> Zs(Uva->m);
+    vector<Vec> labels(Uva->m);
+    ImpLong sample_count = 0; 
+    #pragma omp parallel for schedule(dynamic) reduction(+: sample_count)
+    for (ImpLong i = 0; i < Uva->m; i++){
+        ImpLong num_obv = ImpLong(Uva->Y[i+1] - Uva->Y[i]);
+        Vec& z = Zs[i];
+        Vec& label = labels[i];
+        z.resize(num_obv);
+        label.resize(num_obv);
+        fill(z.begin(), z.end(), 0);
+        fill(label.begin(), label.end(), 0);
+        ImpLong k = 0;
+        for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++, k++){
+            const ImpLong j = y->idx;
+            z[k] += pred_i_j(i, j) + bt[j];
+            label[k] = y->fid;
+            sample_count++;
+        }
+    }
+    Vec Z_all, label_all;
+    Z_all.reserve(sample_count);
+    label_all.reserve(sample_count);
+    for(ImpLong i = 0; i < Uva->m; i++){
+        Z_all.insert(Z_all.end(), Zs[i].begin(), Zs[i].end());
+        label_all.insert(label_all.end(), labels[i].begin(), labels[i].end());
+    }
+    auc = calc_auc_i(Z_all, label_all);
 }
 
 void ImpProblem::logloss() {
@@ -939,12 +970,12 @@ void ImpProblem::validate() {
                 ploss += w2 * log1p( exp(-yy) );
         }
         
-        ImpDouble gauc_i = auc(z, i, true);
+        ImpDouble gauc_i = calc_gauc_i(z, i, true);
         if( gauc_i != -1 ){
             gauc_all_sum += gauc_i;
             gauc_all_weight_sum += 1;
         }
-        gauc_i = auc(z, i, false);
+        gauc_i = calc_gauc_i(z, i, false);
         if( gauc_i != -1){
             gauc_sum += gauc_i * (ImpDouble)(Uva->Y[i+1] - Uva->Y[i]);
             gauc_weight_sum += (Uva->Y[i+1] - Uva->Y[i]);
@@ -1025,7 +1056,7 @@ class Comp{
     }
 };
 
-ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool do_sum_all){
+ImpDouble ImpProblem::calc_gauc_i(Vec &z, ImpLong i, bool do_sum_all){
     ImpDouble rank_sum  = 0;
     ImpDouble auc  = 0;
     ImpLong size = z.size();
@@ -1074,7 +1105,7 @@ ImpDouble ImpProblem::auc(Vec &z, ImpLong i, bool do_sum_all){
     return auc;
 }
 
-ImpDouble ImpProblem::auc_i(Vec &z, Vec &label){
+ImpDouble ImpProblem::calc_auc_i(Vec &z, Vec &label){
     ImpDouble rank_sum  = 0;
     ImpDouble auc  = 0;
     ImpLong size = z.size();
@@ -1146,8 +1177,9 @@ void ImpProblem::print_epoch_info(ImpInt t) {
     cout << t+1 << " ";
     if (!Uva->file_name.empty() && (t+1) % 2 == 0){
         init_Pva_Qva_at_bt();
-        calc_gauc();
+        //calc_gauc();
         logloss();
+        calc_auc();
         //validate();
         for (ImpInt i = 0; i < nr_k; i++ ) {
             cout.width(9);
@@ -1158,7 +1190,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
         cout.width(13);
         cout << setprecision(3) << loss;
         cout << endl;
-        cout << "tr_loss: " << tr_loss <<  " gauc: " << gauc << " gauc_all: " << gauc_all << endl;
+        cout << "tr_loss: " << tr_loss <<  " gauc: " << gauc << " gauc_all: " << gauc_all << "auc" << auc << endl;
     }
 }
 
