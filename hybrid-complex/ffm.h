@@ -114,7 +114,10 @@ private:
     ImpDouble auc = 0;
     ImpDouble L_pos; 
     vector<ImpInt> top_k;
+    vector<Vec> P_imp, Q_imp;
+    ImpInt k_imp, fu_imp, fv_imp, f_imp;
 
+    void load_imputation_model(string & model_imp_path);
     void init_pair(const ImpInt &f12, const ImpInt &fi, const ImpInt &fj,
             const shared_ptr<ImpData> &d1, const shared_ptr<ImpData> &d2);
 
@@ -169,6 +172,7 @@ void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, con
     void init_va(ImpInt size);
 
     void init_Pva_Qva_at_bt();
+    void save_Pva_Qva();
     void pred_z(const ImpLong i, ImpDouble *z);
     ImpDouble pred_i_j(const ImpLong i, const ImpLong j);
     void ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &hit_counts);

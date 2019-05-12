@@ -825,6 +825,55 @@ void ImpProblem::init_Pva_Qva_at_bt(){
     }
 }
 
+void ImpProblem::save_Pva_Qva(){
+    ofstream of("PvaQva.bin", ios::out | ios::trunc | ios::binary);
+    of.write( reinterpret_cast<char*>(&fu), sizeof(ImpInt) );
+    of.write( reinterpret_cast<char*>(&fv), sizeof(ImpInt) );
+    of.write( reinterpret_cast<char*>(&f), sizeof(ImpInt) );
+    of.write( reinterpret_cast<char*>(&k), sizeof(ImpInt) );
+    for (ImpInt f1 = 0; f1 < f; f1++) {
+        for (ImpInt f2 = f1; f2 < f; f2++) {
+            ImpInt f12 = index_vec(f1, f2, f);
+            if( f1 >= fu || f2 < fu )
+                continue;
+            ImpLong Pva_size = Pva.size();
+            ImpLong Qva_size = Qva.size();
+            of.write( reinterpret_cast<char*>(&f12), sizeof(ImpInt) );
+            of.write( reinterpret_cast<char*>(&Pva_size), sizeof(ImpLong) );
+            of.write( reinterpret_cast<char*>(&Qva_size), sizeof(ImpLong) );
+
+            of.write( reinterpret_cast<char*>(Pva.data()), sizeof(ImpDouble)*Pva.size() );
+            of.write( reinterpret_cast<char*>(Qva.data()), sizeof(ImpDouble)*Qva.size() );
+        }
+    }
+}
+
+void ImpProblem::load_imputation_model(string & model_imp_path){
+    ifstream ifile(model_imp_path, ios::in | ios::binary);
+    ifile.read( reinterpret_cast<char*>(&fu_imp), sizeof(ImpInt) );
+    ifile.read( reinterpret_cast<char*>(&fv_imp), sizeof(ImpInt) );
+    ifile.read( reinterpret_cast<char*>(&f_imp), sizeof(ImpInt) );
+    ifile.read( reinterpret_cast<char*>(&k_imp), sizeof(ImpInt) );
+    P_imp.resize(f*(f+1)/2);
+    Q_imp.resize(f*(f+1)/2);
+    for (ImpInt f1 = 0; f1 < f; f1++) {
+        for (ImpInt f2 = f1; f2 < f; f2++) {
+            if( f1 >= fu_imp || f2 < fu_imp )
+                continue;
+            ImpInt f12;
+            ImpLong P_size, Q_size;
+            ifile.read( reinterpret_cast<char*>(&f12), sizeof(ImpInt) );
+            ifile.read( reinterpret_cast<char*>(&P_size), sizeof(ImpLong) );
+            ifile.read( reinterpret_cast<char*>(&Q_size), sizeof(ImpLong) );
+            assert( f12 != index_vec(f1, f2, f_imp) );
+            P_imp[f12].resize(P_size);
+            Q_imp[f12].resize(Q_size);
+            ifile.read( reinterpret_cast<char*>(P_imp.data()), sizeof(ImpDouble)*P_imp.size() );
+            ifile.read( reinterpret_cast<char*>(Q_imp.data()), sizeof(ImpDouble)*Q_imp.size() );
+        }
+    }
+}
+
 void ImpProblem::calc_gauc(){
     ImpDouble gauc_sum = 0;
     ImpDouble gauc_weight_sum = 0;
