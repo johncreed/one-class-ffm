@@ -44,6 +44,26 @@ void mm(const ImpDouble *a, const ImpDouble *b, ImpDouble *c,
             k, k, l, 1, a, k, b, k, 0, c, k);
 }
 
+// l * n = (l * k) x (k * n)
+void mm(const ImpLong l, const ImpLong n, const ImpLong k, const ImpDouble *a, const ImpDouble *b, ImpDouble *c, const ImpLong a_row, const ImpLong b_row, const ImpLong c_row, const ImpDouble beta){
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, l, n, k, 1, a, a_row, b, b_row, beta, c, c_row);
+}
+
+// l * n = (l * k) x (k * n), A^T = (l * k)
+void mTm(const ImpLong l, const ImpLong n, const ImpLong k, const ImpDouble *a, const ImpDouble *b, ImpDouble *c, const ImpLong a_row, const ImpLong b_row, const ImpLong c_row, const ImpDouble beta){
+    cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, l, n, k, 1, a, a_row, b, b_row, beta, c, c_row);
+}
+
+// l * n = (l * k) x (k * n), B^T = (k * n)
+void mmT(const ImpLong l, const ImpLong n, const ImpLong k, const ImpDouble *a, const ImpDouble *b, ImpDouble *c, const ImpLong a_row, const ImpLong b_row, const ImpLong c_row, const ImpDouble beta){
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, l, n, k, 1, a, a_row, b, b_row, beta, c, c_row);
+}
+
+// l * n = (l * k) x (k * n), A^T = (l * k), B^T = (k * n)
+void mTmT(const ImpLong l, const ImpLong n, const ImpLong k, const ImpDouble *a, const ImpDouble *b, ImpDouble *c, const ImpLong a_row, const ImpLong b_row, const ImpLong c_row, const ImpDouble beta){
+    cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans, l, n, k, 1, a, a_row, b, b_row, beta, c, c_row);
+}
+
 void mv(const ImpDouble *a, const ImpDouble *b, ImpDouble *c,
         const ImpLong l, const ImpInt k, const ImpDouble &beta, bool trans) {
     const CBLAS_TRANSPOSE CBTr= (trans)? CblasTrans: CblasNoTrans;
@@ -457,6 +477,28 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
     }
 }
 
+void ImpProblem::init_y_imp(){
+    #pragma omp parallel for schedule(dynamic)
+    for (ImpLong i = 0; i < U->m; i++) {
+        for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
+            const ImpLong j = y->idx;
+            for(ImpLong fa = 0; fa < fu_imp; fa++){
+                for(ImpLong fb = fu_imp; fb < f_imp; fb++){
+                    ImpLong fab = index_vec(fa, fb, f_imp);
+                    y->val_imp += inner(P_imp[fab].data() + i*k, Q_imp[fab].data() + j*k, k_imp);
+                }
+            }
+        }
+    }
+    #pragma omp parallel for schedule(dynamic)
+    for (ImpLong j = 0; j < V->m; j++) {
+        for (YNode* y = V->Y[j]; y < V->Y[j+1]; y++) {
+            const ImpLong i = y->idx;
+            y->val_imp = (U->Y[i]+j)->val_imp;
+        }
+    }
+}
+
 void ImpProblem::init() {
     lambda = param->lambda;
     w = param->omega;
@@ -509,6 +551,7 @@ void ImpProblem::init() {
 
     init_L_pos();
     init_expyy();
+    init_y_imp();
 }
 
 void ImpProblem::cache_sasb() {
@@ -704,16 +747,6 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
 
 void ImpProblem::one_epoch() {
 
-    if (param->self_side) {
-        for (ImpInt f1 = 0; f1 < fu; f1++)
-            for (ImpInt f2 = f1; f2 < fu; f2++)
-                solve_side(f1, f2);
-
-        for (ImpInt f1 = fu; f1 < f; f1++)
-            for (ImpInt f2 = f1; f2 < f; f2++)
-                solve_side(f1, f2);
-    }
-
     for (ImpInt f1 = 0; f1 < fu; f1++)
         for (ImpInt f2 = fu; f2 < f; f2++)
             solve_cross(f1, f2);
@@ -825,8 +858,9 @@ void ImpProblem::init_Pva_Qva_at_bt(){
     }
 }
 
-void ImpProblem::save_Pva_Qva(){
-    ofstream of("PvaQva.bin", ios::out | ios::trunc | ios::binary);
+void ImpProblem::save_Pva_Qva(string &model_path){
+    init_Pva_Qva_at_bt();
+    ofstream of(model_path, ios::out | ios::trunc | ios::binary);
     of.write( reinterpret_cast<char*>(&fu), sizeof(ImpInt) );
     of.write( reinterpret_cast<char*>(&fv), sizeof(ImpInt) );
     of.write( reinterpret_cast<char*>(&f), sizeof(ImpInt) );
@@ -848,7 +882,7 @@ void ImpProblem::save_Pva_Qva(){
     }
 }
 
-void ImpProblem::load_imputation_model(string & model_imp_path){
+void ImpProblem::load_imputation_model(string &model_imp_path){
     ifstream ifile(model_imp_path, ios::in | ios::binary);
     ifile.read( reinterpret_cast<char*>(&fu_imp), sizeof(ImpInt) );
     ifile.read( reinterpret_cast<char*>(&fv_imp), sizeof(ImpInt) );
@@ -1365,8 +1399,8 @@ ImpDouble ImpProblem::func() {
 
 ImpDouble ImpProblem::l_pos_grad(const YNode *y, const ImpDouble iw) {
     const ImpDouble w2 = (y->fid > 0)? 1 : wn;
-    const ImpDouble y_ij = y->fid, y_hat = y->val, expyy = y->expyy;
-    return  iw*w2 * -y_ij / (1 + expyy) - w * (y_hat - r);
+    const ImpDouble y_ij = y->fid, y_hat = y->val, expyy = y->expyy, y_imp = y->val_imp;
+    return  iw*w2 * -y_ij / (1 + expyy) - w * (y_hat - y_imp);
 }
 
 ImpDouble ImpProblem::l_pos_hessian(const YNode *y, const ImpDouble iw) {
@@ -1602,6 +1636,8 @@ void ImpProblem::gd_neg_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
 
     const vector<Vec> &Ps = (f1 < fu)? P:Q;
     const vector<Vec> &Qs = (f1 < fu)? Q:P;
+    const vector<Vec> &Ps_imp = (f1 < fu)? P_imp:Q_imp;
+    const vector<Vec> &Qs_imp = (f1 < fu)? Q_imp:P_imp;
 
     const ImpLong &m1 = (f1 < fu)? m:n;
     const ImpLong &n1 = (f1 < fu)? n:m;
@@ -1623,24 +1659,36 @@ void ImpProblem::gd_neg_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
             mm(Pa.data(), QTQ.data(), T.data(), m1, k, k, 1);
         }
     }
+    
+    Vec QTQ_imp(k_imp*k, 0), T_imp(m1*k, 0);
+    for (ImpInt al = 0; al < fu_imp; al++) {
+        for (ImpInt be = fu_imp; be < f_imp; be++) {
+            const ImpInt fab = index_vec(al, be, f);
+            const Vec &Qa_imp = Qs_imp[fab], &Pa_imp = Ps_imp[fab];
+            mTm(k_imp, k, n1, Qa_imp.data(), Q1.data(), QTQ_imp.data(), k_imp, k, n1, 1);
+            mm(m1, k, k_imp, Pa_imp.data(), QTQ_imp.data(), T_imp.data(), k_imp, k, k, 1);
+        }
+    }
 
     const ImpLong block_size = G.size();
     const ImpInt nr_threads = param->nr_threads;
     Vec G_(nr_threads*block_size, 0);
 
     const ImpDouble *tp = T.data();
+    const ImpDouble *tp_imp = T_imp.data();
 
     #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
         const ImpDouble *t1 = tp+i*k;
+        const ImpDouble *t1_imp = tp_imp+i*k;
         const ImpDouble z_i = a1[i]-r;
         for (Node* x = X[i]; x < X[i+1]; x++) {
             const ImpLong idx = x->idx;
             const ImpDouble val = x->val;
             for (ImpInt d = 0; d < k; d++) {
                 const ImpLong jd = idx*k+d;
-                G_[jd+id*block_size] += w*(t1[d]+z_i*oQ[d]+bQ[d])*val;
+                G_[jd+id*block_size] += w*(t1[d]-t1_imp[d]+z_i*oQ[d]+bQ[d])*val;
             }
         }
     }
@@ -1834,6 +1882,7 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpD
     for(ImpLong i = 0; i < m1; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
             const ImpDouble y_hat_new = y->val + theta * y->delta;
+            const ImpDouble y_imp = y->val_imp;
             const ImpDouble yy = y_hat_new * (ImpDouble) y->fid;
             const ImpDouble w2 = (y->fid > 0)? 1 : wn;
 
@@ -1841,9 +1890,9 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpD
             const ImpDouble iw = param->item_weight? item_w[idx]: 1;
 
             if( -yy > 0 )
-                L_pos_new += iw*w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+                L_pos_new += iw*w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y_hat_new - y_imp) * (y_hat_new - y_imp);
             else
-                L_pos_new += iw*w2 * log1p( exp(-yy) ) - 0.5 * w * (y_hat_new - r) * (y_hat_new - r);
+                L_pos_new += iw*w2 * log1p( exp(-yy) ) - 0.5 * w * (y_hat_new - y_imp) * (y_hat_new - y_imp);
         }
     }
     return L_pos_new;
@@ -1860,9 +1909,9 @@ void ImpProblem::init_L_pos(){
             const ImpDouble yy = y->val * (ImpDouble) y->fid;
 
             if( -yy > 0 )
-                res += iw * w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y->val - r) * (y->val - r);
+                res += iw * w2 * (-yy + log1p( exp(yy) )) - 0.5 * w * (y->val - y->val_imp) * (y->val - y->val_imp);
             else
-                res += iw * w2 * log1p( exp(-yy) ) - 0.5 * w * (y->val - r) * (y->val - r);
+                res += iw * w2 * log1p( exp(-yy) ) - 0.5 * w * (y->val - y->val_imp) * (y->val - y->val_imp);
         }
     }
     L_pos = res;

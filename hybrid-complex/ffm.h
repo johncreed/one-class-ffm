@@ -54,9 +54,10 @@ public:
     ImpDouble fid;
     ImpLong idx;
     ImpDouble val;
+    ImpDouble val_imp;
     ImpDouble expyy;
     ImpDouble delta;
-    YNode(): fid(0), idx(0), val(0) {};
+    YNode(): fid(0), idx(0), val(0), val_imp(0) {};
 };
 
 class ImpData {
@@ -90,9 +91,11 @@ public:
             shared_ptr<ImpData> &V, shared_ptr<Parameter> &param)
         :U(U), Uva(Uva), V(V), param(param) {};
 
+    void load_imputation_model(string & model_imp_path);
     void init();
     void solve();
     void save_model(string & model_path);
+    void save_Pva_Qva(string & model_path);
     ImpDouble func();
     
     void write_header(ofstream& o_f) const;
@@ -117,9 +120,9 @@ private:
     vector<Vec> P_imp, Q_imp;
     ImpInt k_imp, fu_imp, fv_imp, f_imp;
 
-    void load_imputation_model(string & model_imp_path);
     void init_pair(const ImpInt &f12, const ImpInt &fi, const ImpInt &fj,
             const shared_ptr<ImpData> &d1, const shared_ptr<ImpData> &d2);
+    void init_y_imp();
 
     void add_side(const Vec &p, const Vec &q, const ImpLong &m1, Vec &a1);
     void calc_side();
@@ -172,7 +175,6 @@ void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, con
     void init_va(ImpInt size);
 
     void init_Pva_Qva_at_bt();
-    void save_Pva_Qva();
     void pred_z(const ImpLong i, ImpDouble *z);
     ImpDouble pred_i_j(const ImpLong i, const ImpLong j);
     void ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &hit_counts);

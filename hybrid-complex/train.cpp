@@ -6,7 +6,7 @@
 
 struct Option {
     shared_ptr<Parameter> param;
-    string xc_path, xt_path, tr_path, te_path;
+    string xc_path, xt_path, tr_path, te_path, model_imp, save_imp;
 };
 
 string basename(string path) {
@@ -40,6 +40,8 @@ string train_help()
     "-l <lambda_2>: set regularization coefficient on r regularizer (default 0.1)\n"
     "-t <iter>: set number of iterations (default 20)\n"
     "-p <path>: set path to test set\n"
+    "-imp <path>: set path to imputation model\n"
+    "-save-imp <path>: save imputation model\n"
     "-o <path>: set path to save model file\n"
     "-w <omega>: set cost weight for the unobserves\n"
     "-wn <omega>: set cost weight for the negatives\n"
@@ -158,6 +160,22 @@ Option parse_option(int argc, char **argv)
 
             option.te_path = string(args[i]);
         }
+        else if(args[i].compare("-imp") == 0)
+        {
+            if(i == argc-1)
+                throw invalid_argument("need to specify path after -imp");
+            i++;
+
+            option.model_imp = string(args[i]);
+        }
+        else if(args[i].compare("-save-imp") == 0)
+        {
+            if(i == argc-1)
+                throw invalid_argument("need to specify path after -save-imp");
+            i++;
+
+            option.save_imp = string(args[i]);
+        }
         else if(args[i].compare("--ns") == 0)
         {
             option.param->self_side = false;
@@ -212,10 +230,13 @@ int main(int argc, char *argv[])
         }
 
         ImpProblem prob(U, Ut, V, option.param);
+        prob.load_imputation_model(option.model_imp);
         prob.init();
         prob.solve();
         if( !option.param->model_path.empty() )
           prob.save_model(option.param->model_path );
+        if( !option.save_imp.empty() )
+          prob.save_Pva_Qva(option.save_imp);
     }
     catch (invalid_argument &e)
     {
