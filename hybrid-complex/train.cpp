@@ -230,7 +230,8 @@ int main(int argc, char *argv[])
         }
 
         ImpProblem prob(U, Ut, V, option.param);
-        prob.load_imputation_model(option.model_imp);
+        if( !option.model_imp.empty() )
+            prob.load_imputation_model(option.model_imp);
         prob.init();
         prob.solve();
         if( !option.param->model_path.empty() )
