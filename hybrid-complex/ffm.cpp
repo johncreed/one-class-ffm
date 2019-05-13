@@ -1670,7 +1670,7 @@ void ImpProblem::gd_neg_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
         for (ImpInt be = fu_imp; be < f_imp; be++) {
             const ImpInt fab = index_vec(al, be, f);
             const Vec &Qa_imp = Qs_imp[fab], &Pa_imp = Ps_imp[fab];
-            mTm(k_imp, k, n1, Qa_imp.data(), Q1.data(), QTQ_imp.data(), k_imp, k, n1, 1);
+            mTm(k_imp, k, n1, Qa_imp.data(), Q1.data(), QTQ_imp.data(), k_imp, k, k, 1);
             mm(m1, k, k_imp, Pa_imp.data(), QTQ_imp.data(), T_imp.data(), k_imp, k, k, 1);
         }
     }
