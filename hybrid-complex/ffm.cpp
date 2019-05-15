@@ -840,6 +840,7 @@ void ImpProblem::save_Pva_Qva(string &model_path){
             of.write( reinterpret_cast<char*>(Qva[f12].data()), sizeof(ImpDouble)*Qva_size );
         }
     }
+    of.close();
 }
 
 void ImpProblem::load_imputation_model(string &model_imp_path){
@@ -859,13 +860,14 @@ void ImpProblem::load_imputation_model(string &model_imp_path){
             ifile.read( reinterpret_cast<char*>(&f12), sizeof(ImpInt) );
             ifile.read( reinterpret_cast<char*>(&P_size), sizeof(ImpLong) );
             ifile.read( reinterpret_cast<char*>(&Q_size), sizeof(ImpLong) );
-            assert( f12 != index_vec(f1, f2, f_imp) );
+            assert( f12 == index_vec(f1, f2, f_imp) );
             P_imp[f12].resize(P_size);
             Q_imp[f12].resize(Q_size);
             ifile.read( reinterpret_cast<char*>(P_imp[f12].data()), sizeof(ImpDouble)*P_size );
             ifile.read( reinterpret_cast<char*>(Q_imp[f12].data()), sizeof(ImpDouble)*Q_size );
         }
     }
+    ifile.close();
 }
 
 void ImpProblem::calc_gauc(){
@@ -1424,7 +1426,7 @@ void ImpProblem::gd_neg_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
     Vec QTQ_imp(k_imp*k, 0), T_imp(m1*k, 0);
     for (ImpInt al = 0; al < fu_imp; al++) {
         for (ImpInt be = fu_imp; be < f_imp; be++) {
-            const ImpInt fab = index_vec(al, be, f);
+            const ImpInt fab = index_vec(al, be, f_imp);
             const Vec &Qa_imp = Qs_imp[fab], &Pa_imp = Ps_imp[fab];
             mTm(k_imp, k, n1, Qa_imp.data(), Q1.data(), QTQ_imp.data(), k_imp, k, k, 1);
             mm(m1, k, k_imp, Pa_imp.data(), QTQ_imp.data(), T_imp.data(), k_imp, k, k, 1);
