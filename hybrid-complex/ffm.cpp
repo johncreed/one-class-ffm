@@ -482,10 +482,12 @@ void ImpProblem::init_y_imp(){
     for (ImpLong i = 0; i < U->m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
             const ImpLong j = y->idx;
-            for(ImpLong fa = 0; fa < fu_imp; fa++){
-                for(ImpLong fb = fu_imp; fb < f_imp; fb++){
-                    ImpLong fab = index_vec(fa, fb, f_imp);
-                    y->val_imp += inner(P_imp[fab].data() + i*k_imp, Q_imp[fab].data() + j*k_imp, k_imp);
+            for (ImpInt f1 = 0; f1 < f_imp; f1++) {
+                for (ImpInt f2 = f1; f2 < f_imp; f2++) {
+                    if( f1 >= fu_imp || f2 < fu_imp )
+                        continue;
+                    ImpLong f12 = index_vec(f1, f2, f_imp);
+                    y->val_imp += inner(P_imp[f12].data() + i*k_imp, Q_imp[f12].data() + j*k_imp, k_imp);
                 }
             }
         }
@@ -494,10 +496,12 @@ void ImpProblem::init_y_imp(){
     for (ImpLong j = 0; j < V->m; j++) {
         for (YNode* y = V->Y[j]; y < V->Y[j+1]; y++) {
             const ImpLong i = y->idx;
-            for(ImpLong fa = 0; fa < fu_imp; fa++){
-                for(ImpLong fb = fu_imp; fb < f_imp; fb++){
-                    ImpLong fab = index_vec(fa, fb, f_imp);
-                    y->val_imp += inner(P_imp[fab].data() + i*k_imp, Q_imp[fab].data() + j*k_imp, k_imp);
+            for (ImpInt f1 = 0; f1 < f_imp; f1++) {
+                for (ImpInt f2 = f1; f2 < f_imp; f2++) {
+                    if( f1 >= fu_imp || f2 < fu_imp )
+                        continue;
+                    ImpLong f12 = index_vec(f1, f2, f_imp);
+                    y->val_imp += inner(P_imp[f12].data() + i*k_imp, Q_imp[f12].data() + j*k_imp, k_imp);
                 }
             }
         }
@@ -1216,10 +1220,8 @@ void ImpProblem::print_epoch_info(ImpInt t) {
     cout << t+1 << " ";
     if (!Uva->file_name.empty() && (t+1) % 2 == 0){
         init_Pva_Qva_at_bt();
-        //calc_gauc();
         logloss();
         calc_auc();
-        //validate();
         for (ImpInt i = 0; i < nr_k; i++ ) {
             cout.width(9);
             cout << "( " <<setprecision(3) << va_loss_prec[i]*100 << " ,";
