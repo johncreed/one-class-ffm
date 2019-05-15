@@ -101,7 +101,7 @@ public:
     void write_header(ofstream& o_f) const;
     void write_W_and_H(ofstream& o_f) const;
 private:
-    ImpDouble loss, lambda, w, wn, r, tr_loss;
+    ImpDouble loss, lambda, w, wn, tr_loss;
 
     shared_ptr<ImpData> U, Uva, V;
     shared_ptr<Parameter> param;
@@ -144,14 +144,6 @@ private:
 
     ImpDouble l_pos_grad(const YNode* y, const ImpDouble iw);
     ImpDouble l_pos_hessian(const YNode* y, const ImpDouble iw);
-
-    void solve_side(const ImpInt &f1, const ImpInt &f2);
-    void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
-    void gd_pos_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
-    void gd_neg_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
-    void hs_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
-    void hs_pos_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
-    void hs_neg_side(const ImpLong &m1, const ImpLong &n1, const Vec &S, Vec &HS, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
 
     void solve_cross(const ImpInt &f1, const ImpInt &f2);
     void gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Vec &G);
