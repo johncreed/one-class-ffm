@@ -41,16 +41,9 @@ string train_help()
     "-ldiff <lambda_2>: set regularization coefficient on diff regularizer (default 1)\n"
     "-t <iter>: set number of iterations (default 20)\n"
     "-p <path>: set path to test set\n"
-    "-o <path>: set path to save model file\n"
-    "-w <omega>: set cost weight for the unobserves\n"
-    "-wn <omega>: set cost weight for the negatives\n"
-    "-r <rating>: set rating for the negatives\n"
     "-c <threads>: set number of cores\n"
     "-k <rank>: set number of rank\n"
     "--treat <path>: set path to treat data\n"
-    "--no-item: set item-bias\n"
-    "--freq: enable freq-aware lambda\n"
-    "--weighted: enable weighted logloss\n"
     "--ns: disable self interaction\n"
     );
 }
@@ -81,7 +74,7 @@ Option parse_option(int argc, char **argv)
                 throw invalid_argument("-l should be followed by a number");
             option.param->lambda = atof(argv[i]);
         }
-        if(args[i].compare("-ldiff") == 0)
+        else if(args[i].compare("-ldiff") == 0)
         {
             if((i+1) >= argc)
                 throw invalid_argument("need to specify l\
@@ -122,39 +115,6 @@ Option parse_option(int argc, char **argv)
 
             option.param->model_path = string(args[i]);
         }
-        else if(args[i].compare("-w") == 0)
-        {
-            if((i+1) >= argc)
-                throw invalid_argument("need to specify max number of\
-                                        iterations after -t");
-            i++;
-
-            if(!is_numerical(argv[i]))
-                throw invalid_argument("-r should be followed by a number");
-            option.param->omega = atof(argv[i]);
-        }
-        else if(args[i].compare("-wn") == 0)
-        {
-            if((i+1) >= argc)
-                throw invalid_argument("need to specify max number of\
-                                        iterations after -t");
-            i++;
-
-            if(!is_numerical(argv[i]))
-                throw invalid_argument("-wn should be followed by a number");
-            option.param->omega_neg = atof(argv[i]);
-        }
-        else if(args[i].compare("-r") == 0)
-        {
-            if((i+1) >= argc)
-                throw invalid_argument("need to specify max number of\
-                                        iterations after -t");
-            i++;
-
-            if(!is_numerical(argv[i]))
-                throw invalid_argument("-r should be followed by a number");
-            option.param->r = atof(argv[i]);
-        }
         else if(args[i].compare("-c") == 0)
         {
             if((i+1) >= argc)
@@ -167,7 +127,7 @@ Option parse_option(int argc, char **argv)
         else if(args[i].compare("--treat") == 0)
         {
             if(i == argc-1)
-                throw invalid_argument("need to specify path after -treat");
+                throw invalid_argument("need to specify path after --treat");
             i++;
 
             option.treat_path = string(args[i]);
@@ -183,12 +143,6 @@ Option parse_option(int argc, char **argv)
         else if(args[i].compare("--ns") == 0)
         {
             option.param->self_side = false;
-        }
-        else if(args[i].compare("--freq") == 0){
-            option.param->freq = true;
-        }
-        else if(args[i].compare("--weighted") == 0){
-            option.param->item_weight = true;
         }
         else
         {
@@ -207,6 +161,7 @@ Option parse_option(int argc, char **argv)
 
 int main(int argc, char *argv[])
 {
+    feenableexcept(FE_INVALID | FE_OVERFLOW);
     try
     {
         Option option = parse_option(argc, argv);

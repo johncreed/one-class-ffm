@@ -13,7 +13,7 @@
 #include <utility>
 #include <numeric>
 #include <cassert>
-
+#include <fenv.h>
 
 #include <immintrin.h>
 
@@ -34,11 +34,11 @@ const int MIN_Z = -1000;
 
 class Parameter {
 public:
-    ImpFloat omega, omega_neg, lambda, ldiff, r;
+    ImpFloat omega_neg, lambda, ldiff, r;
     ImpInt nr_pass, k, nr_threads;
     string model_path, predict_path;
     bool self_side, freq, item_weight;
-    Parameter():omega(0), omega_neg(1), lambda(4), ldiff(1), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true), freq(false), item_weight(false) {};
+    Parameter(): omega_neg(1), lambda(4), ldiff(1), r(0), nr_pass(20), k(4), nr_threads(1), self_side(true), freq(false), item_weight(false) {};
 };
 
 class Node {
@@ -93,12 +93,11 @@ public:
     void init();
     void solve();
     void save_model(string & model_path);
-    ImpDouble func();
     
     void write_header(ofstream& o_f) const;
     void write_W_and_H(ofstream& o_f) const;
 private:
-    ImpDouble loss, lambda, ldiff, w, wn, r, tr_loss;
+    ImpDouble loss, lambda, ldiff, wn, tr_loss;
 
     shared_ptr<ImpData> U,  U_treat, Uva, V, V_treat;
     shared_ptr<Parameter> param;
@@ -110,7 +109,6 @@ private:
 
     vector<Vec> W, H, P, Q, Pva, Qva;
     vector<Vec> W_treat, H_treat, P_treat, Q_treat;
-    Vec at, bt;
     Vec va_loss_prec, va_loss_ndcg, Gneg, item_w;
     ImpDouble gauc=0, gauc_all=0;
     ImpDouble auc = 0;
@@ -159,6 +157,7 @@ private:
     void init_va(ImpInt size);
 
     void init_Pva_Qva_at_bt();
+    void init_Pva_Qva_at_bt_treat();
     void pred_z(const ImpLong i, ImpDouble *z);
     ImpDouble pred_i_j(const ImpLong i, const ImpLong j);
     void ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &hit_counts);
@@ -166,10 +165,9 @@ private:
     ImpDouble calc_gauc_i(Vec &z, ImpLong i, bool all);
     ImpDouble calc_auc_i(Vec &z, Vec &label);
     void prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<ImpLong> &hit_counts);
-    void validate();
-    void calc_gauc();
     void calc_auc();
     void logloss();
+    void logloss_treat();
     void print_epoch_info(ImpInt t);
 };
 
