@@ -6,7 +6,7 @@
 
 struct Option {
     shared_ptr<Parameter> param;
-    string xc_path, xt_path, tr_path, te_path;
+    string xc_path, xt_path, tr_path, treat_path, te_path;
 };
 
 string basename(string path) {
@@ -37,7 +37,8 @@ string train_help()
     "usage: train [options] item_feature_file train_file\n"
     "\n"
     "options:\n"
-    "-l <lambda_2>: set regularization coefficient on r regularizer (default 0.1)\n"
+    "-l <lambda_2>: set regularization coefficient on r regularizer (default 4)\n"
+    "-ldiff <lambda_2>: set regularization coefficient on diff regularizer (default 1)\n"
     "-t <iter>: set number of iterations (default 20)\n"
     "-p <path>: set path to test set\n"
     "-o <path>: set path to save model file\n"
@@ -46,6 +47,7 @@ string train_help()
     "-r <rating>: set rating for the negatives\n"
     "-c <threads>: set number of cores\n"
     "-k <rank>: set number of rank\n"
+    "--treat <path>: set path to treat data\n"
     "--no-item: set item-bias\n"
     "--freq: enable freq-aware lambda\n"
     "--weighted: enable weighted logloss\n"
@@ -78,6 +80,18 @@ Option parse_option(int argc, char **argv)
             if(!is_numerical(argv[i]))
                 throw invalid_argument("-l should be followed by a number");
             option.param->lambda = atof(argv[i]);
+        }
+        if(args[i].compare("-ldiff") == 0)
+        {
+            if((i+1) >= argc)
+                throw invalid_argument("need to specify l\
+                                        regularization coefficient\
+                                        after -ldiff");
+            i++;
+
+            if(!is_numerical(argv[i]))
+                throw invalid_argument("-ldiff should be followed by a number");
+            option.param->ldiff = atof(argv[i]);
         }
         else if(args[i].compare("-k") == 0)
         {
@@ -150,6 +164,14 @@ Option parse_option(int argc, char **argv)
                 throw invalid_argument("-c should be followed by a number");
             option.param->nr_threads = atof(argv[i]);
         }
+        else if(args[i].compare("--treat") == 0)
+        {
+            if(i == argc-1)
+                throw invalid_argument("need to specify path after -treat");
+            i++;
+
+            option.treat_path = string(args[i]);
+        }
         else if(args[i].compare("-p") == 0)
         {
             if(i == argc-1)
@@ -192,18 +214,27 @@ int main(int argc, char *argv[])
 
 
         shared_ptr<ImpData> U = make_shared<ImpData>(option.tr_path);
+        shared_ptr<ImpData> U_treat = make_shared<ImpData>(option.treat_path);
         shared_ptr<ImpData> V = make_shared<ImpData>(option.xt_path);
+        shared_ptr<ImpData> V_treat = make_shared<ImpData>(option.xt_path);
 
         shared_ptr<ImpData> Ut = make_shared<ImpData>(option.te_path);
 
 
         U->read(true);
         U->split_fields();
+        
+        U_treat->read(true);
+        U_treat->split_fields();
 
         V->read(false);
         V->transY(U->Y);
         V->split_fields();
 
+        V_treat->read(false);
+        V_treat->transY(U_treat->Y);
+        V_treat->split_fields();
+        
         assert(U->n == V->m);
 
         if (!Ut->file_name.empty()) {
@@ -211,7 +242,7 @@ int main(int argc, char *argv[])
             Ut->split_fields();
         }
 
-        ImpProblem prob(U, Ut, V, option.param);
+        ImpProblem prob(U, U_treat, Ut, V, V_treat, option.param);
         prob.init();
         prob.solve();
         if( !option.param->model_path.empty() )
