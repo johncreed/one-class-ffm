@@ -464,7 +464,6 @@ void ImpProblem::init() {
 
     c_norm = U->M.size();
     t_norm = U_treat->M.size();
-    cerr << "c_norm " << c_norm << " t_norm " << t_norm << endl << flush;
 
     m = U->m;
     n = V->m;
