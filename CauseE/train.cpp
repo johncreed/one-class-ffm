@@ -62,6 +62,7 @@ Option parse_option(int argc, char **argv)
     int i = 0;
     for(i = 1; i < argc; i++)
     {
+        cerr << args[i] << endl << flush;
         if(args[i].compare("-l") == 0)
         {
             if((i+1) >= argc)

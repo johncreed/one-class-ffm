@@ -98,6 +98,7 @@ public:
     void write_W_and_H(ofstream& o_f) const;
 private:
     ImpDouble loss, lambda, ldiff, wn, tr_loss;
+    ImpDouble c_norm, t_norm;
 
     shared_ptr<ImpData> U,  U_treat, Uva, V, V_treat;
     shared_ptr<Parameter> param;
@@ -143,14 +144,14 @@ private:
     void solve_cross(const ImpInt &f1, const ImpInt &f2);
     void gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, const Vec &Wreg, Vec &G, bool do_ctrl);
     void gd_pos_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Vec &G, bool do_ctrl);
-    void hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
-    void hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_);
+    void hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_, const ImpDouble norm_);
+    void hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &UX, const vector<YNode*> &Y, Vec &Hv_, const ImpDouble norm_);
 
     void cg(const ImpInt &f1, const ImpInt &f2, Vec &W1, const Vec &Q1, const Vec &G, Vec &P1, bool do_ctrl);
     void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, const Vec &W1, const Vec &Wreg, Vec &P1, const Vec &G, bool do_ctrl);
 
     void calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q);
-    ImpDouble calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpDouble theta);
+    ImpDouble calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpDouble theta, const ImpDouble norm_);
 
 
     void one_epoch();

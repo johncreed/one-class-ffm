@@ -462,6 +462,10 @@ void ImpProblem::init() {
     ldiff = param->ldiff;
     wn = 1;
 
+    c_norm = U->M.size();
+    t_norm = U_treat->M.size();
+    cerr << "c_norm " << c_norm << " t_norm " << t_norm << endl << flush;
+
     m = U->m;
     n = V->m;
     
@@ -520,8 +524,8 @@ void ImpProblem::gd_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, const 
 
 
 void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, Vec &Hv, const Vec &Q1,
-        const vector<Node*> &X, const vector<YNode*> &Y, Vec &Hv_) {
-    hs_pos_cross(m1, n1, V, Hv, Q1, X, Y, Hv_);
+        const vector<Node*> &X, const vector<YNode*> &Y, Vec &Hv_, const ImpDouble norm_) {
+    hs_pos_cross(m1, n1, V, Hv, Q1, X, Y, Hv_, norm_);
 }
 
 void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
@@ -529,13 +533,16 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
     
     shared_ptr<ImpData> U_, V_;
     ImpLong m_, n_;
+    ImpDouble norm_;
     if(do_ctrl){
         U_ = U, V_ = V;
         m_ = m, n_ = n;
+        norm_ = c_norm;
     }
     else{
         U_ = U_treat, V_ = V_treat;
         m_ = m_treat, n_ = n_treat;
+        norm_ = t_norm;
     }
 
     const ImpInt base = (f1 < fu)? 0: fu;
@@ -571,7 +578,7 @@ void ImpProblem::cg(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         fill(Hv_.begin(), Hv_.end(), 0);
 
         axpy( V.data(), Hv.data(), V.size(), lambda + ldiff);
-        hs_cross(m1, n1, V, Hv, Q1, X, Y, Hv_);
+        hs_cross(m1, n1, V, Hv, Q1, X, Y, Hv_, norm_);
 
         vHv = inner(V.data(), Hv.data(), Df1k);
         gamma = r2;
@@ -1100,13 +1107,16 @@ void ImpProblem::init_expyy() {
 void ImpProblem::gd_pos_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Vec &G, bool do_ctrl) {
     shared_ptr<ImpData> U_, V_;
     ImpLong m_, n_;
+    ImpDouble norm_;
     if(do_ctrl){
         U_ = U, V_ = V;
         m_ = m, n_ = n;
+        norm_ = c_norm;
     }
     else{
         U_ = U_treat, V_ = V_treat;
         m_ = m_treat, n_ = n_treat;
+        norm_ = t_norm;
     }
 
     const ImpLong &m1 = (f1 < fu)? m_:n_;
@@ -1147,11 +1157,11 @@ void ImpProblem::gd_pos_cross(const ImpInt &f1, const Vec &Q1, const Vec &W1, Ve
         }
     }
     for(ImpInt i = 0; i < nr_threads; i++)
-        axpy(G_.data()+i*block_size, G.data(), block_size, 1);
+        axpy(G_.data()+i*block_size, G.data(), block_size, 1.0 / norm_ );
 }
 
-void ImpProblem::hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &X, const vector<YNode*> &Y, Vec &Hv_) {
-    
+void ImpProblem::hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V, Vec &Hv, const Vec &Q1, const vector<Node*> &X, const vector<YNode*> &Y, Vec &Hv_, const ImpDouble norm_) {
+   
     fill(Hv_.begin(), Hv_.end(), 0);
     const ImpDouble *qp = Q1.data();
 
@@ -1189,7 +1199,7 @@ void ImpProblem::hs_pos_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V
     }
 
     for(ImpInt i = 0; i < nr_threads; i++)
-        axpy(Hv_.data()+i*block_size, Hv.data(), block_size, 1);
+        axpy(Hv_.data()+i*block_size, Hv.data(), block_size, 1.0 / norm_);
 }
 
 void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, const Vec &W1, const Vec &Wreg, Vec &P1, const Vec &G, bool do_ctrl) {
@@ -1197,15 +1207,18 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const 
     shared_ptr<ImpData> U_, V_;
     ImpLong m_, n_;
     ImpDouble* L_pos_;
+    ImpDouble norm_;
     if(do_ctrl){
         U_ = U, V_ = V;
         m_ = m, n_ = n;
         L_pos_ = &L_pos;
+        norm_ = c_norm;
     }
     else{
         U_ = U_treat, V_ = V_treat;
         m_ = m_treat, n_ = n_treat;
         L_pos_ = &L_pos_treat;
+        norm_ = t_norm;
     }
 
     const ImpInt base = (f1 < fu)? 0: fu;
@@ -1231,7 +1244,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const 
             cerr << "Step size too small and skip this block." << endl;
             break;
         }
-        ImpDouble L_pos_new = calc_L_pos(Y, m1, theta);
+        ImpDouble L_pos_new = calc_L_pos(Y, m1, theta, norm_);
         ImpDouble delta = L_pos_new - *L_pos_ + (theta*wTs + 0.5*theta*theta*sTs);
         if( delta <= nu * theta * sTg ){
             *L_pos_ = L_pos_new;
@@ -1256,7 +1269,7 @@ void ImpProblem::calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const V
     }
 }
 
-ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpDouble theta){
+ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpDouble theta, const ImpDouble norm_){
     ImpDouble L_pos_new = 0;
     #pragma omp parallel for schedule(dynamic) reduction(+: L_pos_new)
     for(ImpLong i = 0; i < m1; i++){
@@ -1274,7 +1287,7 @@ ImpDouble ImpProblem::calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpD
                 L_pos_new += iw*w2 * log1p( exp(-yy) ) ;
         }
     }
-    return L_pos_new;
+    return L_pos_new / norm_;
 }
     
 void ImpProblem::init_L_pos(){
@@ -1293,7 +1306,7 @@ void ImpProblem::init_L_pos(){
                 res += iw * w2 * log1p( exp(-yy) ) ;
         }
     }
-    L_pos = res;
+    L_pos = res / c_norm;
     
     ImpDouble res_treat = 0;
     #pragma omp parallel for schedule(dynamic) reduction(+: res_treat)
@@ -1310,7 +1323,7 @@ void ImpProblem::init_L_pos(){
                 res_treat += iw * w2 * log1p( exp(-yy) ) ;
         }
     }
-    L_pos_treat = res_treat;
+    L_pos_treat = res_treat / t_norm;
 }
 
 void ImpProblem::init_item_weights(){
