@@ -167,6 +167,7 @@ Option parse_option(int argc, char **argv)
             i++;
 
             option.model_imp = string(args[i]);
+            option.param->do_imp = true; 
         }
         else if(args[i].compare("-save-imp") == 0)
         {

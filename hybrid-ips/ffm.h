@@ -37,8 +37,8 @@ public:
     ImpFloat omega, omega_neg, lambda, r;
     ImpInt nr_pass, k, nr_threads;
     string model_path, predict_path;
-    bool self_side, freq, weight;
-    Parameter():omega(0), omega_neg(1), lambda(4), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true), freq(false), weight(false) {};
+    bool self_side, freq, weight, do_imp;
+    Parameter():omega(0), omega_neg(1), lambda(4), r(-1), nr_pass(20), k(4), nr_threads(1), self_side(true), freq(false), weight(false), do_imp(false) {};
 };
 
 class Node {

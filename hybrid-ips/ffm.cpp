@@ -292,6 +292,7 @@ void ImpData::transY(const vector<YNode*> &YT) {
         M[nnz_i].idx = perm[nnz_i].first;
         M[nnz_i].fid = perm[nnz_i].second->fid;
         M[nnz_i].val = perm[nnz_i].second->val;
+        M[nnz_i].ips = perm[nnz_i].second->ips;
     }
 
     Y[0] = M.data();
@@ -559,7 +560,8 @@ void ImpProblem::init() {
 
     init_L_pos();
     init_expyy();
-    init_y_imp();
+    if(param->do_imp)
+        init_y_imp();
 }
 
 void ImpProblem::cache_sasb() {
