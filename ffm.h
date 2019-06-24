@@ -18,7 +18,14 @@
 #include <immintrin.h>
 
 #include<omp.h>
+
+#ifdef MKL
 #include "mkl.h"
+#endif
+
+#ifdef OPENBLAS
+#include <cblas.h>
+#endif
 
 
 

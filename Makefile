@@ -8,23 +8,29 @@ endif
 #MKLROOT = /home/ybw/intel/compilers_and_libraries_2018.2.199/linux/mkl
 
 CXXFLAGS = -Wall -O3 -std=c++0x -march=native
-MKLFLAGS = -m64 -I${MKLROOT}/include -Wl,--no-as-needed -L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm -ldl
-DFLAG += -DUSEOMP
+
+
+#Comment out the following two sentences if MKL is required
+#DFLAG += -DMKL
+#BLASFLAGS = -m64 -I${MKLROOT}/include -Wl,--no-as-needed -L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm -ldl
+
+DFLAG += -DOPENBLAS
+BLASFLAGS =  -I /opt/OpenBLAS/include/ -L/opt/OpenBLAS/lib -lopenblas -lpthread -lgfortran
+
+#DFLAG += -DUSEOMP
 #DFLAG += -DEBUG
 #DFLAG += -D EBUG_nDCG
 #DFLAG += -D SHOW_SCORE_ONLY
 #DFLAG += -D DEBUG_SAVE
 CXXFLAGS += -fopenmp
-CXXFLAGS += $(MKLFLAGS)
 
 all: train
 
 
 train: train.cpp ffm.o
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(BLASFLAGS)
 ffm.o: ffm.cpp ffm.h
-	$(CXX) $(CXXFLAGS) $(DFLAG) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(DFLAG) -c -o $@ $< $(BLASFLAGS)
 
 clean:
 	rm -f train predict ffm.o *.bin.*
