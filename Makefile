@@ -15,7 +15,7 @@ CXXFLAGS = -Wall -O3 -std=c++0x -march=native
 #BLASFLAGS = -m64 -I${MKLROOT}/include -Wl,--no-as-needed -L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm -ldl
 
 DFLAG += -DOPENBLAS
-BLASFLAGS =  -I /opt/OpenBLAS/include/ -L/opt/OpenBLAS/lib -lopenblas -lpthread -lgfortran
+BLASFLAGS =  -I /opt/OpenBLAS/include/ -L/opt/OpenBLAS/lib -lopenblas -lpthread
 
 #DFLAG += -DUSEOMP
 #DFLAG += -DEBUG
