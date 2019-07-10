@@ -192,6 +192,8 @@ int main(int argc, char *argv[])
             Ut->split_fields();
         }
 
+        U->print_data_info();
+
         ImpProblem prob(U, Ut, V, option.param);
         prob.init();
         prob.solve();
