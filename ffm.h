@@ -13,6 +13,7 @@
 #include <utility>
 #include <numeric>
 #include <cassert>
+#include <set>
 
 
 #include <immintrin.h>
@@ -70,9 +71,10 @@ public:
     vector<ImpLong> Ds;
     vector<vector<ImpLong>> freq;
     vector<ImpDouble> popular;
+    vector<set<ImpLong>> rated_items;
 
     ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
-    void read(bool has_label, const ImpLong* ds=nullptr);
+    void read(bool has_label, bool has_rated, const ImpLong* ds=nullptr);
     void print_data_info();
     void split_fields();
     void transY(const vector<Node*> &YT);

@@ -63,7 +63,7 @@ void row_wise_inner(const Vec &V1, const Vec &V2, const ImpLong &row,
         const ImpLong &col,const ImpDouble &alpha, Vec &vv){
     const ImpDouble *v1p = V1.data(), *v2p = V2.data();
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for(ImpInt i = 0; i < row; i++)
         vv[i] += alpha*inner(v1p+i*col, v2p+i*col, col);
 }
@@ -77,7 +77,7 @@ void init_mat(Vec &vec, const ImpLong nr_rows, const ImpLong nr_cols) {
     generate(vec.begin(), vec.end(), gen);
 }
 
-void ImpData::read(bool has_label, const ImpLong *ds) {
+void ImpData::read(bool has_label, bool has_rated, const ImpLong *ds) {
     ifstream fs(file_name);
     string line, label_block, label_str;
     char dummy;
@@ -96,6 +96,13 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
                 idx = stoi(label_str);
                 n = max(n, idx+1);
                 y_nnz++;
+            }
+        }
+        if (has_rated) {
+            iss >> label_block;
+            istringstream labelst(label_block);
+            while (getline(labelst, label_str, ',')) {
+                continue;
             }
         }
 
@@ -128,6 +135,10 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
     fill(nnx.begin(), nnx.end(), 0);
     fill(nny.begin(), nny.end(), 0);
 
+    if(has_rated)
+        rated_items.resize(m);
+
+
     ImpLong nnz_i=0, nnz_j=0, i=0;
 
     while (getline(fs, line)) {
@@ -143,6 +154,14 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
                 popular[idx] += 1;
             }
             nny[i] = nnz_j;
+        }
+        if (has_rated) {
+            iss >> label_block;
+            istringstream labelst(label_block);
+            while (getline(labelst, label_str, ',')) {
+                ImpLong idx = stoi(label_str);
+                rated_items[i].insert(idx);
+            }
         }
 
         while (iss >> fid >> dummy >> idx >> dummy >> val) {
@@ -325,7 +344,7 @@ void ImpProblem::UTx(const Node* x0, const Node* x1, const Vec &A, ImpDouble *c)
 void ImpProblem::UTX(const vector<Node*> &X, const ImpLong m1, const Vec &A, Vec &C) {
     fill(C.begin(), C.end(), 0);
     ImpDouble* c = C.data();
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++)
         UTx(X[i], X[i+1], A, c+i*k);
 }
@@ -386,14 +405,14 @@ ImpDouble ImpProblem::calc_cross(const ImpLong &i, const ImpLong &j) {
 }
 
 void ImpProblem::init_y_tilde() {
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m; i++) {
         for (Node* y = U->Y[i]; y < U->Y[i+1]; y++) {
             ImpLong j = y->idx;
             y->val = a[i]+b[j]+calc_cross(i, j) - 1;
         }
     }
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong j = 0; j < n; j++) {
         for (Node* y = V->Y[j]; y < V->Y[j+1]; y++) {
             ImpLong i = y->idx;
@@ -420,14 +439,14 @@ void ImpProblem::update_side(const bool &sub_type, const Vec &S
     axpy( XS.data(), P1.data(), XS.size(), 1);
     row_wise_inner(XS, Q1, m1, k, 1, gaps);
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < U1->m; i++) {
         a1[i] += gaps[i];
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             y->val += gaps[i];
         }
     }
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
@@ -448,14 +467,14 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
     UTX(X12, m1, S, XS);
     axpy( XS.data(), P1.data(), P1.size(), 1);
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < U1->m; i++) {
         for (Node* y = U1->Y[i]; y < U1->Y[i+1]; y++) {
             const ImpLong j = y->idx;
             y->val += inner( XS.data()+i*k, Q1.data()+j*k, k);
         }
     }
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong j = 0; j < V1->m; j++) {
         for (Node* y = V1->Y[j]; y < V1->Y[j+1]; y++) {
             const ImpLong i = y->idx;
@@ -569,7 +588,7 @@ void ImpProblem::gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G)
         axpy( W1.data(), G.data(), G.size(), lambda);
     }
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         const ImpInt id = omp_get_thread_num();
         const ImpDouble *q1 = qp+i*k;
@@ -600,7 +619,7 @@ void ImpProblem::hs_side(const ImpLong &m1, const ImpLong &n1,
 
     const ImpLong block_size = Hv.size();
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
         for (ImpLong i = 0; i < m1; i++) {
             ImpInt id = omp_get_thread_num();
             const ImpDouble* q1 = qp+i*k;
@@ -675,7 +694,7 @@ void ImpProblem::gd_cross(const ImpInt &f1, const ImpInt &f12, const Vec &Q1, co
 
     const ImpDouble *tp = T.data(), *qp = Q1.data();
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m1; i++) {
         Vec pk(k, 0);
         const ImpInt id = omp_get_thread_num();
@@ -712,7 +731,7 @@ void ImpProblem::hs_cross(const ImpLong &m1, const ImpLong &n1, const Vec &V,
     const ImpLong block_size = Hv.size();
     const ImpInt nr_threads = param->nr_threads;
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic)
         for (ImpLong i = 0; i < m1; i++) {
             const ImpInt id = omp_get_thread_num();
             Vec tau(k, 0), phi(k, 0), ka(k, 0);
@@ -1023,14 +1042,7 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpLong> &hit_counts) {
             ImpLong argmax = distance(z, max_element(z, z + max_z_idx));
             z[argmax] = MIN_Z;
 
-            bool is_in_tr = false;
-            for (Node* nd = Uva->Xs[0][i]; nd < Uva->Xs[0][i+1]; nd++) {
-                if (argmax == nd->idx) {
-                    is_in_tr = true;
-                    break;
-                }
-            }
-            if (is_in_tr)
+            if (Uva->rated_items[i].count(argmax) > 0)
                 continue;
 
             for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {
@@ -1070,14 +1082,7 @@ void ImpProblem::ndcg(ImpDouble *z, ImpLong i, vector<ImpDouble> &ndcg_scores) {
             ImpLong argmax = distance(z, max_element(z, z + max_z_idx));
             z[argmax] = MIN_Z;
 
-            bool is_in_tr = false;
-            for (Node* nd = Uva->Xs[0][i]; nd < Uva->Xs[0][i+1]; nd++) {
-                if (argmax == nd->idx) {
-                    is_in_tr = true;
-                    break;
-                }
-            }
-            if (is_in_tr)
+            if (Uva->rated_items[i].count(argmax) > 0)
                 continue;
 
             for (Node* nd = Uva->Y[i]; nd < Uva->Y[i+1]; nd++) {

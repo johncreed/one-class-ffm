@@ -180,15 +180,15 @@ int main(int argc, char *argv[])
         shared_ptr<ImpData> Ut = make_shared<ImpData>(option.te_path);
 
 
-        U->read(true);
+        U->read(true, false);
         U->split_fields();
 
-        V->read(false);
+        V->read(false, false);
         V->transY(U->Y);
         V->split_fields();
 
         if (!Ut->file_name.empty()) {
-            Ut->read(true, U->Ds.data());
+            Ut->read(true, true, U->Ds.data());
             Ut->split_fields();
         }
 
