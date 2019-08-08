@@ -1236,6 +1236,70 @@ void save_model(const ImpProblem& prob, string & model_path ){
     prob.write_W_and_H( f_out );  
 }
 
+void ImpProblem::save_binary_model(string & model_path){
+    ofstream of(model_path, ios::binary | ios::trunc );
+    of.write( reinterpret_cast<char*>(&f), sizeof(ImpInt) );
+    of.write( reinterpret_cast<char*>(&fu), sizeof(ImpInt) );
+    of.write( reinterpret_cast<char*>(&fv), sizeof(ImpInt) );
+    of.write( reinterpret_cast<char*>(&k), sizeof(ImpInt) );
+    
+    of.write( reinterpret_cast<char*>(U->Ds.data()), sizeof(ImpLong)*fu);
+    of.write( reinterpret_cast<char*>(V->Ds.data()), sizeof(ImpLong)*fv);
+    
+    for(ImpInt fi = 0; fi < f ; fi++){
+        for(ImpInt fj = fi; fj < f; fj++){
+            ImpInt fij = index_vec(fi, fj, f);
+            if( !param->self_side && !(fi < fu && fj >= fu) )
+                continue;
+            
+            ImpLong Wij_size = W[fij].size();
+            ImpLong Hij_size = H[fij].size();
+            of.write( reinterpret_cast<char*>(&fij), sizeof(ImpInt) );
+            of.write( reinterpret_cast<char*>(&Wij_size), sizeof(ImpLong) );
+            of.write( reinterpret_cast<char*>(&Hij_size), sizeof(ImpLong) );
+
+            of.write( reinterpret_cast<char*>(W[fij].data()), sizeof(ImpDouble)*Wij_size );
+            of.write( reinterpret_cast<char*>(H[fij].data()), sizeof(ImpDouble)*Hij_size );
+        }
+    }
+    of.close();
+
+}
+
+void ImpProblem::load_binary_model(string & model_path){
+    ofstream ifile(model_path, ios::binary | ios::trunc );
+    ifile.write( reinterpret_cast<char*>(&f), sizeof(ImpInt) );
+    ifile.write( reinterpret_cast<char*>(&fu), sizeof(ImpInt) );
+    ifile.write( reinterpret_cast<char*>(&fv), sizeof(ImpInt) );
+    ifile.write( reinterpret_cast<char*>(&k), sizeof(ImpInt) );
+    
+    W.resize(f*(f+1)/2);
+    H.resize(f*(f+1)/2);
+    U->Ds.resize(fu);
+    V->Ds.resize(fv);
+    ifile.write( reinterpret_cast<char*>(U->Ds.data()), sizeof(ImpLong)*fu);
+    ifile.write( reinterpret_cast<char*>(V->Ds.data()), sizeof(ImpLong)*fv);
+    
+    for(ImpInt fi = 0; fi < f ; fi++){
+        for(ImpInt fj = fi; fj < f; fj++){
+            ImpInt fij = index_vec(fi, fj, f);
+            if( !param->self_side && !(fi < fu && fj >= fu) )
+                continue;
+            
+            ImpLong Wij_size, Hij_size;
+            ifile.write( reinterpret_cast<char*>(&fij), sizeof(ImpInt) );
+            ifile.write( reinterpret_cast<char*>(&Wij_size), sizeof(ImpLong) );
+            ifile.write( reinterpret_cast<char*>(&Hij_size), sizeof(ImpLong) );
+
+            W[fij].resize(Wij_size);
+            H[fij].resize(Hij_size);
+            ifile.write( reinterpret_cast<char*>(W[fij].data()), sizeof(ImpDouble)*Wij_size );
+            ifile.write( reinterpret_cast<char*>(H[fij].data()), sizeof(ImpDouble)*Hij_size );
+        }
+    }
+    ifile.close();
+}
+
 ImpDouble ImpProblem::pq(const ImpInt &i, const ImpInt &j,const ImpInt &f1, const ImpInt &f2) {
     ImpInt f12 = index_vec(f1, f2, f);
     ImpInt Pi = (f1 < fu)? i : j;
