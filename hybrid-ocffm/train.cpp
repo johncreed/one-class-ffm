@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
         prob.init();
         prob.solve();
         if( !option.param->model_path.empty() )
-          prob.save_model(option.param->model_path );
+          prob.save_binary_model(option.param->model_path );
     }
     catch (invalid_argument &e)
     {

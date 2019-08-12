@@ -97,6 +97,9 @@ public:
     
     void write_header(ofstream& o_f) const;
     void write_W_and_H(ofstream& o_f) const;
+
+    void save_binary_model(string& model_path);
+    void load_binary_model(string& model_path);
 private:
     ImpDouble loss, lambda, w, wn, r, tr_loss;
 
