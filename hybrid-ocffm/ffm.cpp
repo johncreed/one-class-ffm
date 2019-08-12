@@ -913,6 +913,43 @@ void ImpProblem::logloss() {
     loss = ploss/Uva->M.size();
 }
 
+void ImpProblem::calc_logloss_mn() {
+    ImpDouble logloss_mn_sum = 0;
+    #pragma omp parallel for schedule(dynamic) reduction(+: logloss_mn_sum)
+    for (ImpLong i = 0; i < Uva->m; i++) {
+        Vec z(bt);
+        pred_z(i, z.data());
+
+        bool is_pos = false;
+        for(ImpLong j = 0; j < n; j++){
+            for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
+                if( j == y->idx ){
+                    is_pos = true;
+                    break;
+                }
+            }
+            
+            ImpDouble yy;
+            ImpDouble w2;
+            ImpDouble iw = 1;
+            
+            if(is_pos){
+                yy = 1.0 * z[j];
+                w2 = 1;
+            }
+            else{
+                yy = -1.0 * z[j];
+                w2 = wn;
+            }
+            if( -yy > 0 )
+                logloss_mn_sum += iw*w2 *(-yy + log1p( exp(yy) ));
+            else
+                logloss_mn_sum += iw*w2 * log1p( exp(-yy) );
+        }
+    }
+    logloss_mn = logloss_mn_sum / ImpDouble(Uva->m*n); 
+}
+
 void ImpProblem::validate() {
     const ImpInt nr_th = param->nr_threads, nr_k = top_k.size();
     ImpLong valid_samples = 0;
@@ -1174,23 +1211,15 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<I
 void ImpProblem::print_epoch_info(ImpInt t) {
     ImpInt nr_k = top_k.size();
     cout.width(2);
-    cout << t+1 << " ";
     if (!Uva->file_name.empty() && (t+1) % 2 == 0){
+        cout << t+1 << " ";
         init_Pva_Qva_at_bt();
         //calc_gauc();
-        logloss();
-        calc_auc();
+        //logloss();
+        //calc_auc();
         //validate();
-        for (ImpInt i = 0; i < nr_k; i++ ) {
-            cout.width(9);
-            cout << "( " <<setprecision(3) << va_loss_prec[i]*100 << " ,";
-            cout.width(6);
-            cout << setprecision(3) << va_loss_ndcg[i]*100 << " )";
-        }
-        cout.width(13);
-        cout << setprecision(3) << loss;
-        cout << endl;
-        cout << "tr_loss: " << tr_loss <<  " gauc: " << gauc << " gauc_all: " << gauc_all << " auc: " << auc << endl;
+        calc_logloss_mn();
+        cout << logloss_mn << endl;
     }
 }
 

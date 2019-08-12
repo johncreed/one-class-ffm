@@ -115,7 +115,8 @@ private:
     Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb, Gneg, item_w;
     ImpDouble gauc=0, gauc_all=0;
     ImpDouble auc = 0;
-    ImpDouble L_pos; 
+    ImpDouble L_pos;
+    ImpDouble logloss_mn;
     vector<ImpInt> top_k;
 
     void init_pair(const ImpInt &f12, const ImpInt &fi, const ImpInt &fj,
@@ -183,6 +184,7 @@ void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, con
     void calc_gauc();
     void calc_auc();
     void logloss();
+    void calc_logloss_mn();
     void print_epoch_info(ImpInt t);
 };
 
