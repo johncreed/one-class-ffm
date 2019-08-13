@@ -1177,10 +1177,8 @@ void ImpProblem::print_epoch_info(ImpInt t) {
     cout << t+1 << " ";
     if (!Uva->file_name.empty() && (t+1) % 2 == 0){
         init_Pva_Qva_at_bt();
-        //calc_gauc();
         logloss();
         calc_auc();
-        //validate();
         for (ImpInt i = 0; i < nr_k; i++ ) {
             cout.width(9);
             cout << "( " <<setprecision(3) << va_loss_prec[i]*100 << " ,";
