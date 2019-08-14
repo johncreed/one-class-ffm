@@ -920,8 +920,9 @@ void ImpProblem::calc_logloss_mn() {
         Vec z(bt);
         pred_z(i, z.data());
 
-        bool is_pos = false;
+        bool is_pos;
         for(ImpLong j = 0; j < n; j++){
+            is_pos = false;
             for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
                 if( j == y->idx ){
                     is_pos = true;
@@ -934,11 +935,11 @@ void ImpProblem::calc_logloss_mn() {
             ImpDouble iw = 1;
             
             if(is_pos){
-                yy = 1.0 * z[j];
+                yy = 1.0 * (z[j]+ + a[j]);
                 w2 = 1;
             }
             else{
-                yy = -1.0 * z[j];
+                yy = -1.0 * (z[j] + a[j]);
                 w2 = wn;
             }
             if( -yy > 0 )
@@ -947,7 +948,7 @@ void ImpProblem::calc_logloss_mn() {
                 logloss_mn_sum += iw*w2 * log1p( exp(-yy) );
         }
     }
-    logloss_mn = logloss_mn_sum / ImpDouble(Uva->m*n); 
+    logloss_mn = logloss_mn_sum / ImpDouble(Uva->m*n);
 }
 
 void ImpProblem::validate() {
