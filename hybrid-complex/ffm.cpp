@@ -948,7 +948,7 @@ void ImpProblem::logloss() {
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            ImpDouble yy = (pred_i_j(i, j) + at[i])*y->fid;
+            ImpDouble yy = (pred_i_j(i, j) + at[i] + bt[j])*y->fid;
             if (-yy > 0)
                 ploss += w2 *(-yy + log1p( exp(yy) ));
             else
