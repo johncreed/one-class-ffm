@@ -93,12 +93,15 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         if (has_label) {
             iss >> label_block;
             istringstream labelst(label_block);
+            ImpInt pos_counter = 0;
             while (getline(labelst, label_str, ',')) {
                 istringstream labels(label_str);
                 labels >> idx >> dummy >> label;
                 n = max(n, idx+1);
                 y_nnz++;
+                pos_counter++;
             }
+            nr_pos = max(nr_pos, pos_counter);
         }
 
         while (iss >> fid >> dummy >> idx >> dummy >> val) {
@@ -133,12 +136,17 @@ void ImpData::read(bool has_label, const ImpLong *ds) {
         if (has_label) {
             iss >> label_block;
             istringstream labelst(label_block);
+            ImpInt pos = 0;
             while (getline(labelst, label_str, ',')) {
                 nnz_j++;
                 istringstream labels(label_str);
                 labels >> idx >> dummy >> label;
+
                 M[nnz_j-1].fid = (label > 0) ? 1 : -1;
                 M[nnz_j-1].idx = idx;
+                M[nnz_j-1].pos = pos;
+
+                pos++;
             }
             nny[i] = nnz_j;
         }
@@ -270,7 +278,9 @@ void ImpData::transY(const vector<YNode*> &YT) {
     for (ImpLong nnz_i = 0; nnz_i < nnz; nnz_i++) {
         M[nnz_i].idx = perm[nnz_i].first;
         M[nnz_i].fid = perm[nnz_i].second->fid;
+
         M[nnz_i].val = perm[nnz_i].second->val;
+        M[nnz_i].pos = perm[nnz_i].second->pos;
     }
 
     Y[0] = M.data();
@@ -377,15 +387,17 @@ void ImpProblem::init_y_tilde() {
     #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
-            ImpLong j = y->idx;
-            y->val = a[i]+b[j]+calc_cross(i, j);
+            const ImpLong j = y->idx;
+            const ImpInt pos = y->pos;
+            y->val = a[i]+b[j]+calc_cross(i, j) + pos_b[pos];
         }
     }
     #pragma omp parallel for schedule(dynamic)
     for (ImpLong j = 0; j < n; j++) {
         for (YNode* y = V->Y[j]; y < V->Y[j+1]; y++) {
-            ImpLong i = y->idx;
-            y->val = a[i]+b[j]+calc_cross(i, j);
+            const ImpLong i = y->idx;
+            const ImpInt pos = y->pos;
+            y->val = a[i]+b[j]+calc_cross(i, j) + pos_b[pos];
         }
     }
 
@@ -457,6 +469,25 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
     }
 }
 
+void ImpProblem::update_pos_bias(const Vec &S){
+    #pragma omp parallel for schedule(dynamic)
+    for (ImpLong i = 0; i < U->m; i++) {
+        for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
+            const ImpInt pos = y->pos;
+            y->val += S[pos];
+            y->expyy = exp( y->val * (ImpDouble) y->fid);
+        }
+    }
+    #pragma omp parallel for schedule(dynamic)
+    for (ImpLong j = 0; j < V->m; j++) {
+        for (YNode* y = V->Y[j]; y < V->Y[j+1]; y++) {
+            const ImpInt pos = y->pos;
+            y->val += S[pos];
+            y->expyy = exp( y->val * (ImpDouble) y->fid);
+        }
+    }
+}
+
 void ImpProblem::init() {
     lambda = param->lambda;
     w = param->omega;
@@ -470,6 +501,8 @@ void ImpProblem::init() {
     fv = V->f;
     f = fu+fv;
 
+    nr_pos = U->nr_pos;
+
     k = param->k;
 
     a.resize(m, 0);
@@ -477,6 +510,8 @@ void ImpProblem::init() {
 
     sa.resize(m, 0);
     sb.resize(n, 0);
+
+    pos_b.resize(nr_pos, 0);
 
     const ImpInt nr_blocks = f*(f+1)/2;
 
@@ -702,6 +737,50 @@ void ImpProblem::solve_cross(const ImpInt &f1, const ImpInt &f2) {
     update_cross(false, SH, P1, H1, V1, Q1);
 }
 
+void ImpProblem::solve_pos_bias(){
+    Vec G(nr_pos, 0), S(nr_pos, 0), H(nr_pos, 0);
+
+    const ImpInt nr_threads = param->nr_threads;
+    Vec G_(nr_threads*nr_pos, 0), H_(nr_threads*nr_pos, 0);
+
+    #pragma omp parallel for schedule(dynamic)
+    for (ImpLong i = 0; i < U->m; i++) {
+        const ImpInt id = omp_get_thread_num();
+        for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
+            const ImpInt pos = y->pos; 
+            G_[pos+id*nr_pos] += l_pos_grad(y, 1);
+            H_[pos+id*nr_pos] += l_pos_hessian(y, 1);
+        }
+    }
+    for(ImpInt i = 0; i < nr_threads; i++) {
+        axpy(G_.data()+i*nr_pos, G.data(), nr_pos, 1);
+        axpy(H_.data()+i*nr_pos, H.data(), nr_pos, 1);
+    }
+    for (ImpInt p_ = 0; p_ < nr_pos; p_++)
+        S[p_] = -G[p_]/H[p_];
+
+    ImpDouble sTg = inner(S.data(), G.data(), S.size());
+    ImpDouble theta = 1, beta = 0.5, nu = 0.1;
+    while(true){
+        if(theta < 1e-20){
+            scal(S.data(), S.size(), 0);
+            cerr << "Step size too small and skip this block." << endl;
+            break;
+        }
+        ImpDouble L_pos_new = calc_L_pos(U->Y, m, theta);
+        ImpDouble delta = L_pos_new - L_pos;
+        if( delta <= nu * theta * sTg ){
+            L_pos = L_pos_new;
+            scal(S.data(), S.size(), theta);
+            break;
+        }
+        theta *= beta;
+    }
+    if( theta != 1 )
+        cerr << "Do line search " << theta << endl << flush;
+    update_pos_bias(S);
+}
+
 void ImpProblem::one_epoch() {
 
     if (param->self_side) {
@@ -717,6 +796,8 @@ void ImpProblem::one_epoch() {
     for (ImpInt f1 = 0; f1 < fu; f1++)
         for (ImpInt f2 = fu; f2 < f; f2++)
             solve_cross(f1, f2);
+
+    solve_pos_bias();
 
     if (param->self_side && w != 0)
         cache_sasb();
@@ -836,7 +917,8 @@ void ImpProblem::calc_gauc(){
         ImpLong k = 0;
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++, k++){
             const ImpLong j = y->idx;
-            z[k] += pred_i_j(i, j) + bt[j];
+            const ImpInt pos = y->pos;
+            z[k] += pred_i_j(i, j) + bt[j] + pos_b[pos];
             label[k] = y->fid;
         }
         ImpDouble gauc_i = calc_auc_i(z,label);
@@ -864,7 +946,8 @@ void ImpProblem::calc_auc(){
         ImpLong k = 0;
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++, k++){
             const ImpLong j = y->idx;
-            z[k] += pred_i_j(i, j) + bt[j];
+            const ImpInt pos = y->pos;
+            z[k] += pred_i_j(i, j) + bt[j] + pos_b[pos];
             label[k] = y->fid;
             sample_count++;
         }
@@ -902,8 +985,9 @@ void ImpProblem::logloss() {
     for (ImpLong i = 0; i < Uva->m; i++) {
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
+            const ImpInt pos = y->pos;
             ImpDouble w2 = (y->fid > 0)? 1 : wn;
-            ImpDouble yy = (pred_i_j(i, j) + at[i])*y->fid;
+            ImpDouble yy = (pred_i_j(i, j) + at[i] + bt[j] + pos_b[pos])*y->fid;
             if (-yy > 0)
                 ploss += w2 *(-yy + log1p( exp(yy) ));
             else
@@ -960,7 +1044,8 @@ void ImpProblem::validate() {
 
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++){
             const ImpLong j = y->idx;
-            const ImpDouble yy = (z[j]+at[i])*y->fid;
+            const ImpInt pos = y->pos;
+            const ImpDouble yy = (z[j]+at[i]+pos_b[pos])*y->fid;
 
             const ImpDouble w2 = (y->fid > 0)? 1 : wn;
 

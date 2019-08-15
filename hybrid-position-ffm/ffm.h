@@ -66,7 +66,7 @@ class ImpData {
 public:
     string file_name;
     ImpLong m, n, nnz_x, nnz_y;
-    ImpInt f;
+    ImpInt f, nr_pos;
     vector<Node> N;
     vector<YNode> M;
     vector<Node*> X;
@@ -79,7 +79,7 @@ public:
     vector<vector<ImpLong>> freq;
 
 
-    ImpData(string file_name): file_name(file_name), m(0), n(0), f(0) {};
+    ImpData(string file_name): file_name(file_name), m(0), n(0), f(0), nr_pos(0) {};
     void read(bool has_label, const ImpLong* ds=nullptr);
     void print_data_info();
     void split_fields();
@@ -109,16 +109,18 @@ private:
     shared_ptr<ImpData> U, Uva, V;
     shared_ptr<Parameter> param;
 
-    ImpInt k, fu, fv, f;
+    ImpInt k, fu, fv, f, nr_pos;
     ImpLong m, n;
     ImpLong mt;
 
     vector<Vec> W, H, P, Q, Pva, Qva;
     Vec at, bt;
-    Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb, Gneg, item_w;
+    Vec a, b, va_loss_prec, va_loss_ndcg, sa, sb, Gneg, item_w, pos_b;
+
     ImpDouble gauc=0, gauc_all=0;
     ImpDouble auc = 0;
     ImpDouble L_pos; 
+
     vector<ImpInt> top_k;
 
     void init_pair(const ImpInt &f12, const ImpInt &fi, const ImpInt &fj,
@@ -134,6 +136,7 @@ private:
 
     void update_side(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
     void update_cross(const bool &sub_type, const Vec &S, const Vec &Q1, Vec &W1, const vector<Node*> &X12, Vec &P1);
+    void update_pos_bias(const Vec &S);
 
     void UTx(const Node *x0, const Node* x1, const Vec &A, ImpDouble *c);
     void UTX(const vector<Node*> &X, ImpLong m1, const Vec &A, Vec &C);
@@ -144,6 +147,8 @@ private:
 
     ImpDouble l_pos_grad(const YNode* y, const ImpDouble iw);
     ImpDouble l_pos_hessian(const YNode* y, const ImpDouble iw);
+
+    void solve_pos_bias();
 
     void solve_side(const ImpInt &f1, const ImpInt &f2);
     void gd_side(const ImpInt &f1, const Vec &W1, const Vec &Q1, Vec &G);
