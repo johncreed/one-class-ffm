@@ -304,8 +304,6 @@ void ImpData::print_data_info() {
     cout << "f:";
     cout << f;
     cout.width(12);
-    cout << "d:";
-    cout << Ds[0];
     cout << endl;
 }
 
@@ -470,6 +468,7 @@ void ImpProblem::update_cross(const bool &sub_type, const Vec &S,
 }
 
 void ImpProblem::update_pos_bias(const Vec &S){
+    axpy( S.data(), pos_b.data(), S.size(), 1);
     #pragma omp parallel for schedule(dynamic)
     for (ImpLong i = 0; i < U->m; i++) {
         for (YNode* y = U->Y[i]; y < U->Y[i+1]; y++) {
@@ -777,7 +776,7 @@ void ImpProblem::solve_pos_bias(){
         theta *= beta;
     }
     if( theta != 1 )
-        cerr << "Do line search " << theta << endl << flush;
+        cerr << "Sub-problem: position bias did line search " << theta << endl << flush;
     update_pos_bias(S);
 }
 
@@ -1900,7 +1899,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         theta *= beta;
     }
     if( theta != 1 )
-        cerr << "Do line search " << theta << endl << flush;
+        cerr << "Sub-problem:" << f1 << "-" <<  f2 <<  "did line search " << theta << endl << flush;
 }
 
 void ImpProblem::calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q){
