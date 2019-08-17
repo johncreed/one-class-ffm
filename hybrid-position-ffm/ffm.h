@@ -171,6 +171,9 @@ void line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1, const Vec &Q1, con
 
     void calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q);
     void calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q);
+
+    void calc_delta_y_pos(vector<YNode*> &Y, const ImpLong m1, const Vec &S);
+
     ImpDouble calc_L_pos(vector<YNode*> &Y, const ImpLong m1, const ImpDouble theta);
 
     void cache_sasb();

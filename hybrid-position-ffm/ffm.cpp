@@ -759,6 +759,8 @@ void ImpProblem::solve_pos_bias(){
         S[p_] = -G[p_]/H[p_];
 
     ImpDouble sTg = inner(S.data(), G.data(), S.size());
+    calc_delta_y_pos(U->Y, m, S);
+
     ImpDouble theta = 1, beta = 0.5, nu = 0.1;
     while(true){
         if(theta < 1e-20){
@@ -781,7 +783,6 @@ void ImpProblem::solve_pos_bias(){
 }
 
 void ImpProblem::one_epoch() {
-
     if (param->self_side) {
         for (ImpInt f1 = 0; f1 < fu; f1++)
             for (ImpInt f2 = f1; f2 < fu; f2++)
@@ -1919,8 +1920,18 @@ void ImpProblem::calc_delta_y_cross(vector<YNode*> &Y, const ImpLong m1, const V
     #pragma omp parallel for schedule(dynamic)
     for(ImpLong i = 0 ; i < m1; i++){
         for(YNode *y = Y[i]; y != Y[i+1]; y++){
-            ImpLong j = y->idx;
+            const ImpLong j = y->idx;
             y->delta = inner(pp + i * k, qp + j * k, k);
+        }
+    }
+}
+
+void ImpProblem::calc_delta_y_pos(vector<YNode*> &Y, const ImpLong m1, const Vec &S){
+    #pragma omp parallel for schedule(dynamic)
+    for(ImpLong i = 0 ; i < m1; i++){
+        for(YNode *y = Y[i]; y != Y[i+1]; y++){
+            const ImpInt pos = y->pos;
+            y->delta = S[pos];
         }
     }
 }
