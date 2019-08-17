@@ -797,7 +797,8 @@ void ImpProblem::one_epoch() {
         for (ImpInt f2 = fu; f2 < f; f2++)
             solve_cross(f1, f2);
 
-    solve_pos_bias();
+    if (param->position)
+        solve_pos_bias();
 
     if (param->self_side && w != 0)
         cache_sasb();

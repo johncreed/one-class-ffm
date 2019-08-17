@@ -50,6 +50,7 @@ string train_help()
     "--freq: enable freq-aware lambda\n"
     "--weighted: enable weighted logloss\n"
     "--ns: disable self interaction\n"
+    "--position: add position bias\n"
     );
 }
 
@@ -167,6 +168,9 @@ Option parse_option(int argc, char **argv)
         }
         else if(args[i].compare("--weighted") == 0){
             option.param->item_weight = true;
+        }
+        else if(args[i].compare("--position") == 0){
+            option.param->position = true;
         }
         else
         {
