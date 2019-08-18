@@ -18,6 +18,12 @@ ImpDouble sum(const Vec &v) {
     return sum;
 }
 
+void print_vec(const Vec &v) {
+    for (ImpDouble val: v)
+        cout << val << ",";
+    cout << endl;
+}
+
 void axpy(const ImpDouble *x, ImpDouble *y, const ImpLong &l, const ImpDouble &lambda) {
     cblas_daxpy(l, lambda, x, 1, y, 1);
 }
@@ -797,8 +803,9 @@ void ImpProblem::one_epoch() {
         for (ImpInt f2 = fu; f2 < f; f2++)
             solve_cross(f1, f2);
 
-    if (param->position)
+    if (param->position) {
         solve_pos_bias();
+    }
 
     if (param->self_side && w != 0)
         cache_sasb();
@@ -831,19 +838,14 @@ void ImpProblem::init_va(ImpInt size) {
     va_loss_prec.resize(size,0);
     va_loss_ndcg.resize(size,0);
     top_k.resize(size);
-    ImpInt start = 5;
 
     cout << "iter";
-    for (ImpInt i = 0; i < size; i++) {
-        top_k[i] = start;
-        cout.width(9);
-        cout << "( p@ " << start << ", ";
-        cout.width(6);
-        cout << "nDCG@" << start << " )";
-        start *= 2;
-    }
-    cout.width(12);
-    cout << "logloss";
+    cout.width(13);
+    cout << "tr_loss";
+    cout.width(13);
+    cout << "te_loss";
+    cout.width(11);
+    cout << "AUC";
     cout << endl;
 }
 
@@ -948,7 +950,7 @@ void ImpProblem::calc_auc(){
         for(YNode* y = Uva->Y[i]; y < Uva->Y[i+1]; y++, k++){
             const ImpLong j = y->idx;
             const ImpInt pos = y->pos;
-            z[k] += pred_i_j(i, j) + bt[j] + pos_b[pos];
+            z[k] += pred_i_j(i, j) + at[i] + bt[j] + pos_b[pos];
             label[k] = y->fid;
             sample_count++;
         }
@@ -1258,23 +1260,19 @@ void ImpProblem::prec_k(ImpDouble *z, ImpLong i, vector<ImpInt> &top_k, vector<I
 }
 
 void ImpProblem::print_epoch_info(ImpInt t) {
-    ImpInt nr_k = top_k.size();
     cout.width(2);
     cout << t+1 << " ";
-    if (!Uva->file_name.empty() && (t+1) % 2 == 0){
+    if (!Uva->file_name.empty() && (t+1) % 1 == 0){
         init_Pva_Qva_at_bt();
         logloss();
         calc_auc();
-        for (ImpInt i = 0; i < nr_k; i++ ) {
-            cout.width(9);
-            cout << "( " <<setprecision(3) << va_loss_prec[i]*100 << " ,";
-            cout.width(6);
-            cout << setprecision(3) << va_loss_ndcg[i]*100 << " )";
-        }
+        cout.width(13);
+        cout << setprecision(3) << tr_loss;
         cout.width(13);
         cout << setprecision(3) << loss;
+        cout.width(13);
+        cout << setprecision(3) << auc;
         cout << endl;
-        cout << "tr_loss: " << tr_loss <<  " gauc: " << gauc << " gauc_all: " << gauc_all << " auc: " << auc << endl;
     }
 }
 
@@ -1901,7 +1899,7 @@ void ImpProblem::line_search(const ImpInt &f1, const ImpInt &f2, Vec &S1,
         theta *= beta;
     }
     if( theta != 1 )
-        cerr << "Sub-problem:" << f1 << "-" <<  f2 <<  "did line search " << theta << endl << flush;
+        cerr << "Sub-problem:" << f1 << "-" <<  f2 <<  " did line search " << theta << endl << flush;
 }
 
 void ImpProblem::calc_delta_y_side(vector<YNode*> &Y, const ImpLong m1, const Vec &XS, const Vec &Q){
