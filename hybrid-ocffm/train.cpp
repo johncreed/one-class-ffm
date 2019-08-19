@@ -198,16 +198,22 @@ int main(int argc, char *argv[])
 
 
         U->read(true);
-        U->split_fields();
-
         V->read(false);
-        V->transY(U->Y);
+
+        assert(U->n <= V->m);
+        U->n = V->m;
+
+        U->split_fields();
         V->split_fields();
+
+        V->transY(U->Y);
 
         assert(U->n == V->m);
 
         if (!Ut->file_name.empty()) {
             Ut->read(true, U->Ds.data());
+            assert(Ut->n <= V->m);
+            Ut->n = V->m;
             Ut->split_fields();
         }
 
