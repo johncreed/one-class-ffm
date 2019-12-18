@@ -1189,7 +1189,7 @@ void ImpProblem::print_epoch_info(ImpInt t) {
     ImpInt nr_k = top_k.size();
     cout.width(2);
     cout << t+1 << " ";
-    if (!Uva->file_name.empty() && (t+1) % 2 == 0){
+    if (!Uva->file_name.empty()){
         init_Pva_Qva_at_bt();
         logloss();
         calc_auc();
